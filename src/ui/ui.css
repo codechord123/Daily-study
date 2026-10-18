@@ -205,6 +205,16 @@
   display: flex; gap: 6px; padding: 6px; border-radius: 999px; max-width: calc(100% - 32px); flex-wrap: wrap; justify-content: center;
 }
 .item-tools .btn { min-height: 44px; font-size: 15px; padding: 0 16px; }
+.item-tools .btn.on { border-color: var(--gold); color: var(--gold); }
+/* 색 고르기: 원래 색 + 색상환을 따라 7가지 (누르면 별 위 소품에 바로 보임) */
+.hue-row { flex-basis: 100%; display: flex; justify-content: center; gap: 8px; padding: 4px 0 2px; flex-wrap: wrap; }
+.hue-dot {
+  width: 40px; height: 40px; border-radius: 50%; cursor: pointer; padding: 0; font-size: 11px; color: var(--ink-dark); font-weight: 700;
+  border: 2px solid rgba(255,255,255,.35); background: hsl(calc(var(--h) * 45deg + 10deg) 75% 66%);
+}
+.hue-dot:first-child { background: conic-gradient(#ffd36e, #8fe3b0, #8ec9ff, #f0a3d8, #ffd36e); }
+.hue-dot.on { border-color: #fff; box-shadow: 0 0 0 3px var(--gold); }
+@media (max-width: 640px) { .hue-row { gap: 5px; flex-wrap: nowrap; } .hue-dot { width: 34px; height: 34px; font-size: 10px; flex: none; } }
 
 /* ================= 미션 ================= */
 /* 3D 별이 보이도록: 가로 화면은 오른쪽에 카드, 세로 화면은 아래에 카드 */

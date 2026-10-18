@@ -219,7 +219,8 @@ export default function DecorPanel({ onDone }) {
     ro.observe(el);
     return () => (ro.disconnect(), root.style.removeProperty('--decor-h'));
   }, []);
-  const { rotateItem, storeItem, recolorItem, resizeItem } = useGame();
+  const { rotateItem, storeItem, recolorItem, resizeItem, profile } = useGame();
+  const [colorOpen, setColorOpen] = useState(false);
   const { heldItem, selectedUid, movingUid, hold, startMove, clearDecor, setLookFocus } = useUI();
   useEffect(() => {
     setLookFocus(tab === 'me');
@@ -227,6 +228,8 @@ export default function DecorPanel({ onDone }) {
     return () => setLookFocus(false);
   }, [tab, setLookFocus, clearDecor]);
 
+  const selItem = selectedUid ? profile.planet.items.find((i) => i.uid === selectedUid) : null;
+  useEffect(() => setColorOpen(false), [selectedUid]);
   // Esc: 들고 있던 소품·고른 소품을 내려놓는다
   useEscape(clearDecor, !!(heldItem || selectedUid || movingUid));
 
@@ -245,7 +248,7 @@ export default function DecorPanel({ onDone }) {
       {selectedUid && !movingUid && (
         <div className="item-tools panel rise">
           <button className="btn" data-nosfx onClick={() => (sfx('rotate'), rotateItem(selectedUid, 45))}>↻ 돌리기</button>
-          <button className="btn" data-nosfx onClick={() => (sfx('star'), recolorItem(selectedUid))}>🎨 색</button>
+          <button className={`btn ${colorOpen ? 'on' : ''}`} data-nosfx onClick={() => setColorOpen((o) => !o)} aria-expanded={colorOpen}>🎨 색</button>
           <button className="btn" data-nosfx onClick={() => (sfx('rotate'), resizeItem(selectedUid))}>⤢ 크기</button>
           <button className="btn" onClick={() => startMove(selectedUid)}>✥ 옮기기</button>
           <button
@@ -260,6 +263,22 @@ export default function DecorPanel({ onDone }) {
             ⤓ 가방에 넣기
           </button>
           <button className="btn btn-icon btn-ghost" onClick={clearDecor} aria-label="선택 해제">✕</button>
+          {colorOpen && (
+            <div className="hue-row" role="group" aria-label="색 고르기">
+              {Array.from({ length: 8 }, (_, h) => (
+                <button
+                  key={h}
+                  className={`hue-dot ${(selItem?.hue ?? 0) === h ? 'on' : ''}`}
+                  style={{ '--h': h }}
+                  data-nosfx
+                  onClick={() => (sfx('star'), recolorItem(selectedUid, h))}
+                  aria-label={h ? `색 ${h + 1}` : '원래 색'}
+                >
+                  {h === 0 ? '원래' : ''}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

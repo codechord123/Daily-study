@@ -205,11 +205,12 @@ export const useGame = create((set, get) => {
     },
 
     // 소품 색 바꾸기 (8단계를 돌아가며)
-    recolorItem(uid) {
+    // 소품 색: hue를 주면 그 단계로, 없으면 다음 단계로
+    recolorItem(uid, hue) {
       update((p) => {
         const it = p.planet.items.find((i) => i.uid === uid);
         if (!it) return null;
-        it.hue = ((it.hue ?? 0) + 1) % 8;
+        it.hue = hue ?? ((it.hue ?? 0) + 1) % 8;
         return p;
       });
     },
