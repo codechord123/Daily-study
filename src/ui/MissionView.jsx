@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGame, todayKey } from '../store/useGame';
 import { useUI } from '../store/useUI';
-import { buildDailyMission, isCorrect } from '../engine/dailyMission';
+import { buildDailyMission, buildPractice, isCorrect } from '../engine/dailyMission';
 import { SUBJECT_META } from '../data/missions/grade5';
 import RichText from './RichText';
 import { sfx } from '../services/sound';
@@ -56,7 +56,7 @@ function RewardRow({ label, value, delay }) {
   );
 }
 
-function Result({ correct, total, reward, practice, onExit }) {
+function Result({ correct, total, reward, practice, mode, wrongCount, reviewGain, onExit, onReview, onPractice }) {
   const totalV = useCountUp(reward?.total ?? 0, 1100, 1300);
   const stars = Math.round((correct / total) * 5);
   useEffect(() => {
@@ -72,7 +72,9 @@ function Result({ correct, total, reward, practice, onExit }) {
           <span key={i} className={`rs ${i < stars ? 'on' : ''}`} style={{ animationDelay: `${300 + i * 140}ms` }} />
         ))}
       </div>
-      <h2 className="title result-title">{correct === total ? '완벽해요!' : correct >= total * 0.7 ? '잘했어요!' : '오늘도 해냈어요!'}</h2>
+      <h2 className="title result-title">
+        {mode === 'review' ? (correct === total ? '오답을 모두 정복했어요!' : '조금씩 정복 중!') : correct === total ? '완벽해요!' : correct >= total * 0.7 ? '잘했어요!' : '오늘도 해냈어요!'}
+      </h2>
       <p className="result-score">
         별 조각 <b>{correct}</b> / {total}개를 모았어요
       </p>
@@ -89,9 +91,21 @@ function Result({ correct, total, reward, practice, onExit }) {
             </b>
           </div>
         </div>
+      ) : mode === 'review' ? (
+        <p className="result-note">{reviewGain > 0 ? `다시 맞힌 아침 미션 문제로 별가루 ✦ ${reviewGain}개를 받았어요` : '다시 맞힌 문제는 오답 노트에서 지워졌어요'}</p>
       ) : (
-        practice && <p className="result-note">연습 모드예요. 별가루는 내일 미션에서 다시 받을 수 있어요.</p>
+        practice && <p className="result-note">연습이라 별가루는 없어요. 아침 미션은 내일 다시 열려요.</p>
       )}
+      <div className="result-actions">
+        {wrongCount > 0 && (
+          <button className="btn result-sub" onClick={onReview}>
+            📒 틀린 {wrongCount}문제 다시 풀기
+          </button>
+        )}
+        <button className="btn result-sub" onClick={onPractice}>
+          ✏️ 과목별 연습
+        </button>
+      </div>
       <button className="btn btn-primary btn-block result-go" onClick={onExit}>
         내 별 꾸미러 가기 →
       </button>
@@ -100,10 +114,18 @@ function Result({ correct, total, reward, practice, onExit }) {
 }
 
 export default function MissionView() {
-  const { profile, go, setMode, completeMission, missionDoneToday } = useGame();
-  const { setMission, missionFx } = useUI();
-  const practice = useMemo(() => missionDoneToday(), []); // eslint-disable-line react-hooks/exhaustive-deps
-  const questions = useMemo(() => buildDailyMission(profile.sid, todayKey()), [profile.sid]);
+  const { profile, go, setMode, completeMission, missionDoneToday, missionMode, noteWrong, clearWrong, startMission } = useGame();
+  const { setMission, missionFx, openSheet } = useUI();
+  const mode = missionMode?.type ?? 'daily';
+  // 오늘 미션을 이미 했으면 다시 푸는 것은 연습
+  const practice = useMemo(() => mode !== 'daily' || missionDoneToday(), [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  const questions = useMemo(() => {
+    if (mode === 'review') return (profile.wrongNotes ?? []).filter((n) => !n.cleared).slice(-10).map((n, i) => ({ ...n.q, id: i, noteSource: n.source }));
+    if (mode === 'practice') return buildPractice(missionMode.subject, `${profile.sid}:${Date.now()}`, todayKey());
+    return buildDailyMission(profile.sid, todayKey());
+  }, [mode, missionMode, profile.sid]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [reviewGain, setReviewGain] = useState(0);
+  const [wrongCount, setWrongCount] = useState(0);
   const [idx, setIdx] = useState(0);
   const [results, setResults] = useState([]);
   const [feedback, setFeedback] = useState(null); // { ok, picked, cheer }
@@ -114,7 +136,7 @@ export default function MissionView() {
   const cardRef = useRef();
 
   const q = questions[idx];
-  const meta = SUBJECT_META[q?.subject];
+  const meta = SUBJECT_META[q?.subject] ?? SUBJECT_META.math;
   const combo = useMemo(() => {
     let c = 0;
     for (let i = results.length - 1; i >= 0 && results[i]; i--) c++;
@@ -138,12 +160,21 @@ export default function MissionView() {
       if (ok) sfx('correct', combo + 1);
       else sfx('wrong');
       setFeedback({ ok, picked: value, cheer: CHEERS[Math.floor(Math.random() * CHEERS.length)] });
+      // 오답 노트: 틀리면 적고, 오답 노트에서 다시 맞히면 지운다
+      if (mode === 'review') {
+        if (ok) {
+          const gain = clearWrong(q.prompt);
+          setReviewGain((g) => g + gain);
+        }
+      } else if (!ok) {
+        noteWrong(q, mode === 'daily' && !practice ? 'daily' : 'practice');
+      }
       if (ok) {
         const r = (el ?? cardRef.current)?.getBoundingClientRect();
         if (r) setBurst({ x: r.left + r.width / 2, y: r.top + r.height / 2, id: performance.now() });
       }
     },
-    [feedback, finished, q, results, combo, setMission, missionFx],
+    [feedback, finished, q, results, combo, setMission, missionFx, mode, practice, clearWrong, noteWrong],
   );
 
   const next = useCallback(() => {
@@ -156,10 +187,20 @@ export default function MissionView() {
     }
     sfx('complete');
     const correct = results.filter(Boolean).length;
-    if (!practice) setReward(completeMission({ correct, total: questions.length }));
+    if (!practice) {
+      // 과목별 맞힌 수 / 문제 수
+      const subjects = {};
+      questions.forEach((qq, i) => {
+        const t = (subjects[qq.subject] ??= [0, 0]);
+        t[1] += 1;
+        if (results[i]) t[0] += 1;
+      });
+      setReward(completeMission({ correct, total: questions.length, subjects }));
+    }
+    setWrongCount((useGame.getState().profile.wrongNotes ?? []).filter((n) => !n.cleared).length);
     missionFx('complete');
     setFinished(true);
-  }, [idx, questions.length, results, practice, completeMission, missionFx]);
+  }, [idx, questions, results, practice, completeMission, missionFx]);
 
   const pressKey = useCallback(
     (k) => {
@@ -176,7 +217,7 @@ export default function MissionView() {
 
   // 크롬북 키보드: 숫자/1~4 고르기, O·X, Enter 확인·다음
   useEffect(() => {
-    if (finished) return;
+    if (finished || !q) return;
     const onKey = (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -215,6 +256,19 @@ export default function MissionView() {
   const choiceState = (match, picked) =>
     feedback ? (match ? 'right' : picked ? 'wrong' : 'dim') : '';
 
+  if (!questions.length)
+    return (
+      <div className="mission">
+        <div className="mission-stage">
+          <div className="mission-result">
+            <h2 className="title result-title">오답 노트가 비어 있어요</h2>
+            <p className="result-score">아침 미션에서 틀린 문제가 생기면 여기서 다시 풀 수 있어요.</p>
+            <button className="btn btn-primary btn-block" onClick={() => go('home')}>내 별로 돌아가기</button>
+          </div>
+        </div>
+      </div>
+    );
+
   return (
     <div className={`mission ${finished ? 'is-finished' : ''}`}>
       <header className="mission-head">
@@ -229,14 +283,28 @@ export default function MissionView() {
           ))}
         </div>
         <span className="q-count">
-          {practice && <em>연습 </em>}
+          {mode === 'review' ? <em>오답 노트 </em> : mode === 'practice' ? <em>{SUBJECT_META[missionMode.subject]?.label} 연습 </em> : practice && <em>연습 </em>}
           {Math.min(idx + 1, questions.length)}<small>/{questions.length}</small>
         </span>
       </header>
 
       <div className="mission-stage" data-nosfx>
         {finished ? (
-          <Result correct={results.filter(Boolean).length} total={questions.length} reward={reward} practice={practice} onExit={exit} />
+          <Result
+            correct={results.filter(Boolean).length}
+            total={questions.length}
+            reward={reward}
+            practice={practice}
+            mode={mode}
+            wrongCount={mode === 'review' ? 0 : wrongCount}
+            reviewGain={reviewGain}
+            onExit={exit}
+            onReview={() => startMission({ type: 'review', at: Date.now() })}
+            onPractice={() => {
+              go('home');
+              openSheet('records');
+            }}
+          />
         ) : (
           <article
             ref={cardRef}
@@ -323,7 +391,7 @@ export default function MissionView() {
                   {!feedback.ok && (
                     <p className="fb-answer">
                       정답은 <b><RichText text={correctLabel()} /></b>
-                      {q.explain && <span className="explain">{q.explain}</span>}
+                      {(q.explain || q.hint) && <span className="explain">💡 {q.explain || q.hint}</span>}
                     </p>
                   )}
                 </div>

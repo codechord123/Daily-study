@@ -41,7 +41,7 @@ export function unitTitles(pos) {
   };
 }
 
-function englishSet(r, count, week) {
+export function englishSet(r, count, week) {
   // 이번 주 묶음까지 배운 단어에서 출제, 이번 주 단어 비중을 높인다
   const upto = Math.min(ENGLISH_WORDS.length, (week + 1) * 8);
   const thisWeek = ENGLISH_WORDS.slice(Math.max(0, upto - 8), upto);
@@ -99,6 +99,28 @@ export function buildDailyMission(sid, dateKey) {
   const dayIndex = Math.floor(new Date(dateKey).getTime() / 86400000);
   const order = INQUIRY_ROTATION[dayIndex % INQUIRY_ROTATION.length];
   const qs = [...makeMathSet(r, 5, pos.math), ...englishSet(r, 5, pos.week), ...order.map((s) => inquiry(r, s, pos, titles))];
+  return qs.map((q, i) => ({ id: i, ...q }));
+}
+
+// 과목별 추가 연습 (별가루 없음): 배운 단원까지에서 골고루
+export function buildPractice(subject, seedStr, dateKey) {
+  const r = seeded(seedStr);
+  const pos = curriculumPosition(dateKey);
+  const titles = unitTitles(pos);
+  let qs = [];
+  if (subject === 'math') {
+    for (let i = 0; i < 10; i++) qs.push(...makeMathSet(r, 1, randInt(r, 0, pos.math)));
+  } else if (subject === 'english') {
+    qs = englishSet(r, 10, pos.week);
+  } else {
+    const seen = new Set();
+    for (let tries = 0; qs.length < 8 && tries < 60; tries++) {
+      const q = inquiry(r, subject, { ...pos, [subject]: subject === 'korean' ? 0 : randInt(r, 0, pos[subject]) }, titles);
+      if (seen.has(q.prompt)) continue;
+      seen.add(q.prompt);
+      qs.push(q);
+    }
+  }
   return qs.map((q, i) => ({ id: i, ...q }));
 }
 

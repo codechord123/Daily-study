@@ -11,13 +11,15 @@ import FlightHud from './ui/FlightHud';
 import MissionView from './ui/MissionView';
 import Toast from './ui/Toast';
 import WarpOverlay from './ui/WarpOverlay';
+import RecordsSheet from './ui/RecordsSheet';
 import { useGame } from './store/useGame';
 import { useUI } from './store/useUI';
 import * as presence from './services/presence';
 import { sfx, playMusic } from './services/sound';
 
 export default function App() {
-  const { profile, screen, visiting, launchFrom, restoreSession, visit } = useGame();
+  const { profile, screen, visiting, launchFrom, restoreSession, visit, missionMode } = useGame();
+  const sheet = useUI((s) => s.sheet);
   const quality = useUI((s) => s.quality);
   const low = quality === 'low';
   const [emote, setEmote] = useState(null);
@@ -71,7 +73,8 @@ export default function App() {
         {!profile && <Login />}
         {profile && (screen === 'home' || screen === 'visit') && <PlanetHud ownerId={ownerId} onEmote={sendEmote} />}
         {profile && screen === 'space' && <FlightHud />}
-        {profile && screen === 'mission' && <MissionView />}
+        {profile && screen === 'mission' && <MissionView key={missionMode?.at ?? 'daily'} />}
+        {profile && sheet === 'records' && screen !== 'mission' && <RecordsSheet />}
         <WarpOverlay />
         <Toast />
       </div>

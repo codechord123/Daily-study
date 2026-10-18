@@ -32,6 +32,7 @@ export const useGame = create((set, get) => {
 
   return {
     profile: null,
+    missionMode: { type: 'daily' }, // daily | review(오답 노트) | practice(과목 연습)
     screen: 'login', // login | home | mission | space | visit
     visiting: null, // 방문 중인 친구 sid
     launchFrom: null, // 우주로 이륙한 별 sid
@@ -69,6 +70,38 @@ export const useGame = create((set, get) => {
     go(screen) {
       set({ screen, mode: 'walk', ...(screen !== 'visit' && { visiting: null }) });
     },
+    startMission(mode = { type: 'daily' }) {
+      set({ missionMode: mode, screen: 'mission', mode: 'walk', visiting: null });
+    },
+
+    // 틀린 문제를 오답 노트에 (같은 문제는 한 번만)
+    noteWrong(q, source) {
+      update((p) => {
+        p.wrongNotes ??= [];
+        if (p.wrongNotes.some((n) => n.q.prompt === q.prompt && !n.cleared)) return null;
+        const { id, ...rest } = q; // eslint-disable-line no-unused-vars
+        p.wrongNotes.push({ q: rest, date: todayKey(), source, cleared: false });
+        if (p.wrongNotes.length > 80) p.wrongNotes = p.wrongNotes.filter((n) => !n.cleared).slice(-80);
+        return p;
+      });
+    },
+    // 오답 노트에서 다시 맞히면 지운다. 아침 미션에서 틀린 문제면 별가루 +3
+    clearWrong(prompt) {
+      let gain = 0;
+      update((p) => {
+        const n = p.wrongNotes?.find((x) => x.q.prompt === prompt && !x.cleared);
+        if (!n) return null;
+        n.cleared = true;
+        n.clearedAt = todayKey();
+        if (n.source === 'daily') {
+          gain = 3;
+          p.stardust += gain;
+        }
+        return p;
+      });
+      return gain;
+    },
+
     // 지금 있는 별에서 추진기를 메고 이륙
     launch() {
       const { visiting, profile } = get();
@@ -87,11 +120,16 @@ export const useGame = create((set, get) => {
     },
 
     // 미션 보상: 하루 1회만 지급, 연속 출석은 등교일 기준
-    completeMission({ correct, total }) {
+    completeMission({ correct, total, subjects }) {
       let reward = null;
       update((p) => {
         const today = todayKey();
         if (p.lastMissionDate === today) return null;
+        // 학습 기록 (최근 120일)
+        p.history ??= {};
+        p.history[today] = { correct, total, subjects };
+        const days = Object.keys(p.history).sort();
+        if (days.length > 120) for (const d of days.slice(0, days.length - 120)) delete p.history[d];
         p.streak = p.lastMissionDate === prevSchoolDay() ? p.streak + 1 : 1;
         const base = correct * 5;
         const finish = 20;

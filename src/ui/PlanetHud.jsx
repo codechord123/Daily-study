@@ -46,7 +46,7 @@ function EmoteBar({ onEmote }) {
 }
 
 export default function PlanetHud({ ownerId, onEmote }) {
-  const { profile, mode, setMode, go, visit, launch, canGiveHeart, markHeartGiven, missionDoneToday } = useGame();
+  const { profile, mode, setMode, visit, launch, startMission, canGiveHeart, markHeartGiven, missionDoneToday } = useGame();
   const { clearDecor, showToast } = useUI();
   const isMine = ownerId === profile.sid;
   const owner = studentById(ownerId);
@@ -93,7 +93,7 @@ export default function PlanetHud({ ownerId, onEmote }) {
             {isMine ? (
               <>
                 {!done ? (
-                  <button className="mission-cta" onClick={() => go('mission')}>
+                  <button className="mission-cta" onClick={() => startMission({ type: 'daily', at: Date.now() })}>
                     <span className="mission-cta-star">✦</span>
                     <span>
                       <b>오늘의 미션</b>
@@ -101,7 +101,7 @@ export default function PlanetHud({ ownerId, onEmote }) {
                     </span>
                   </button>
                 ) : (
-                  <button className="btn btn-done" onClick={() => go('mission')}>✓ 오늘 미션 완료 · 연습하기</button>
+                  <button className="btn btn-done" onClick={() => startMission({ type: 'daily', at: Date.now() })}>✓ 오늘 미션 완료 · 연습하기</button>
                 )}
                 <button className="btn" onClick={() => setMode('decorate')}>🎨 꾸미기</button>
                 <button className="btn" onClick={launch}>🚀 여행</button>
