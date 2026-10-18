@@ -1,14 +1,17 @@
 // 학생 한 명의 저장 데이터. 지금은 localStorage, 나중에 Firestore로 교체.
 import { DEFAULT_CHARACTER } from '../data/items';
 import { samplePlanet } from '../data/classroom';
-import { uploadProfile, cloudAddHeart, onRemote } from '../services/cloud';
+import { uploadProfile, cloudAddHeart, onRemote, cloudEnabled, getCloudStatus } from '../services/cloud';
 
 const KEY = (sid) => `ds:profile:${sid}`;
 const listeners = new Set();
 
+// 학급 서버가 켜져 있는데 아직 서버 기록을 못 받은 채(와이파이 끊김) 만든 별은 임시 별.
+// 서버 기록이 오면 그것으로 바꾸고, 서버에도 없던 학생이면 그때부터 진짜 별로 올린다.
 export function newProfile(sid) {
   return {
     sid,
+    ...(cloudEnabled && !getCloudStatus().synced ? { provisional: true } : {}),
     stardust: 60, // 첫날 환영 선물
     streak: 0,
     lastMissionDate: null,
@@ -56,7 +59,7 @@ export function onRemoteProfile(fn) {
 onRemote('profile', (p) => {
   if (!p?.sid) return;
   const local = loadProfile(p.sid);
-  if (local && (local.updatedAt ?? 0) >= (p.updatedAt ?? 0)) return;
+  if (local && !local.provisional && (local.updatedAt ?? 0) >= (p.updatedAt ?? 0)) return;
   try {
     localStorage.setItem(KEY(p.sid), JSON.stringify(p));
   } catch {
@@ -65,6 +68,13 @@ onRemote('profile', (p) => {
   listeners.forEach((fn) => fn(p.sid));
   ownListeners.forEach((fn) => fn(p));
 });
+
+const syncedListeners = new Set();
+export function onSynced(fn) {
+  syncedListeners.add(fn);
+  return () => syncedListeners.delete(fn);
+}
+onRemote('synced', (serverSids) => syncedListeners.forEach((fn) => fn(serverSids)));
 
 // 친구 별 읽기: 저장된 별이 있으면 그것, 없으면 샘플 별
 export function getPlanet(sid) {

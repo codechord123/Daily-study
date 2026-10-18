@@ -12,7 +12,7 @@ export const cloudEnabled = EMULATOR || !!env.VITE_FIREBASE_PROJECT_ID;
 let fb = null; // { db, rtdb, fs, rd }
 let readyResolve;
 export const cloudReady = new Promise((r) => (readyResolve = r));
-const status = { connected: false, error: null };
+const status = { connected: false, synced: false, error: null };
 const statusListeners = new Set();
 export const getCloudStatus = () => ({ ...status });
 export function onCloudStatus(fn) {
@@ -25,13 +25,15 @@ const setStatus = (patch) => {
 };
 
 // 다른 모듈이 원격 변경을 받을 곳 (순환 import 피하려고 등록 방식)
-const handlers = { profile: null, hearts: null, settings: null, presence: null };
+const handlers = { profile: null, hearts: null, settings: null, presence: null, synced: null };
 export function onRemote(kind, fn) {
   handlers[kind] = fn;
 }
 
 export async function startCloud() {
   if (!cloudEnabled) return readyResolve(false);
+  // 와이파이가 끊겨 첫 응답이 안 와도 10초 뒤엔 이 기기 기록으로 들어갈 수 있게 (연결되면 이어서 동기화)
+  setTimeout(() => readyResolve(false), 10000);
   try {
     const [{ initializeApp }, fs, rd, au] = await Promise.all([
       import('firebase/app'),
@@ -58,13 +60,15 @@ export async function startCloud() {
     await au.signInAnonymously(auth);
     fb = { db, rtdb, fs, rd };
 
-    // 학생 프로필 전체 구독 (첫 응답이 오면 준비 완료)
-    let first = true;
-    fs.onSnapshot(fs.collection(db, 'classes', CLASS_ID, 'students'), (snap) => {
+    // 학생 프로필 전체 구독. 기기 캐시가 아니라 서버가 확인해 준 첫 응답이 오면 준비 완료
+    // (캐시만 보고 들어가면 새 기기에서 빈 별로 시작해 진짜 기록을 덮어쓸 수 있다)
+    let synced = false;
+    fs.onSnapshot(fs.collection(db, 'classes', CLASS_ID, 'students'), { includeMetadataChanges: true }, (snap) => {
       snap.docChanges().forEach((ch) => ch.type !== 'removed' && handlers.profile?.(ch.doc.data()));
-      if (first) {
-        first = false;
-        setStatus({ connected: true, error: null });
+      if (!synced && !snap.metadata.fromCache) {
+        synced = true;
+        setStatus({ connected: true, synced: true, error: null });
+        handlers.synced?.(new Set(snap.docs.map((d) => d.id)));
         readyResolve(true);
       }
     });
@@ -84,7 +88,7 @@ export async function startCloud() {
 // ---------- 쓰기 ----------
 const pending = new Map();
 export function uploadProfile(profile) {
-  if (!fb) return;
+  if (!fb || profile.provisional) return; // 서버 확인 전 새 기기에서 만든 임시 별은 올리지 않는다
   // 빠르게 여러 번 바뀌면 마지막 것만 0.6초 뒤에 올린다
   clearTimeout(pending.get(profile.sid));
   pending.set(

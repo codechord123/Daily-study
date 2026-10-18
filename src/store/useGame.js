@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { ITEM_BY_ID } from '../data/items';
 import { OPTION_SLOTS, COLOR_SLOTS } from '../data/character';
 import { PLANET_DECO } from '../theme/tokens';
-import { loadProfile, newProfile, saveProfile, onRemoteProfile } from './profileStore';
+import { loadProfile, newProfile, saveProfile, onRemoteProfile, onSynced } from './profileStore';
 
 export const todayKey = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -318,5 +318,14 @@ export const useGame = create((set, get) => {
 // 같은 학생이 다른 기기에서 바꾼 내용이 더 새것이면 반영
 onRemoteProfile((p) => {
   const cur = useGame.getState().profile;
-  if (cur?.sid === p.sid && (p.updatedAt ?? 0) > (cur.updatedAt ?? 0)) useGame.setState({ profile: p });
+  if (cur?.sid === p.sid && (cur.provisional || (p.updatedAt ?? 0) > (cur.updatedAt ?? 0))) useGame.setState({ profile: p });
+});
+// 서버와 처음 맞춰진 순간: 끊긴 동안 바꾼 내 별을 올리고, 서버에 없던 학생의 임시 별은 진짜 별이 된다
+// (서버에 더 새 기록이 있었다면 이미 그것으로 바뀌어 있다)
+onSynced((serverSids) => {
+  const cur = useGame.getState().profile;
+  if (!cur || (cur.provisional && serverSids.has(cur.sid))) return;
+  const { provisional, ...profile } = cur; // eslint-disable-line no-unused-vars
+  saveProfile(profile);
+  useGame.setState({ profile });
 });
