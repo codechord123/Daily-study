@@ -10,6 +10,7 @@ import PlanetHud from './ui/PlanetHud';
 import FlightHud from './ui/FlightHud';
 import MissionView from './ui/MissionView';
 import Toast from './ui/Toast';
+import WarpOverlay from './ui/WarpOverlay';
 import { useGame } from './store/useGame';
 import { useUI } from './store/useUI';
 import * as presence from './services/presence';
@@ -71,6 +72,7 @@ export default function App() {
         {profile && (screen === 'home' || screen === 'visit') && <PlanetHud ownerId={ownerId} onEmote={sendEmote} />}
         {profile && screen === 'space' && <FlightHud />}
         {profile && screen === 'mission' && <MissionView />}
+        <WarpOverlay />
         <Toast />
       </div>
     </div>

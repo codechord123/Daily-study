@@ -4,6 +4,7 @@ const keys = {};
 const joy = { active: false, x: 0, y: 0 };
 let lift = 0;
 let landRequest = false;
+let leaveRequest = false;
 
 const onDown = (e) => {
   if (e.target?.tagName === 'INPUT') return;
@@ -46,6 +47,15 @@ export function takeLandRequest() {
 }
 export function requestLand() {
   landRequest = true;
+}
+// 착륙하지 않고 별에서 멀어지기
+export function requestLeave() {
+  leaveRequest = true;
+}
+export function takeLeaveRequest() {
+  const r = leaveRequest;
+  leaveRequest = false;
+  return r;
 }
 
 const k = (...codes) => (codes.some((c) => keys[c]) ? 1 : 0);

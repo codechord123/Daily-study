@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGame } from '../store/useGame';
 import { useUI } from '../store/useUI';
-import { ROSTER, studentById } from '../data/classroom';
+import { studentById } from '../data/classroom';
 import * as input from '../services/flightInput';
-import * as presence from '../services/presence';
 import TopBar from './TopBar';
+import FriendPicker from './FriendPicker';
 
 const JOY_R = 52; // 조이스틱이 움직이는 반경(px)
 
@@ -70,38 +70,6 @@ function HoldButton({ value, children, label }) {
   );
 }
 
-function TargetPicker({ meId, onClose }) {
-  const { flightTarget, setFlightTarget } = useUI();
-  const online = presence.onlineMap();
-  const list = [
-    { id: meId, nickname: '내 별' },
-    ...ROSTER.filter((s) => s.id !== meId).sort((a, b) => (online[b.id] ?? 0) - (online[a.id] ?? 0)),
-  ];
-  return (
-    <div className="picker panel rise" role="dialog" aria-label="목적지 고르기">
-      <div className="picker-head">
-        <b className="title">어디로 갈까요?</b>
-        <button className="btn btn-icon btn-ghost" onClick={onClose} aria-label="닫기">✕</button>
-      </div>
-      <div className="picker-list">
-        {list.map((s) => (
-          <button
-            key={s.id}
-            className={`picker-item ${flightTarget === s.id ? 'on' : ''}`}
-            onClick={() => {
-              setFlightTarget(s.id);
-              onClose();
-            }}
-          >
-            {s.nickname}
-            {online[s.id] > 0 && <span className="map-dot">{online[s.id]}</span>}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function FlightHud() {
   const { profile, visit } = useGame();
   const { near, flightTarget, setFlightTarget } = useUI();
@@ -129,7 +97,7 @@ export default function FlightHud() {
         </button>
         <button className="chip" onClick={() => visit(profile.sid)}>🏠 바로 집으로</button>
       </div>
-      {picking && <TargetPicker meId={profile.sid} onClose={() => setPicking(false)} />}
+      {picking && <FriendPicker meId={profile.sid} guide onClose={() => setPicking(false)} />}
 
       {near && (
         <div className="land-wrap">
@@ -139,6 +107,9 @@ export default function FlightHud() {
               <b>{nearName}에 내리기</b>
               <small>Enter 키를 눌러도 돼요</small>
             </span>
+          </button>
+          <button className="btn pass-btn rise" onClick={input.requestLeave}>
+            ↗ 지나가기
           </button>
         </div>
       )}

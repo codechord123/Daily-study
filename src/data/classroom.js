@@ -1,5 +1,5 @@
 import { DEFAULT_CHARACTER, CHAR_PARTS, ITEMS } from './items';
-import { PLANET_TINTS } from '../theme/tokens';
+import { PLANET_TINTS, PLANET_DECO } from '../theme/tokens';
 
 // 샘플 학급 (5학년 별빛반). 실명 대신 교사가 정한 별명을 쓴다.
 export const SAMPLE_CLASS = {
@@ -53,6 +53,9 @@ export function samplePlanet(studentId) {
   for (const slot of Object.keys(CHAR_PARTS)) character[slot] = pick(r, CHAR_PARTS[slot]).id;
   return {
     tint: pick(r, PLANET_TINTS).id,
+    ring: r() < 0.35 ? pick(r, PLANET_DECO.ring).id : 'none',
+    moon: r() < 0.35 ? pick(r, PLANET_DECO.moon).id : 'none',
+    aura: pick(r, PLANET_DECO.aura).id,
     items,
     character,
     hearts: Math.floor(r() * 12),

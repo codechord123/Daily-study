@@ -36,6 +36,37 @@ export const PLANET_TINTS = [
   { id: 'butter', base: PASTEL.butter, shade: '#b48b5a' },
   { id: 'lavender', base: PASTEL.lavender, shade: '#6e5ca3' },
   { id: 'peach', base: PASTEL.peach, shade: '#b0705e' },
+  { id: 'coral', base: '#f59a8b', shade: '#a8505a' },
+  { id: 'lime', base: '#c8e68f', shade: '#6d9a4e' },
+  { id: 'ice', base: '#dff1ff', shade: '#7f9cc8' },
+  { id: 'sunset', base: '#ffc27a', shade: '#c0567a' },
+  { id: 'midnight', base: '#7c83d6', shade: '#2e2f6e' },
+  { id: 'aurora', base: '#9ff0d8', shade: '#7a5cc8' },
 ];
+
+// 별 꾸미기: 고리 · 위성 · 빛 무리
+export const PLANET_DECO = {
+  ring: [
+    { id: 'none', name: '없음', price: 0 },
+    { id: 'gold', name: '금빛 고리', color: '#ffd76a', price: 70 },
+    { id: 'ice', name: '얼음 고리', color: '#c8f6ff', price: 70 },
+    { id: 'rainbow', name: '무지개 고리', color: 'rainbow', price: 120 },
+    { id: 'double', name: '두 겹 고리', color: '#c3b2ec', price: 100 },
+  ],
+  moon: [
+    { id: 'none', name: '없음', price: 0 },
+    { id: 'small', name: '꼬마 달', color: '#f7efe1', price: 50 },
+    { id: 'rocky', name: '바위 위성', color: '#b9b3c9', price: 50 },
+    { id: 'heart', name: '하트 위성', color: '#ff8fb1', price: 80 },
+    { id: 'twins', name: '쌍둥이 달', color: '#ffe08a', price: 100 },
+  ],
+  aura: [
+    { id: 'cyan', name: '하늘빛', color: '#7fdcff', price: 0 },
+    { id: 'gold', name: '금빛', color: '#ffd76a', price: 30 },
+    { id: 'pink', name: '분홍빛', color: '#ff8fd0', price: 30 },
+    { id: 'green', name: '오로라', color: '#8fffc8', price: 30 },
+    { id: 'violet', name: '보랏빛', color: '#b48cff', price: 30 },
+  ],
+};
 
 export const PLANET_RADIUS = 2;

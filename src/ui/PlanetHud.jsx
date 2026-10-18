@@ -6,6 +6,7 @@ import { getHearts, addHeart, onPlanetChange } from '../store/profileStore';
 import * as presence from '../services/presence';
 import DecorPanel from './DecorPanel';
 import TopBar from './TopBar';
+import FriendPicker from './FriendPicker';
 
 const EMOTES = ['👋', '❤️', '⭐', '😄', '🎉'];
 
@@ -52,6 +53,7 @@ export default function PlanetHud({ ownerId, onEmote }) {
   const hearts = useHearts(ownerId);
   const done = missionDoneToday();
   const decorating = isMine && mode === 'decorate';
+  const [picking, setPicking] = useState(false);
 
   const giveHeart = () => {
     if (!canGiveHeart(ownerId)) return showToast('오늘은 이미 하트를 보냈어요');
@@ -101,6 +103,7 @@ export default function PlanetHud({ ownerId, onEmote }) {
                 )}
                 <button className="btn" onClick={() => setMode('decorate')}>🎨 꾸미기</button>
                 <button className="btn" onClick={launch}>🚀 여행</button>
+                <button className="btn" onClick={() => setPicking((p) => !p)}>⚡ 바로 가기</button>
               </>
             ) : (
               <>
@@ -108,10 +111,12 @@ export default function PlanetHud({ ownerId, onEmote }) {
                   {canGiveHeart(ownerId) ? '❤️ 하트 남기기' : '❤️ 하트 보냄'}
                 </button>
                 <button className="btn" onClick={launch}>🚀 날아가기</button>
+                <button className="btn" onClick={() => setPicking((p) => !p)}>⚡ 바로 가기</button>
                 <button className="btn" onClick={() => visit(profile.sid)}>🏠 내 별</button>
               </>
             )}
           </div>
+          {picking && <FriendPicker meId={profile.sid} here={ownerId} onClose={() => setPicking(false)} />}
           <p className="walk-hint">별을 누르면 그곳으로 걸어가요 · 끌어서 별을 돌려 봐요</p>
         </>
       )}

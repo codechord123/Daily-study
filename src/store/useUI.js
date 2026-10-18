@@ -46,6 +46,11 @@ export const useUI = create((set) => ({
   setMission: (patch) => set((s) => ({ mission: { ...s.mission, ...patch } })),
   missionFx: (kind) => set((s) => ({ mission: { ...s.mission, fx: { kind, at: performance.now() } } })),
 
+  // 바로 가기(순간이동): 연출이 끝나면 App이 그 별로 보낸다
+  warp: null, // { sid, at }
+  startWarp: (sid) => set({ warp: { sid, at: Date.now() } }),
+  endWarp: () => set({ warp: null }),
+
   sheet: null, // 'shop' | 'bag' | 'style' | null
   openSheet: (sheet) => set({ sheet }),
 

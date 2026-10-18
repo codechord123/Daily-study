@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { toon, glow, glass } from '../materials';
 import { PASTEL, NEON } from '../../theme/tokens';
+import { MODELS2 } from './models2';
 
 const M = (c) => toon(c);
 
@@ -359,4 +360,5 @@ export const MODELS = {
   volcano: Volcano,
   telescope: Telescope,
   rocket: Rocket,
+  ...MODELS2,
 };

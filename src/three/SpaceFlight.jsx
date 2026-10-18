@@ -55,7 +55,7 @@ function FlightPlanet({ student, isMine, isTarget, online, playerPos, low }) {
   return (
     <group position={center}>
       <group ref={spin}>
-        <Planet tint={planet.tint} items={near ? planet.items : null} detail={near ? 64 : 28} highlight={online ? 1 : 0} />
+        <Planet tint={planet.tint} ring={planet.ring} moon={planet.moon} aura={planet.aura} items={near ? planet.items : null} detail={near ? 64 : 28} highlight={online ? 1 : 0} />
       </group>
       {(isMine || online > 0) && (
         <mesh rotation={[Math.PI / 2, 0, 0]} material={glow(isMine ? NEON.gold : NEON.cyan, 1.2)}>
@@ -220,6 +220,17 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
         setNear(key);
         if (key) sound.sfx('near');
       }
+      if (input.takeLeaveRequest() && inRange) {
+        // 별 반대쪽으로 방향을 틀고 힘껏 밀어낸다
+        const away = st.pos.clone().sub(PLANET_POS[nearest]);
+        st.yaw = Math.atan2(away.x, away.z);
+        st.speed = MAX_SPEED;
+        st.vy = Math.sign(away.y || 1) * 2;
+        st.ignore = nearest;
+        st.near = null;
+        setNear(null);
+        sound.sfx('takeoff');
+      }
       if (input.takeLandRequest() && inRange) {
         st.landing = { sid: nearest, from: st.pos.clone(), t: 0 };
         sound.sfx('land');
@@ -251,6 +262,12 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
     const camGoal = st.pos.clone().addScaledVector(fwd, -5.2).addScaledVector(UP, 2.1);
     if (st.landing) camGoal.copy(PLANET_POS[st.landing.sid]).add(new THREE.Vector3(0, R + 4, 6));
     camera.position.lerp(camGoal, 1 - Math.exp(-dt * (st.landing ? 2 : 3.2)));
+    // 카메라가 별 속으로 들어가 화면이 가려지지 않게 밀어낸다
+    for (const sid in PLANET_POS) {
+      const c = PLANET_POS[sid];
+      const off = camera.position.clone().sub(c);
+      if (off.length() < R + 1.2) camera.position.copy(c).add(off.setLength(R + 1.2));
+    }
     camera.lookAt(st.pos.clone().addScaledVector(UP, 0.6).addScaledVector(fwd, 2));
 
     // 실시간 위치 전송 (초당 5회)

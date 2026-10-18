@@ -1,19 +1,18 @@
 import { useState } from 'react';
 import { useGame } from '../store/useGame';
 import { useUI } from '../store/useUI';
-import { ITEMS, ITEM_BY_ID, ITEM_CATEGORIES, CHAR_PARTS } from '../data/items';
-import { PLANET_TINTS } from '../theme/tokens';
+import { ITEMS, ITEM_BY_ID, ITEM_CATEGORIES, CHAR_PARTS, SLOT_LABEL, DEFAULT_CHARACTER } from '../data/items';
+import { PLANET_TINTS, PLANET_DECO } from '../theme/tokens';
 import ItemThumb from './ItemThumb';
 import { sfx } from '../services/sound';
 
 const TABS = [
   { id: 'bag', label: '가방' },
   { id: 'shop', label: '상점' },
-  { id: 'tint', label: '별 색' },
+  { id: 'tint', label: '별 꾸미기' },
   { id: 'me', label: '내 모습' },
 ];
 
-const SLOT_LABEL = { skin: '피부', hair: '머리', coat: '코트', scarf: '목도리', hat: '머리 장식' };
 
 function Bag() {
   const inventory = useGame((s) => s.profile.inventory);
@@ -74,19 +73,54 @@ function Shop({ onBought }) {
   );
 }
 
+const DECO_LABEL = { ring: '고리', moon: '위성', aura: '빛 무리' };
+
 function Tints() {
-  const { profile, setTint } = useGame();
+  const { profile, setTint, setPlanetPart } = useGame();
+  const showToast = useUI((s) => s.showToast);
+  const owned = (slot, p) => p.price === 0 || profile.ownedParts.includes(`planet:${slot}:${p.id}`);
+  const pickDeco = (slot, p) => {
+    if (!owned(slot, p) && profile.stardust < p.price) return showToast(`별가루가 ${p.price - profile.stardust}개 더 필요해요`);
+    const bought = !owned(slot, p);
+    if (setPlanetPart(slot, p.id)) {
+      sfx(bought ? 'buy' : 'rotate');
+      if (bought) showToast(`${p.name}을(를) 달았어요!`);
+    }
+  };
   return (
-    <div className="swatches big">
-      {PLANET_TINTS.map((t) => (
-        <button
-          key={t.id}
-          className={`swatch ${profile.planet.tint === t.id ? 'on' : ''}`}
-          style={{ background: `radial-gradient(circle at 35% 30%, ${t.base}, ${t.shade})` }}
-          onClick={() => setTint(t.id)}
-          aria-label={`별 색 ${t.id}`}
-        />
-      ))}
+    <div className="looks">
+      <div className="look-row">
+        <span className="look-label">별 색</span>
+        <div className="swatches">
+          {PLANET_TINTS.map((t) => (
+            <button
+              key={t.id}
+              className={`swatch ${profile.planet.tint === t.id ? 'on' : ''}`}
+              style={{ background: `radial-gradient(circle at 35% 30%, ${t.base}, ${t.shade})` }}
+              onClick={() => (sfx('rotate'), setTint(t.id))}
+              aria-label={`별 색 ${t.id}`}
+              data-nosfx
+            />
+          ))}
+        </div>
+      </div>
+      {Object.entries(PLANET_DECO).map(([slot, parts]) => {
+        const cur = profile.planet[slot] ?? parts[0].id;
+        return (
+          <div key={slot} className="look-row">
+            <span className="look-label">{DECO_LABEL[slot]}</span>
+            <div className="swatches">
+              {parts.map((p) => (
+                <button key={p.id} className={`pill ${cur === p.id ? 'on' : ''}`} onClick={() => pickDeco(slot, p)} data-nosfx>
+                  {p.color && p.color !== 'rainbow' && <span className="pill-dot" style={{ background: p.color }} />}
+                  {p.name}
+                  {!owned(slot, p) && <small> ✦{p.price}</small>}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -94,7 +128,7 @@ function Tints() {
 function Looks() {
   const { profile, wearPart } = useGame();
   const showToast = useUI((s) => s.showToast);
-  const look = profile.planet.character;
+  const look = { ...DEFAULT_CHARACTER, ...profile.planet.character };
   const owned = (slot, p) => p.price === 0 || profile.ownedParts.includes(`${slot}:${p.id}`);
   const tryWear = (slot, p) => {
     if (!owned(slot, p) && profile.stardust < p.price) return showToast(`별가루가 ${p.price - profile.stardust}개 더 필요해요`);
@@ -107,13 +141,13 @@ function Looks() {
     }
   };
   return (
-    <div className="looks">
+    <div className="looks" data-nosfx>
       {Object.entries(CHAR_PARTS).map(([slot, parts]) => (
         <div key={slot} className="look-row">
           <span className="look-label">{SLOT_LABEL[slot]}</span>
           <div className="swatches">
             {parts.map((p) =>
-              p.color ? (
+              p.color && !p.name ? (
                 <button
                   key={p.id}
                   className={`swatch ${look[slot] === p.id ? 'on' : ''}`}

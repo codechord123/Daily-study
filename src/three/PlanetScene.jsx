@@ -322,6 +322,9 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
       <directionalLight position={[-6, -3, -4]} intensity={0.35} color="#7fb6ff" />
       <Planet
         tint={planet.tint}
+        ring={planet.ring}
+        moon={planet.moon}
+        aura={planet.aura}
         items={planet.items}
         selectedUid={decorating ? selectedUid : null}
         onItemTap={decorating ? select : undefined}

@@ -248,6 +248,7 @@ export default function MissionView() {
               <span className="q-subject">
                 <span className="q-icon">{meta.icon}</span>
                 {meta.label}
+                {q.unit && <small className="q-unit">{q.unit}</small>}
               </span>
               {combo >= 2 && (
                 <span className="combo" key={combo}>

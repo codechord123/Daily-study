@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ITEM_BY_ID, CHAR_PARTS } from '../data/items';
+import { PLANET_DECO } from '../theme/tokens';
 import { loadProfile, newProfile, saveProfile } from './profileStore';
 
 export const todayKey = (d = new Date()) =>
@@ -162,6 +163,25 @@ export const useGame = create((set, get) => {
         p.planet.tint = tint;
         return p;
       });
+    },
+
+    // 별 고리·위성·빛 무리: 산 것은 언제든 바꿔 달 수 있다
+    setPlanetPart(slot, id) {
+      let ok = false;
+      update((p) => {
+        const part = PLANET_DECO[slot]?.find((x) => x.id === id);
+        if (!part) return null;
+        const key = `planet:${slot}:${id}`;
+        if (part.price > 0 && !p.ownedParts.includes(key)) {
+          if (p.stardust < part.price) return null;
+          p.stardust -= part.price;
+          p.ownedParts.push(key);
+        }
+        p.planet[slot] = id;
+        ok = true;
+        return p;
+      });
+      return ok;
     },
 
     // 캐릭터 부위: 무료거나 이미 산 것만 착용, 아니면 구매 후 착용

@@ -3,6 +3,7 @@ import { MODELS } from './items/models';
 import { ITEM_BY_ID } from '../data/items';
 import { planetMaterial, haloMaterial, glow } from './materials';
 import { latLonToVec, surfaceQuaternion } from './sphere';
+import { Ring, Moon, auraColor } from './PlanetDeco';
 import { PLANET_TINTS, PLANET_RADIUS, NEON } from '../theme/tokens';
 
 export const ITEM_SCALE = 1.15;
@@ -41,14 +42,15 @@ const PlacedItem = memo(function PlacedItem({ item, radius, selected, onTap }) {
   );
 });
 
-export default function Planet({ tint, items, radius = PLANET_RADIUS, selectedUid, onItemTap, onSurfaceTap, highlight = 0, detail = 64 }) {
+export default function Planet({ tint, ring, moon, aura, items, radius = PLANET_RADIUS, selectedUid, onItemTap, onSurfaceTap, highlight = 0, detail = 64 }) {
   const t = PLANET_TINTS.find((x) => x.id === tint) ?? PLANET_TINTS[0];
   const mat = useMemo(() => planetMaterial(t.base, t.shade), [t.base, t.shade]);
-  const halo = useMemo(() => haloMaterial(), []);
+  const halo = useMemo(() => haloMaterial(auraColor(aura)), [aura]);
   useEffect(() => () => mat.dispose(), [mat]);
   useEffect(() => {
     mat.uniforms.uHighlight.value = highlight;
-  }, [mat, highlight]);
+    mat.uniforms.uRim.value.set(auraColor(aura));
+  }, [mat, highlight, aura]);
 
   return (
     <group>
@@ -68,6 +70,8 @@ export default function Planet({ tint, items, radius = PLANET_RADIUS, selectedUi
       <mesh material={halo} scale={1.22}>
         <sphereGeometry args={[radius, 32, 16]} />
       </mesh>
+      <Ring type={ring} radius={radius} />
+      <Moon type={moon} radius={radius} />
       {items?.map((it) => (
         <PlacedItem key={it.uid} item={it} radius={radius} selected={it.uid === selectedUid} onTap={onItemTap} />
       ))}
