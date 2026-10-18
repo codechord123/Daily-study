@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark; /* 우주 배경 하나로 고정된 어두운 디자인 */
   --space-deep: #070a22;
   --space-mid: #141a45;
   --panel: rgba(20, 24, 66, 0.72);
