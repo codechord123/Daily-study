@@ -225,6 +225,7 @@ const TRACKS = {
   login: ['bgm-home'],
 };
 const EXTS = ['mp3', 'ogg', 'wav', 'm4a'];
+const AUDIO_VER = 2; // 곡을 바꾸면 올린다 (예전 곡이 브라우저 보관본으로 나오지 않게)
 const missing = new Set();
 let currentScene = null;
 let current = null; // { name, audio }
@@ -251,7 +252,7 @@ function loadTrack(name, extIndex = 0) {
       missing.add(name);
       return resolve(null);
     }
-    const a = new Audio(`${import.meta.env.BASE_URL}audio/${name}.${EXTS[extIndex]}`);
+    const a = new Audio(`${import.meta.env.BASE_URL}audio/${name}.${EXTS[extIndex]}?v=${AUDIO_VER}`);
     a.loop = true;
     a.volume = 0;
     a.preload = 'auto';

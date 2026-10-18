@@ -54,7 +54,7 @@ export default function Login() {
           <button className="btn btn-primary btn-block" type="submit" disabled={!pin}>
             선생님 화면 열기
           </button>
-          <p className="field-hint">샘플 비밀번호는 <b>0000</b> 이에요</p>
+          {getSettings().teacherPin === '0000' && <p className="field-hint">샘플 비밀번호는 <b>0000</b> 이에요</p>}
           <button type="button" className="btn btn-ghost" onClick={() => (setStep('code'), setErr(''))}>← 학생 로그인</button>
         </form>
       ) : step === 'code' ? (

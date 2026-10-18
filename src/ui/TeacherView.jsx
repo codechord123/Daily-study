@@ -327,8 +327,34 @@ export default function TeacherView() {
             <span />
           </button>
           <span className="muted">{settings.travelOpen ? '학생들이 친구 별로 여행할 수 있어요' : '여행·바로 가기가 잠겨 있어요 (수업 시간 등)'}</span>
+
+          <PinSetting pin={settings.teacherPin} />
         </div>
       </section>
     </div>
+  );
+}
+
+/* 선생님 비밀번호 바꾸기: 샘플 0000 그대로면 경고 (로그인 화면에 힌트가 보여 학생도 들어올 수 있음) */
+function PinSetting({ pin }) {
+  const [next, setNext] = useState('');
+  const [msg, setMsg] = useState('');
+  const sample = pin === '0000';
+  const save = (e) => {
+    e.preventDefault();
+    if (!/^\d{4,8}$/.test(next)) return setMsg('숫자 4~8자리로 정해 주세요');
+    setSettings({ teacherPin: next });
+    setNext('');
+    setMsg('바꿨어요. 다음부터 새 비밀번호로 들어와요');
+  };
+  return (
+    <>
+      <label htmlFor="pin-new">선생님 비밀번호</label>
+      <form className="pin-form" onSubmit={save}>
+        <input id="pin-new" type="password" inputMode="numeric" autoComplete="new-password" placeholder="새 비밀번호" value={next} maxLength={8} onChange={(e) => (setNext(e.target.value.replace(/\D/g, '')), setMsg(''))} />
+        <button className="btn btn-sm" type="submit" disabled={!next}>바꾸기</button>
+      </form>
+      <span className={sample && !msg ? 'warn' : 'muted'}>{msg || (sample ? '⚠︎ 아직 샘플 비밀번호(0000)예요. 학생들이 들어오지 못하게 바꿔 주세요' : '비밀번호가 설정되어 있어요')}</span>
+    </>
   );
 }
