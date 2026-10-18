@@ -24,6 +24,7 @@ const MISSION_DIST = 8; // 가로 화면
 const MISSION_DIST_TALL = 13.5;
 const LOOK_DIST = 5.2; // 내 모습 꾸미기: 캐릭터를 크게
 const BASE_DIST = 8.54; // 기본 카메라 거리
+let hinted = false; // 확대 카메라 안내는 한 번만
 const FOLLOW_ZOOM = 0.8; // 이보다 더 확대하면 캐릭터 뒤를 따라가는 카메라 // 세로 화면: 위쪽 40%에 별 전체가 들어오게
 
 /** 내 별이면 내 프로필에서, 친구 별이면 저장소에서 읽고 변경을 구독 */
@@ -64,7 +65,10 @@ function Player({ look, name, controlsActive, controls, targetRef, emote, inMiss
   const moving = useRef(false);
   const keys = useRef({});
   const lastSent = useRef(0);
-  const { camera, size } = useThree();
+  const { camera, size, gl } = useThree();
+  // 확대(따라가기) 카메라: 캐릭터에서 카메라 쪽 수평 방향 + 올려다보는 각도. 드래그로 돌린다
+  const cam = useRef({ on: false, back: new THREE.Vector3(), pitch: 0.55, dragAt: -99 });
+  if (import.meta.env.DEV) window.__planetCam = { camera, cam: cam.current, pos }; // 테스트용
   const missionDist = size.width / size.height > 1.1 ? MISSION_DIST : MISSION_DIST_TALL;
 
   useEffect(() => {
@@ -80,6 +84,37 @@ function Player({ look, name, controlsActive, controls, targetRef, emote, inMiss
       window.removeEventListener('keyup', up);
     };
   }, []);
+
+  // 따라가기 카메라 드래그: 한 손가락/마우스로 캐릭터 주위를 돌린다 (두 손가락은 확대)
+  useEffect(() => {
+    const el = gl.domElement;
+    const pts = new Map();
+    const down = (e) => pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const move = (e) => {
+      const last = pts.get(e.pointerId);
+      if (!last) return;
+      const dx = e.clientX - last.x;
+      const dy = e.clientY - last.y;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const c = cam.current;
+      if (!c.on || pts.size !== 1) return;
+      const n = pos.current;
+      c.back.applyAxisAngle(n, -dx * 0.009);
+      c.pitch = THREE.MathUtils.clamp(c.pitch + dy * 0.006, 0.3, 1.35);
+      c.dragAt = performance.now();
+    };
+    const up = (e) => pts.delete(e.pointerId);
+    el.addEventListener('pointerdown', down);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+    return () => {
+      el.removeEventListener('pointerdown', down);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+  }, [gl]);
 
   useFrame((state, dt) => {
     const posing = inMission || lookFocus;
@@ -158,16 +193,41 @@ function Player({ look, name, controlsActive, controls, targetRef, emote, inMiss
     const z = useUI.getState().zoom;
     const follow = z < FOLLOW_ZOOM && !posing;
     if (controls.current) controls.current.enabled = !follow;
+    const c = cam.current;
     if (follow) {
-      // 캐릭터 뒤 위쪽에서, 캐릭터 조금 앞을 바라본다 (가는 길이 보이게)
-      const back = THREE.MathUtils.mapLinear(z, 0.55, FOLLOW_ZOOM, 2.4, 4.4);
-      const look = p.clone().multiplyScalar(R + 0.15).addScaledVector(facing.current, 0.2);
-      const want = p
+      const head = p.clone().multiplyScalar(R + 0.35);
+      if (!c.on) {
+        // 들어올 때: 지금 카메라가 있는 쪽에서 시작 (갑자기 휙 돌지 않게)
+        c.on = true;
+        if (!hinted) {
+          hinted = true;
+          useUI.getState().showToast?.('끌어서 둘러보기 · 탭해서 걷기');
+        }
+        c.back.copy(camera.position).sub(head);
+        c.pitch = THREE.MathUtils.clamp(Math.asin(THREE.MathUtils.clamp(c.back.clone().normalize().dot(p), -1, 1)), 0.45, 1.2);
+      }
+      // 별 위를 걸어도 방향을 유지하도록 접평면에 다시 눕힌다
+      c.back.sub(p.clone().multiplyScalar(c.back.dot(p)));
+      if (c.back.lengthSq() < 1e-6) c.back.copy(facing.current).negate();
+      c.back.normalize();
+      // 걷는 중이고 최근에 직접 돌리지 않았으면 천천히 캐릭터 뒤로 돌아간다
+      if (moving.current && performance.now() - c.dragAt > 1500) {
+        c.back.lerp(facing.current.clone().negate(), 1 - Math.exp(-dt * 1.2)).normalize();
+      }
+      const dist = THREE.MathUtils.mapLinear(z, 0.55, FOLLOW_ZOOM, 2.6, 4.6);
+      const want = head
         .clone()
-        .multiplyScalar(R + 0.6 + back * 0.5)
-        .addScaledVector(facing.current, -back);
-      camera.position.lerp(want, 1 - Math.exp(-dt * 4));
-      camera.lookAt(look);
+        .addScaledVector(c.back, Math.cos(c.pitch) * dist)
+        .addScaledVector(p, Math.sin(c.pitch) * dist);
+      // 땅속으로 들어가지 않게
+      if (want.length() < R + 0.4) want.setLength(R + 0.4);
+      camera.position.lerp(want, 1 - Math.exp(-dt * 6));
+      camera.up.lerp(p, 1 - Math.exp(-dt * 4)).normalize();
+      // 발밑 쪽을 바라봐서 캐릭터가 화면 가운데 위쪽, 아래 버튼 위로 땅이 보이게
+      camera.lookAt(p.clone().multiplyScalar(R - 0.15));
+    } else if (c.on) {
+      c.on = false;
+      camera.up.set(0, 1, 0);
     }
 
     // 걷는 동안 카메라가 부드럽게 따라온다 (직접 돌리는 중엔 멈춤)
