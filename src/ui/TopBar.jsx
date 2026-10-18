@@ -22,7 +22,9 @@ export default function TopBar() {
   useEffect(() => sound.onPrefs(setSnd), []);
   return (
     <div className="topbar" ref={root}>
-      <button className="chip chip-btn" onClick={() => openSheet('records')} aria-label="나의 기록">📒 기록</button>
+      <button className="chip chip-btn" onClick={() => openSheet('records')} aria-label="나의 기록">
+        📒<span className="chip-txt"> 기록</span>
+      </button>
       <span className="chip chip-gold" aria-label="별가루">✦ {profile.stardust}</span>
       <span className="chip" aria-label="연속 출석">🔥 {profile.streak}일</span>
       <button className="btn btn-icon btn-ghost" onClick={() => setOpen((o) => !o)} aria-label="설정">⚙︎</button>

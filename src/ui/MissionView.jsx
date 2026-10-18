@@ -103,7 +103,7 @@ function Result({ correct, total, reward, practice, mode, wrongCount, reviewGain
       <div className="result-actions">
         {wrongCount > 0 && (
           <button className="btn result-sub" onClick={onReview}>
-            📒 틀린 {wrongCount}문제 다시 풀기
+            📒 {wrongCount > 10 ? `틀린 문제 10개 다시 풀기 (모두 ${wrongCount}개)` : `틀린 ${wrongCount}문제 다시 풀기`}
           </button>
         )}
         <button className="btn result-sub" onClick={onPractice}>

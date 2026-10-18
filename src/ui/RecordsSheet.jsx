@@ -115,7 +115,7 @@ export default function RecordsSheet() {
           {notes.length ? (
             <div className="note-row">
               <p>다시 풀어 볼 문제가 <b>{notes.length}개</b> 있어요. 아침 미션에서 틀린 문제를 맞히면 별가루 ✦3!</p>
-              <button className="btn btn-primary" onClick={() => go({ type: 'review' })}>다시 풀기</button>
+              <button className="btn btn-primary" onClick={() => go({ type: 'review' })}>{notes.length > 10 ? '10문제씩 다시 풀기' : '다시 풀기'}</button>
             </div>
           ) : (
             <p className="muted">틀린 문제가 없어요. 아침 미션에서 틀린 문제는 여기에 모여요.</p>
