@@ -175,6 +175,18 @@ export default function TeacherView() {
         </div>
         <button className="btn" onClick={() => go('login')}>← 학생 화면으로</button>
       </header>
+      {/* 아래쪽 자주 쓰는 곳으로 바로 이동 */}
+      <nav className="t-jump" aria-label="바로 가기">
+        {[
+          ['t-students', '👩‍🎓 학생별 현황'],
+          ['t-units', '📚 출제 단원'],
+          ['t-settings', '⚙︎ 설정'],
+        ].map(([id, label]) => (
+          <button key={id} className="chip chip-btn" onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+            {label}
+          </button>
+        ))}
+      </nav>
 
       <section className="t-cards">
         <div className="t-card"><b>{summary.done}<small>/{ROSTER.length}</small></b><span>오늘 미션 완료</span></div>
@@ -211,7 +223,7 @@ export default function TeacherView() {
         </div>
       </section>
 
-      <section className="t-panel">
+      <section className="t-panel" id="t-students">
         <div className="t-panel-head">
           <h2>학생별 현황</h2>
           <div className="t-actions">
@@ -289,7 +301,7 @@ export default function TeacherView() {
         </div>
       )}
 
-      <section className="t-panel">
+      <section className="t-panel" id="t-units">
         <div className="t-panel-head">
           <h2>출제 단원</h2>
           <span className="muted">매일 {Object.values(MISSION_COUNTS).reduce((a, b) => a + b, 0)}문제 = {SUBJECTS.map((s) => `${SUBJECT_META[s].label} ${MISSION_COUNTS[s]}`).join(' · ')}</span>
@@ -315,7 +327,7 @@ export default function TeacherView() {
         </div>
       </section>
 
-      <section className="t-panel">
+      <section className="t-panel" id="t-settings">
         <h2>설정</h2>
         <div className="t-settings">
           <label htmlFor="sem-start">2학기 시작일</label>

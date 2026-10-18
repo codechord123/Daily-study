@@ -646,6 +646,9 @@
 .t-panel-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
 .t-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .t-table-wrap { overflow-x: auto; }
+.t-jump { display: flex; gap: var(--s-2); flex-wrap: wrap; margin: calc(-1 * var(--s-2)) 0 var(--s-4); }
+.t-jump .chip { cursor: pointer; min-height: 40px; color: var(--ink); }
+.teacher .t-panel { scroll-margin-top: var(--s-4); }
 .t-table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; min-width: 760px; }
 .t-table th { text-align: left; font-weight: 600; color: var(--ink-muted); padding: 8px; border-bottom: 1px solid var(--panel-line); white-space: nowrap; }
 .t-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,.05); white-space: nowrap; }
