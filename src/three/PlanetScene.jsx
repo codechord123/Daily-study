@@ -26,6 +26,7 @@ const LOOK_DIST = 5.2; // 내 모습 꾸미기: 캐릭터를 크게
 const BASE_DIST = 8.54; // 기본 카메라 거리
 let hinted = false; // 확대 카메라 안내는 한 번만
 const WORLD_UP = new THREE.Vector3(0, 1, 0);
+const ORIGIN = new THREE.Vector3();
 const FOLLOW_ZOOM = 0.8; // 이보다 더 확대하면 캐릭터 뒤를 따라가는 카메라 // 세로 화면: 위쪽 40%에 별 전체가 들어오게
 
 /** 내 별이면 내 프로필에서, 친구 별이면 저장소에서 읽고 변경을 구독 */
@@ -77,6 +78,7 @@ function Player({ look, name, targetRef, emote, inMission, lookFocus }) {
     rig.current = createRig(camera);
   }
   const wasPosing = useRef(false);
+  const lookAim = useRef(new THREE.Vector3());
   if (import.meta.env.DEV) window.__planetCam = { camera, rig: rig.current, pos }; // 테스트용
   const missionDist = size.width / size.height > 1.1 ? MISSION_DIST : MISSION_DIST_TALL;
 
@@ -119,7 +121,8 @@ function Player({ look, name, targetRef, emote, inMission, lookFocus }) {
         // 비틀기: 두 손가락 사이 각도가 바뀐 만큼 별을 돌린다 (돌린 방향 그대로 따라 돈다)
         let da = angle(after[0], after[1]) - angle(before[0], before[1]);
         da = Math.atan2(Math.sin(da), Math.cos(da));
-        rig.current.yaw += da;
+        rig.current.twist += da;
+        rig.current.lastInput = now;
         // 두 손가락을 함께 밀면 한 손가락처럼 돌린다 (가운데 점의 움직임, 손가락 하나 몫이라 절반)
         rigDrag(rig.current, dx / 2, dy / 2, 0, el.clientHeight);
       }
@@ -179,8 +182,8 @@ function Player({ look, name, targetRef, emote, inMission, lookFocus }) {
       // 카메라는 거의 옆에서(살짝 위) 별을 본다. 좌우로 끌면 돌려 볼 수 있다
       {
         const rg = rig.current;
-        if (rg.yaw) camera.position.applyAxisAngle(WORLD_UP, rg.yaw);
-        rg.yaw = rg.pitch = 0;
+        if (rg.yaw + rg.twist) camera.position.applyAxisAngle(WORLD_UP, rg.yaw + rg.twist);
+        rg.yaw = rg.pitch = rg.twist = 0;
         const cur = camera.position.clone().normalize();
         const flat = new THREE.Vector3(cur.x, 0, cur.z);
         if (flat.lengthSq() < 1e-4) flat.set(0, 0, 1);
@@ -190,7 +193,10 @@ function Player({ look, name, targetRef, emote, inMission, lookFocus }) {
         const dist = THREE.MathUtils.damp(camera.position.length(), lookFocus ? LOOK_DIST : missionDist, 2, dt);
         camera.position.copy(cur.multiplyScalar(dist));
         camera.up.lerp(WORLD_UP, 1 - Math.exp(-dt * 8)).normalize();
-        camera.lookAt(0, 0, 0);
+        // 내 모습: 캐릭터 얼굴 쪽을 보아 화면 밖으로 잘리지 않게 / 미션: 별 전체
+        const lt = lookAim.current;
+        lt.lerp(lookFocus ? p.clone().multiplyScalar(R + 0.45) : ORIGIN, 1 - Math.exp(-dt * 4));
+        camera.lookAt(lt);
       }
       // 도착하면 카메라 쪽을 바라본다
       if (!targetRef.current) {
@@ -334,7 +340,7 @@ function MissionViewOffset({ active, look, decor }) {
     // 넓은 화면은 꾸미기 창이 오른쪽에 있으니 왼쪽으로, 좁은 화면은 아래 창 위로
     const sideDecor = w >= 900 && wide;
     const ox = look || decor ? (sideDecor ? w * 0.2 * k.current : 0) : wide ? w * 0.21 * k.current : 0;
-    const oy = look ? (sideDecor ? 0 : -h * 0.3 * k.current) : wide ? 0 : h * 0.2 * k.current;
+    const oy = look ? (sideDecor ? 0 : h * 0.2 * k.current) : wide ? 0 : h * 0.2 * k.current; // 내 모습: 캐릭터를 아래 창 위쪽에
     camera.setViewOffset(w, h, ox, oy, w, h);
   });
   useEffect(() => () => camera.clearViewOffset(), [camera]);

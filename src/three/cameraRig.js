@@ -25,6 +25,8 @@ export function createRig(camera) {
     pitch: 0,
     vYaw: 0, // 손 뗀 뒤 관성 (rad/s)
     vPitch: 0,
+    twist: 0, // 두 손가락 비틀기
+    up: camera.up.clone(), // 멀리 보기에서 화면 위쪽 (별을 넘어 360도 돌 수 있게 같이 돈다)
     dragging: false,
     lastInput: -1e9,
   };
@@ -58,15 +60,11 @@ export function rigUpdate(rig, camera, { dt, p, facing, moving, zoom, R, base, d
   rig.f = rig.f === null ? fGoal : THREE.MathUtils.damp(rig.f, fGoal, 4, dt);
   const f = rig.f;
 
-  // 위쪽 축: 멀리선 세계 위, 가까이선 캐릭터가 선 땅의 위
-  _u.copy(Y).lerp(p, f);
-  if (_u.lengthSq() < 0.04) _u.copy(p);
-  _u.normalize();
-
   // 끌기 · 관성
   let dyaw = rig.yaw;
   let dpitch = rig.pitch;
-  rig.yaw = rig.pitch = 0;
+  const twist = rig.twist;
+  rig.yaw = rig.pitch = rig.twist = 0;
   if (!rig.dragging) {
     dyaw += rig.vYaw * dt;
     dpitch += rig.vPitch * dt;
@@ -74,18 +72,45 @@ export function rigUpdate(rig, camera, { dt, p, facing, moving, zoom, R, base, d
     rig.vYaw *= decay;
     rig.vPitch *= decay;
   }
+  const idle0 = now - rig.lastInput;
 
-  // 방향을 (수평, 높이각)으로 나눠 돌린다
-  let el = Math.asin(THREE.MathUtils.clamp(rig.dir.dot(_u), -1, 1));
-  _h.copy(rig.dir).addScaledVector(_u, -rig.dir.dot(_u));
-  if (_h.lengthSq() < 1e-6) _h.copy(facing).negate();
-  _h.normalize();
-  if (dyaw) _h.applyAxisAngle(_u, dyaw);
-  const elMin = THREE.MathUtils.lerp(-1.2, 0.3, f);
-  el = THREE.MathUtils.clamp(el + dpitch, elMin, 1.4);
-  // 가까이 볼수록 보기 좋은 높이(캐릭터 뒤 살짝 위)로 천천히 맞춘다 (방금 직접 돌렸으면 그대로)
-  if (f > 0.05 && !rig.dragging && performance.now() - rig.lastInput > 1500) el = THREE.MathUtils.damp(el, 0.62, 2.5 * f, dt);
-  rig.dir.copy(_h).multiplyScalar(Math.cos(el)).addScaledVector(_u, Math.sin(el)).normalize();
+  // 화면 위쪽을 방향과 수직으로 정리
+  rig.up.addScaledVector(rig.dir, -rig.up.dot(rig.dir));
+  if (rig.up.lengthSq() < 1e-6) rig.up.copy(Y).addScaledVector(rig.dir, -rig.dir.y);
+  rig.up.normalize();
+
+  if (f < 0.5) {
+    // 멀리 보기: 막힘 없이 360도 (위아래로 계속 끌면 별을 넘어 한 바퀴)
+    if (twist) rig.up.applyAxisAngle(rig.dir, twist); // 비튼 방향 그대로 화면 속 별이 돈다
+    if (dyaw) rig.dir.applyAxisAngle(rig.up, dyaw);
+    if (dpitch) {
+      _h.crossVectors(rig.up, rig.dir).normalize(); // 화면 오른쪽 축
+      rig.dir.applyAxisAngle(_h, -dpitch);
+      rig.up.applyAxisAngle(_h, -dpitch);
+    }
+    rig.dir.normalize();
+    // 한참 안 만지면 별이 바로 서도록 천천히 (꾸미는 중엔 돌려 둔 그대로)
+    if (!decorating && !rig.dragging && idle0 > 4000) {
+      _want.copy(Y).addScaledVector(rig.dir, -rig.dir.y);
+      if (_want.lengthSq() > 0.01) rig.up.lerp(_want.normalize(), 1 - Math.exp(-dt * 0.6));
+    }
+    _u.copy(rig.up);
+  } else {
+    // 가까이 보기: 캐릭터가 선 땅이 위쪽, 땅 밑으로는 못 내려감
+    _u.copy(p);
+    let el = Math.asin(THREE.MathUtils.clamp(rig.dir.dot(_u), -1, 1));
+    _h.copy(rig.dir).addScaledVector(_u, -rig.dir.dot(_u));
+    if (_h.lengthSq() < 1e-6) _h.copy(facing).negate();
+    _h.normalize();
+    if (dyaw + twist) _h.applyAxisAngle(_u, dyaw + twist);
+    el = Math.min(el + dpitch, 1.4);
+    const elMin = THREE.MathUtils.lerp(-1.2, 0.3, f);
+    if (el < elMin) el = THREE.MathUtils.damp(el, elMin, 8, dt); // 넘어가 있으면 부드럽게 올라온다
+    // 보기 좋은 높이(캐릭터 뒤 살짝 위)로 천천히 맞춘다 (방금 직접 돌렸으면 그대로)
+    if (!rig.dragging && idle0 > 1500) el = THREE.MathUtils.damp(el, 0.62, 2.5 * f, dt);
+    rig.dir.copy(_h).multiplyScalar(Math.cos(el)).addScaledVector(_u, Math.sin(el)).normalize();
+    rig.up.lerp(_u, 1 - Math.exp(-dt * 6)); // 다시 멀리 볼 때 이어지게
+  }
 
   // 알아서 맞추기 (직접 돌리는 중·관성 중에는 안 함)
   const still = !rig.dragging && Math.abs(rig.vYaw) + Math.abs(rig.vPitch) < 0.08;
@@ -111,7 +136,7 @@ export function rigUpdate(rig, camera, { dt, p, facing, moving, zoom, R, base, d
   _target.copy(p).multiplyScalar((R + 0.35) * f);
   camera.position.copy(_target).addScaledVector(rig.dir, rig.dist);
   if (camera.position.length() < R + 0.4) camera.position.setLength(R + 0.4); // 땅속으로 들어가지 않게
-  camera.up.lerp(_u, 1 - Math.exp(-dt * 8)).normalize();
+  camera.up.lerp(_u, 1 - Math.exp(-dt * 14)).normalize();
   _look.copy(p).multiplyScalar((R - 0.15) * f); // 가까이선 발밑 쪽을 봐서 캐릭터가 화면 위쪽에
   camera.lookAt(_look);
 }
@@ -124,4 +149,5 @@ export function rigAdopt(rig, camera, p, R) {
   rig.dist = v.length();
   rig.dir.copy(v.normalize());
   rig.vYaw = rig.vPitch = 0;
+  rig.up.copy(camera.up);
 }
