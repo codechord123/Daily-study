@@ -11,4 +11,7 @@ createRoot(document.getElementById('root')).render(
 );
 
 // 개발 중 브라우저 콘솔에서 상태를 볼 수 있게
-if (import.meta.env.DEV) import('./store/useGame').then((m) => (window.__game = m.useGame));
+if (import.meta.env.DEV) {
+  import('./store/useGame').then((m) => (window.__game = m.useGame));
+  import('./store/useUI').then((m) => (window.__ui = m.useUI));
+}

@@ -58,7 +58,51 @@ function Hat({ type }) {
   return null;
 }
 
-export default function Character({ look, movingRef, moving, name, emote, emoteAt, isMe, scale = 1 }) {
+// 등에 메는 로켓 추진기. thrustRef(0~1)에 따라 불꽃 크기가 변한다
+function Jetpack({ thrustRef }) {
+  const flames = useRef([]);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    const p = thrustRef?.current ?? 0;
+    flames.current.forEach((f, i) => {
+      if (!f) return;
+      const len = 0.35 + p * 1.1 + Math.sin(t * 30 + i * 2) * 0.12;
+      f.scale.set(1, len, 1);
+    });
+  });
+  return (
+    <group position={[0, 0.2, -0.12]}>
+      {/* 어깨끈 */}
+      <mesh material={toon('#4c4f86')} position={[0, 0.03, 0.06]}>
+        <boxGeometry args={[0.2, 0.025, 0.02]} />
+      </mesh>
+      {[-0.055, 0.055].map((x, i) => (
+        <group key={x} position={[x, 0, 0]}>
+          <mesh material={toon('#f7efe1')}>
+            <capsuleGeometry args={[0.045, 0.12, 4, 10]} />
+          </mesh>
+          <mesh material={toon('#ef7d7d')} position={[0, 0.1, 0]}>
+            <coneGeometry args={[0.045, 0.06, 10]} />
+          </mesh>
+          <mesh material={toon('#4c4f86')} position={[0, -0.1, 0]}>
+            <cylinderGeometry args={[0.03, 0.04, 0.03, 8]} />
+          </mesh>
+          {/* 불꽃: 원점이 위쪽 끝이 되도록 아래로 뻗는다 */}
+          <group ref={(el) => (flames.current[i] = el)} position={[0, -0.115, 0]}>
+            <mesh material={glow('#ffb35c', 2)} position={[0, -0.05, 0]} rotation={[Math.PI, 0, 0]}>
+              <coneGeometry args={[0.03, 0.1, 8]} />
+            </mesh>
+            <mesh material={glow('#fff3c4', 2.4)} position={[0, -0.03, 0]} rotation={[Math.PI, 0, 0]}>
+              <coneGeometry args={[0.015, 0.06, 6]} />
+            </mesh>
+          </group>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+export default function Character({ look, movingRef, moving, name, emote, emoteAt, isMe, scale = 1, jetpack, thrustRef }) {
   const body = useRef();
   const legL = useRef();
   const legR = useRef();
@@ -74,9 +118,9 @@ export default function Character({ look, movingRef, moving, name, emote, emoteA
     const isMoving = movingRef ? movingRef.current : moving;
     const sp = isMoving ? 11 : 2;
     if (body.current) body.current.position.y = isMoving ? Math.abs(Math.sin(t * sp)) * 0.035 : Math.sin(t * sp) * 0.006;
-    const swing = isMoving ? Math.sin(t * sp) * 0.6 : 0;
+    const swing = jetpack ? 0.25 + Math.sin(t * 2.5) * 0.12 : isMoving ? Math.sin(t * sp) * 0.6 : 0;
     if (legL.current) legL.current.rotation.x = swing;
-    if (legR.current) legR.current.rotation.x = -swing;
+    if (legR.current) legR.current.rotation.x = jetpack ? swing * 0.7 : -swing;
     if (scarf.current) scarf.current.rotation.x = -0.9 - (isMoving ? 0.5 : 0) + Math.sin(t * (isMoving ? 9 : 2.2)) * 0.15;
   });
 
@@ -93,7 +137,7 @@ export default function Character({ look, movingRef, moving, name, emote, emoteA
   return (
     <group scale={scale}>
       {/* 발밑 그림자 */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]}>
+      <mesh visible={!jetpack} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]}>
         <circleGeometry args={[0.11, 16]} />
         <meshBasicMaterial color="#000" transparent opacity={0.18} depthWrite={false} />
       </mesh>
@@ -145,6 +189,7 @@ export default function Character({ look, movingRef, moving, name, emote, emoteA
           </group>
         ))}
         <Hat type={look.hat} />
+        {jetpack && <Jetpack thrustRef={thrustRef} />}
       </group>
 
       {(name || showEmote) && (

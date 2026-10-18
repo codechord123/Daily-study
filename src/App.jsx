@@ -3,11 +3,11 @@ import { Canvas } from '@react-three/fiber';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import SpaceBackdrop from './three/SpaceBackdrop';
 import PlanetScene from './three/PlanetScene';
-import SpaceMap from './three/SpaceMap';
+import SpaceFlight from './three/SpaceFlight';
 import LoginBackdrop from './three/LoginBackdrop';
 import Login from './ui/Login';
 import PlanetHud from './ui/PlanetHud';
-import MapHud from './ui/MapHud';
+import FlightHud from './ui/FlightHud';
 import MissionView from './ui/MissionView';
 import Toast from './ui/Toast';
 import { useGame } from './store/useGame';
@@ -15,16 +15,15 @@ import { useUI } from './store/useUI';
 import * as presence from './services/presence';
 
 export default function App() {
-  const { profile, screen, visiting, restoreSession, visit, go } = useGame();
+  const { profile, screen, visiting, launchFrom, restoreSession, visit } = useGame();
   const quality = useUI((s) => s.quality);
   const low = quality === 'low';
   const [emote, setEmote] = useState(null);
 
   useEffect(() => restoreSession(), [restoreSession]);
 
-  // 지도·로그인 화면에서는 어느 별에도 없는 상태
   useEffect(() => {
-    if (screen === 'login' || screen === 'map') presence.leave();
+    if (screen === 'login') presence.leave();
   }, [screen]);
 
   const sendEmote = (e) => {
@@ -43,7 +42,7 @@ export default function App() {
             <SpaceBackdrop low={low} />
             {!profile && <LoginBackdrop />}
             {onPlanet && <PlanetScene key={ownerId} ownerId={ownerId} editable={screen === 'home'} emote={emote} />}
-            {profile && screen === 'map' && <SpaceMap meId={profile.sid} onVisit={visit} low={low} />}
+            {profile && screen === 'space' && <SpaceFlight me={profile} launchFrom={launchFrom} onLand={visit} low={low} />}
             {!low && (
               <EffectComposer multisampling={0}>
                 <Bloom intensity={0.9} luminanceThreshold={0.85} luminanceSmoothing={0.2} mipmapBlur />
@@ -57,7 +56,7 @@ export default function App() {
       <div className="ui-layer">
         {!profile && <Login />}
         {profile && (screen === 'home' || screen === 'visit') && <PlanetHud ownerId={ownerId} onEmote={sendEmote} />}
-        {profile && screen === 'map' && <MapHud onBack={() => go('home')} />}
+        {profile && screen === 'space' && <FlightHud />}
         {profile && screen === 'mission' && <MissionView />}
         <Toast />
       </div>

@@ -59,9 +59,12 @@ export function samplePlanet(studentId) {
   };
 }
 
-// 우주 지도에서 별이 놓이는 위치 (나선형으로 퍼뜨림)
-export function mapPosition(index) {
-  const a = index * 2.399963; // 황금각
-  const rad = 4 + Math.sqrt(index) * 3.6;
-  return [Math.cos(a) * rad, Math.sin(index * 1.7) * 2.2, Math.sin(a) * rad];
+// 우주에서 별이 놓이는 위치 (황금각 나선으로 고르게 퍼뜨림)
+// 이웃 별까지 약 15칸: 추진기로 3~4초 거리
+export function spacePosition(index) {
+  const a = index * 2.399963;
+  const rad = 16 + Math.sqrt(index) * 15;
+  return [Math.cos(a) * rad, Math.sin(index * 1.7) * 8, Math.sin(a) * rad];
 }
+
+export const SPACE_BOUNDS = 110; // 이 반경 밖으로는 못 나가게

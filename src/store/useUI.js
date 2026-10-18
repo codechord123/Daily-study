@@ -34,6 +34,12 @@ export const useUI = create((set) => ({
   startMove: (uid) => set({ movingUid: uid }),
   clearDecor: () => set({ heldItem: null, selectedUid: null, movingUid: null }),
 
+  // 우주 비행
+  flightTarget: null, // 목적지 별 sid (화살표 안내)
+  setFlightTarget: (sid) => set({ flightTarget: sid }),
+  near: null, // 착륙 가능한 거리에 있는 별 sid
+  setNear: (sid) => set({ near: sid }),
+
   sheet: null, // 'shop' | 'bag' | 'style' | null
   openSheet: (sheet) => set({ sheet }),
 

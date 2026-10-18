@@ -30,8 +30,9 @@ export const useGame = create((set, get) => {
 
   return {
     profile: null,
-    screen: 'login', // login | home | mission | map | visit
+    screen: 'login', // login | home | mission | space | visit
     visiting: null, // 방문 중인 친구 sid
+    launchFrom: null, // 우주로 이륙한 별 sid
     mode: 'walk', // walk | decorate
 
     restoreSession() {
@@ -65,6 +66,11 @@ export const useGame = create((set, get) => {
 
     go(screen) {
       set({ screen, mode: 'walk', ...(screen !== 'visit' && { visiting: null }) });
+    },
+    // 지금 있는 별에서 추진기를 메고 이륙
+    launch() {
+      const { visiting, profile } = get();
+      set({ screen: 'space', launchFrom: visiting ?? profile.sid, visiting: null, mode: 'walk' });
     },
     visit(sid) {
       if (sid === get().profile?.sid) return set({ screen: 'home', visiting: null });

@@ -88,10 +88,6 @@
 .map-label.is-me { background: var(--gold); color: var(--ink-dark); box-shadow: var(--glow-gold); font-weight: 700; }
 .map-label.is-online:not(.is-me) { border: 1px solid var(--cyan); box-shadow: var(--glow-cyan); }
 .map-dot { min-width: 20px; height: 20px; border-radius: 10px; background: var(--cyan); color: var(--ink-dark); font-size: 12px; display: grid; place-items: center; padding: 0 5px; }
-.map-legend { position: absolute; left: var(--s-5); bottom: calc(var(--s-6) + env(safe-area-inset-bottom) + 70px); gap: 8px; font-size: 14px; color: var(--ink-muted); }
-.legend-ring { width: 12px; height: 12px; border-radius: 50%; border: 2px solid; display: inline-block; margin-left: 6px; }
-.legend-ring.gold { border-color: var(--gold); box-shadow: var(--glow-gold); }
-.legend-ring.cyan { border-color: var(--cyan); box-shadow: var(--glow-cyan); }
 
 .toast {
   position: absolute; left: 50%; top: calc(96px + env(safe-area-inset-top)); transform: translateX(-50%);
@@ -323,9 +319,66 @@
   .walk-hint { display: none; }
   .decor { max-height: 52vh; }
   .item-tools { bottom: calc(52vh + var(--s-5)); }
-  .map-legend { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
 }
+
+/* ================= 우주 비행 ================= */
+.flight-tools {
+  position: absolute; top: calc(118px + env(safe-area-inset-top)); left: var(--s-5);
+  display: flex; gap: var(--s-2); flex-wrap: wrap;
+}
+.flight-tools .chip { cursor: pointer; min-height: 44px; color: var(--ink); }
+.target-chip.on { border-color: var(--gold); color: var(--gold); box-shadow: var(--glow-gold); }
+.map-label.is-target { border: 1px solid var(--gold); color: var(--gold); box-shadow: var(--glow-gold); }
+
+.picker {
+  position: absolute; top: calc(172px + env(safe-area-inset-top)); left: var(--s-5);
+  width: min(340px, calc(100% - 32px)); max-height: 52vh; display: flex; flex-direction: column;
+  padding: var(--s-3); border-radius: var(--r-md);
+}
+.picker-head { display: flex; justify-content: space-between; align-items: center; padding-left: var(--s-2); }
+.picker-list { overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: var(--s-2); }
+.picker-item {
+  min-height: 44px; border-radius: var(--r-sm); border: 1px solid var(--panel-line); background: rgba(255,255,255,.05);
+  cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px;
+}
+.picker-item:first-child { color: var(--gold); }
+.picker-item.on { border-color: var(--gold); box-shadow: var(--glow-gold); }
+
+.land-wrap { position: absolute; left: 0; right: 0; bottom: calc(150px + env(safe-area-inset-bottom)); display: flex; justify-content: center; pointer-events: none; }
+.land-cta { pointer-events: auto; }
+
+.joy {
+  position: absolute; left: var(--s-6); bottom: calc(var(--s-6) + env(safe-area-inset-bottom));
+  width: 140px; height: 140px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(111,243,255,.08), rgba(20,24,66,.55));
+  border: 1px solid rgba(111,243,255,.35); box-shadow: inset 0 0 30px rgba(111,243,255,.12);
+  display: grid; place-items: center; touch-action: none;
+}
+.joy-knob {
+  width: 60px; height: 60px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 35% 30%, #fff, #c8f6ff 45%, #6ff3ff);
+  box-shadow: var(--glow-cyan);
+}
+.lift {
+  position: absolute; right: var(--s-6); bottom: calc(var(--s-6) + env(safe-area-inset-bottom));
+  display: grid; gap: var(--s-3);
+}
+.lift-btn {
+  width: 72px; height: 64px; border-radius: var(--r-md); cursor: pointer; touch-action: none;
+  border: 1px solid rgba(111,243,255,.35); background: rgba(20,24,66,.6); font-size: 24px; color: var(--cyan);
+  backdrop-filter: blur(10px);
+}
+.lift-btn:active { background: rgba(111,243,255,.25); box-shadow: var(--glow-cyan); }
+
+@media (max-width: 640px) {
+  .flight-tools { top: calc(150px + env(safe-area-inset-top)); left: var(--s-4); }
+  .picker { top: calc(200px + env(safe-area-inset-top)); left: var(--s-4); }
+  .joy { left: var(--s-4); width: 124px; height: 124px; }
+  .lift { right: var(--s-4); }
+  .land-cta { max-width: calc(100% - 32px); }
+}
+@media (hover: none) { .walk-hint { display: none; } }
