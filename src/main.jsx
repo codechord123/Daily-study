@@ -25,6 +25,11 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>,
 );
 
+// 와이파이가 끊겨도 열리게 (배포판에서만, 미리보기 iframe 등 막힌 곳에서는 조용히 넘어감)
+if (import.meta.env.PROD && 'serviceWorker' in navigator && window.isSecureContext && window.top === window.self) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}
+
 // 개발 중 브라우저 콘솔에서 상태를 볼 수 있게
 if (import.meta.env.DEV) {
   import('./store/useGame').then((m) => (window.__game = m.useGame));
