@@ -37,9 +37,9 @@ export const INQUIRY = {
 };
 
 export const SUBJECT_META = {
-  math: { label: '수학', color: '#ffd76a' },
-  english: { label: '영어', color: '#6ff3ff' },
-  korean: { label: '국어', color: '#f2a7b8' },
-  social: { label: '사회', color: '#a8dcc4' },
-  science: { label: '과학', color: '#c3b2ec' },
+  math: { icon: '÷', label: '수학', color: '#ffd76a' },
+  english: { icon: 'Aa', label: '영어', color: '#6ff3ff' },
+  korean: { icon: '가', label: '국어', color: '#f2a7b8' },
+  social: { icon: '🌏', label: '사회', color: '#a8dcc4' },
+  science: { icon: '🔬', label: '과학', color: '#c3b2ec' },
 };

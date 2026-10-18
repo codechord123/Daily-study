@@ -40,6 +40,12 @@ export const useUI = create((set) => ({
   near: null, // 착륙 가능한 거리에 있는 별 sid
   setNear: (sid) => set({ near: sid }),
 
+  // 미션 진행 상태: 3D 장면(별 조각 고리·캐릭터 반응)이 이것을 보고 연출한다
+  // fx.kind: 'correct' | 'wrong' | 'complete', fx.at: 발생 시각(ms)
+  mission: { results: [], total: 0, fx: null },
+  setMission: (patch) => set((s) => ({ mission: { ...s.mission, ...patch } })),
+  missionFx: (kind) => set((s) => ({ mission: { ...s.mission, fx: { kind, at: performance.now() } } })),
+
   sheet: null, // 'shop' | 'bag' | 'style' | null
   openSheet: (sheet) => set({ sheet }),
 

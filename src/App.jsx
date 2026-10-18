@@ -41,7 +41,7 @@ export default function App() {
           <Suspense fallback={null}>
             <SpaceBackdrop low={low} />
             {!profile && <LoginBackdrop />}
-            {onPlanet && <PlanetScene key={ownerId} ownerId={ownerId} editable={screen === 'home'} emote={emote} />}
+            {onPlanet && <PlanetScene key={ownerId} ownerId={ownerId} editable={screen === 'home'} emote={emote} inMission={screen === 'mission'} />}
             {profile && screen === 'space' && <SpaceFlight me={profile} launchFrom={launchFrom} onLand={visit} low={low} />}
             {!low && (
               <EffectComposer multisampling={0}>

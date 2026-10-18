@@ -12,11 +12,15 @@ import { useGame } from '../store/useGame';
 import { useUI } from '../store/useUI';
 import { getPlanet, onPlanetChange } from '../store/profileStore';
 import { studentById } from '../data/classroom';
+import Sparks from './Sparks';
+import MissionOrbit from './MissionOrbit';
 
 const R = PLANET_RADIUS;
 const WALK_SPEED = 0.9; // 라디안/초
-const MAX_PEERS = 8;
-const CHAR_SCALE = 1.3; // 한 별에 정상 표시할 최대 친구 수
+const MAX_PEERS = 8; // 한 별에 정상 표시할 최대 친구 수
+const CHAR_SCALE = 1.3;
+const MISSION_DIST = 8; // 가로 화면
+const MISSION_DIST_TALL = 13.5; // 세로 화면: 위쪽 40%에 별 전체가 들어오게
 
 /** 내 별이면 내 프로필에서, 친구 별이면 저장소에서 읽고 변경을 구독 */
 export function usePlanetData(ownerId) {
@@ -46,15 +50,18 @@ export function usePeerIds(planetId) {
 }
 
 /* ---------- 나 (조작 가능한 캐릭터) ---------- */
-function Player({ look, name, controlsActive, targetRef, emote }) {
+function Player({ look, name, controlsActive, targetRef, emote, inMission }) {
   const group = useRef();
+  const react = useRef(); // 미션 반응(점프·갸웃) 전용
+  const fx = useUI((s) => s.mission.fx);
   // 여러 명이 같은 자리에 겹쳐 생기지 않게 카메라 앞쪽 근처에 흩어 놓는다
   const pos = useRef(latLonToVec(45 + Math.random() * 15, (Math.random() - 0.5) * 70));
   const facing = useRef(new THREE.Vector3(0, 0, 1));
   const moving = useRef(false);
   const keys = useRef({});
   const lastSent = useRef(0);
-  const { camera } = useThree();
+  const { camera, size } = useThree();
+  const missionDist = size.width / size.height > 1.1 ? MISSION_DIST : MISSION_DIST_TALL;
 
   useEffect(() => {
     const down = (e) => {
@@ -71,7 +78,14 @@ function Player({ look, name, controlsActive, targetRef, emote }) {
   }, []);
 
   useFrame((state, dt) => {
-    const k = keys.current;
+    const k = inMission ? {} : keys.current;
+    if (inMission) {
+      // 어린왕자 그림처럼: 카메라에서 봤을 때 별 꼭대기로 걸어가 선다
+      const camDir = camera.position.clone().normalize();
+      const top = new THREE.Vector3(0, 1, 0).sub(camDir.clone().multiplyScalar(camDir.y)).normalize();
+      const goal = top.add(camDir.multiplyScalar(0.3)).normalize();
+      targetRef.current = pos.current.angleTo(goal) > 0.03 ? goal : null;
+    }
     const n = pos.current;
     // 키보드(크롬북): ↑↓ 앞뒤, ←→ 방향 돌리기
     const turn = (k.ArrowLeft || k.a ? 1 : 0) - (k.ArrowRight || k.d ? 1 : 0);
@@ -96,8 +110,47 @@ function Player({ look, name, controlsActive, targetRef, emote }) {
     group.current.position.copy(p).multiplyScalar(R);
     group.current.quaternion.slerp(lookAlongSurface(p, facing.current), 1 - Math.exp(-dt * 12));
 
+    if (inMission) {
+      // 카메라는 거의 옆에서(살짝 위) 별을 본다
+      if (!controlsActive.current) {
+        const cur = camera.position.clone().normalize();
+        const flat = new THREE.Vector3(cur.x, 0, cur.z);
+        if (flat.lengthSq() < 1e-4) flat.set(0, 0, 1);
+        flat.normalize();
+        const want = flat.multiplyScalar(Math.cos(0.22)).add(new THREE.Vector3(0, Math.sin(0.22), 0));
+        cur.lerp(want, 1 - Math.exp(-dt * 2)).normalize();
+        const dist = THREE.MathUtils.damp(camera.position.length(), missionDist, 2, dt);
+        camera.position.copy(cur.multiplyScalar(dist));
+      }
+      // 도착하면 카메라 쪽을 바라본다
+      if (!targetRef.current) {
+        const toCam = camera.position.clone().normalize();
+        facing.current.lerp(toCam.sub(p.clone().multiplyScalar(toCam.dot(p))), 1 - Math.exp(-dt * 4));
+      }
+    }
+
+    // 미션 반응 연출
+    const r = react.current;
+    const f = useUI.getState().mission.fx;
+    const age = f ? (performance.now() - f.at) / 1000 : 99;
+    let hop = 0;
+    let spinY = 0;
+    let tiltZ = 0;
+    if (f?.kind === 'correct' && age < 0.7) {
+      const u = age / 0.7;
+      hop = Math.sin(u * Math.PI) * 0.45;
+      spinY = (1 - Math.pow(1 - u, 3)) * Math.PI * 2;
+    } else if (f?.kind === 'wrong' && age < 0.9) {
+      tiltZ = Math.sin(age * 9) * 0.28 * (1 - age / 0.9); // 고개 갸웃
+    } else if (f?.kind === 'complete' && age < 2.4) {
+      hop = Math.abs(Math.sin(age * Math.PI * 2.5)) * 0.35; // 신나서 콩콩
+    }
+    r.position.y = hop;
+    r.rotation.y = spinY;
+    r.rotation.z = tiltZ;
+
     // 걷는 동안 카메라가 부드럽게 따라온다 (직접 돌리는 중엔 멈춤)
-    if (moving.current && !controlsActive.current) {
+    if (moving.current && !controlsActive.current && !inMission) {
       const dist = camera.position.length();
       const want = p.clone().add(new THREE.Vector3(0, 0.35, 0)).normalize();
       const cur = camera.position.clone().normalize();
@@ -115,7 +168,10 @@ function Player({ look, name, controlsActive, targetRef, emote }) {
 
   return (
     <group ref={group}>
-      <Character look={look} movingRef={moving} name={name} isMe emote={emote?.e} emoteAt={emote?.at} scale={CHAR_SCALE} />
+      <group ref={react}>
+        <Character look={look} movingRef={moving} name={name} isMe emote={emote?.e} emoteAt={emote?.at} scale={CHAR_SCALE} />
+      </group>
+      <Sparks trigger={fx && fx.kind !== 'wrong' ? fx.at : 0} position={[0, 0.55, 0]} power={fx?.kind === 'complete' ? 1.6 : 1} />
     </group>
   );
 }
@@ -172,6 +228,31 @@ function Peer({ sid, ghost }) {
   );
 }
 
+/* ---------- 미션 중엔 별을 카드 옆(가로)·위(세로)로 비켜 그린다 ---------- */
+function MissionViewOffset({ active }) {
+  const { camera, size } = useThree();
+  const k = useRef(0);
+  useFrame((_, dt) => {
+    const goal = active ? 1 : 0;
+    if (Math.abs(k.current - goal) < 0.001 && !active) {
+      if (camera.view?.enabled) {
+        camera.clearViewOffset();
+        k.current = 0;
+      }
+      return;
+    }
+    k.current = THREE.MathUtils.damp(k.current, goal, 4, dt);
+    const { width: w, height: h } = size;
+    const wide = w / h > 1.1;
+    // 확대 없이 화면만 비켜 그린다. 가로: 별을 왼쪽으로 / 세로: 별을 위로
+    const ox = wide ? w * 0.21 * k.current : 0;
+    const oy = wide ? 0 : h * 0.2 * k.current;
+    camera.setViewOffset(w, h, ox, oy, w, h);
+  });
+  useEffect(() => () => camera.clearViewOffset(), [camera]);
+  return null;
+}
+
 /* ---------- 카메라: 멀리서 날아 들어오는 연출 ---------- */
 function CameraIntro({ controls }) {
   const { camera, size } = useThree();
@@ -194,7 +275,7 @@ function CameraIntro({ controls }) {
   return null;
 }
 
-export default function PlanetScene({ ownerId, editable, emote }) {
+export default function PlanetScene({ ownerId, editable, emote, inMission }) {
   const profile = useGame((s) => s.profile);
   const mode = useGame((s) => s.mode);
   const placeItem = useGame((s) => s.placeItem);
@@ -250,7 +331,10 @@ export default function PlanetScene({ ownerId, editable, emote }) {
         controlsActive={controlsActive}
         targetRef={walkTarget}
         emote={emote}
+        inMission={inMission}
       />
+      {inMission && <MissionOrbit />}
+      <MissionViewOffset active={!!inMission} />
       {peerIds.map((sid, i) => (
         <Peer key={sid} sid={sid} ghost={i >= MAX_PEERS} />
       ))}
@@ -258,7 +342,7 @@ export default function PlanetScene({ ownerId, editable, emote }) {
         ref={controls}
         enablePan={false}
         minDistance={4.2}
-        maxDistance={14}
+        maxDistance={inMission ? 16 : 14}
         enableDamping
         dampingFactor={0.08}
         rotateSpeed={0.6}
