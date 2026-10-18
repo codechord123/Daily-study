@@ -5,6 +5,10 @@ import { buildDailyMission, buildPractice, isCorrect } from '../engine/dailyMiss
 import { SUBJECT_META } from '../data/missions/grade5';
 import RichText from './RichText';
 import { sfx } from '../services/sound';
+import { speak, canSpeak, stopSpeaking } from '../services/speech';
+
+// 영어 문제에서 읽어 줄 영어: 영어가 문제에 있으면 문제, 아니면 정답 보기
+const englishText = (q) => (/[a-z]/i.test(q.prompt) ? q.prompt : q.choices?.[q.answer]);
 
 const KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'];
 const CHEERS = ['정답이에요!', '멋져요!', '바로 그거예요!', '똑똑해요!', '반짝반짝!'];
@@ -143,6 +147,14 @@ export default function MissionView() {
     return c;
   }, [results]);
 
+  useEffect(() => {
+    if (q?.subject === 'english' && /[a-z]/i.test(q.prompt)) {
+      const t = setTimeout(() => speak(q.prompt), 450);
+      return () => clearTimeout(t);
+    }
+  }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => stopSpeaking, []);
+
   // 3D 장면에 미션 시작·종료 알림
   useEffect(() => {
     setMission({ results: [], total: questions.length, fx: null });
@@ -160,6 +172,7 @@ export default function MissionView() {
       if (ok) sfx('correct', combo + 1);
       else sfx('wrong');
       setFeedback({ ok, picked: value, cheer: CHEERS[Math.floor(Math.random() * CHEERS.length)] });
+      if (q.subject === 'english') setTimeout(() => speak(englishText(q)), 500);
       // 오답 노트: 틀리면 적고, 오답 노트에서 다시 맞히면 지운다
       if (mode === 'review') {
         if (ok) {
@@ -308,7 +321,7 @@ export default function MissionView() {
         ) : (
           <article
             ref={cardRef}
-            className={`q-card page-in ${feedback ? (feedback.ok ? 'is-ok' : 'is-no') : ''}`}
+            className={`q-card page-in ${feedback ? (feedback.ok ? 'is-ok' : 'is-no') : ''} ${q.subject === 'english' && canSpeak() ? 'has-speak' : ''}`}
             key={idx}
             style={{ '--subject': meta.color }}
           >
@@ -325,6 +338,11 @@ export default function MissionView() {
               )}
             </div>
             {q.sub && <p className="q-sub">{q.sub}</p>}
+            {q.subject === 'english' && canSpeak() && (/[a-z]/i.test(q.prompt) || feedback) && (
+              <button className="speak-btn" data-nosfx onClick={() => speak(englishText(q))} aria-label="영어 듣기">
+                🔊 듣기
+              </button>
+            )}
             <h2 className={`q-prompt ${q.big ? 'is-big' : ''}`}>
               <RichText text={q.prompt} />
             </h2>

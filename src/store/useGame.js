@@ -102,6 +102,14 @@ export const useGame = create((set, get) => {
       return gain;
     },
 
+    setHeartsSeen(n) {
+      update((p) => {
+        if (p.heartsSeen === n) return null;
+        p.heartsSeen = n;
+        return p;
+      });
+    },
+
     finishOnboarding() {
       update((p) => {
         p.onboarded = true;
@@ -137,7 +145,8 @@ export const useGame = create((set, get) => {
         p.history[today] = { correct, total, subjects };
         const days = Object.keys(p.history).sort();
         if (days.length > 120) for (const d of days.slice(0, days.length - 120)) delete p.history[d];
-        p.streak = p.lastMissionDate === prevSchoolDay() ? p.streak + 1 : 1;
+        // 직전 등교일 이후(주말 포함)에 했으면 이어진다
+        p.streak = p.lastMissionDate && p.lastMissionDate >= prevSchoolDay() ? p.streak + 1 : 1;
         const base = correct * 5;
         const finish = 20;
         const streakBonus = Math.min(p.streak, 5) * 4;

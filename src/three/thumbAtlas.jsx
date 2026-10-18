@@ -47,7 +47,14 @@ function render(cells) {
         const tick = () => {
           if (++n < 8) return requestAnimationFrame(tick);
           const url = canvas.toDataURL('image/png');
-          root.unmount();
+          // 렌더 중에 정리하지 않도록 다음 틈에 정리
+          setTimeout(() => {
+            try {
+              root.unmount();
+            } catch {
+              /* 이미 정리됨 */
+            }
+          }, 0);
           resolve({ url, width, height, index: Object.fromEntries(cells.map((c, i) => [c.key, i])) });
         };
         requestAnimationFrame(tick);

@@ -56,6 +56,13 @@ export default function PlanetHud({ ownerId, onEmote }) {
   const done = missionDoneToday();
   const decorating = isMine && mode === 'decorate';
   const [picking, setPicking] = useState(false);
+  // 내 별에 돌아오면 그사이 받은 하트를 알려 준다
+  useEffect(() => {
+    if (!isMine) return;
+    const seen = profile.heartsSeen ?? hearts;
+    if (hearts > seen) showToast(`친구들이 내 별에 하트 ${hearts - seen}개를 남겼어요 ❤️`);
+    useGame.getState().setHeartsSeen(hearts);
+  }, [isMine, hearts]); // eslint-disable-line react-hooks/exhaustive-deps
   const [travelOpen, setTravelOpen] = useState(() => getSettings().travelOpen);
   useEffect(() => onSettings((s) => setTravelOpen(s.travelOpen)), []);
 
@@ -100,7 +107,7 @@ export default function PlanetHud({ ownerId, onEmote }) {
                     <span className="mission-cta-star">✦</span>
                     <span>
                       <b>오늘의 미션</b>
-                      <small>13문제 · 약 10분 · 별가루 받기</small>
+                      <small>20문제 · 약 15분 · 별가루 받기</small>
                     </span>
                   </button>
                 ) : (

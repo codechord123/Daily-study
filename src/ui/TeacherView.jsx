@@ -4,9 +4,7 @@ import { ROSTER, samplePlanet } from '../data/classroom';
 import { loadProfile, saveProfile, newProfile } from '../store/profileStore';
 import { getSettings, setSettings, onSettings } from '../store/classSettings';
 import { SUBJECT_META } from '../data/missions/grade5';
-import { SCHEDULE } from '../data/missions/grade5s2';
-import { MATH_UNITS } from '../engine/mathGen';
-import { curriculumPosition, unitTitles, buildDailyMission } from '../engine/dailyMission';
+import { curriculumPosition, unitTitles, buildDailyMission, UNIT_TITLES, MISSION_COUNTS } from '../engine/dailyMission';
 
 const SUBJECTS = ['math', 'english', 'korean', 'social', 'science'];
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : null);
@@ -80,6 +78,7 @@ export default function TeacherView() {
   const go = useGame((s) => s.go);
   const settings = useSettings();
   const [tick, setTick] = useState(0);
+  const [csv, setCsv] = useState(null);
   const today = todayKey();
   const pos = curriculumPosition(today);
   const titles = unitTitles(pos);
@@ -140,7 +139,9 @@ export default function TeacherView() {
   }, [rows]);
 
   const download = () => {
-    const blob = new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8' });
+    const text = toCSV(rows);
+    setCsv(text.replace('\ufeff', '')); // 파일 저장이 막힌 곳(미리보기 등)을 위해 복사 창도 띄운다
+    const blob = new Blob([text], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `나의작은별_학습기록_${today}.csv`;
@@ -148,20 +149,16 @@ export default function TeacherView() {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
 
-  const unitSelect = (key, list) => (
-    <select
-      id={`unit-${key}`}
-      value={settings.override[key] ?? 'auto'}
-      onChange={(e) => setSettings({ override: { [key]: e.target.value === 'auto' ? null : Number(e.target.value) } })}
-    >
-      <option value="auto">날짜로 자동</option>
-      {list.map((t, i) => (
-        <option key={t} value={i}>
-          {i + 1}. {t}
-        </option>
-      ))}
-    </select>
-  );
+  // 과목별 단원 고르기: 아무것도 안 고르면 날짜로 자동, 고르면 그 단원(들)에서만 출제
+  const toggleUnit = (subject, i) => {
+    const cur = Array.isArray(settings.override[subject]) ? settings.override[subject] : settings.override[subject] == null ? [] : [settings.override[subject]];
+    const next = cur.includes(i) ? cur.filter((x) => x !== i) : [...cur, i].sort((a, b) => a - b);
+    setSettings({ override: { [subject]: next.length ? next : null } });
+  };
+  const chosen = (subject) => {
+    const v = settings.override[subject];
+    return v == null ? [] : Array.isArray(v) ? v : [v];
+  };
 
   return (
     <div className="teacher">
@@ -255,24 +252,63 @@ export default function TeacherView() {
         <p className="muted small-note">지금은 이 기기에 저장된 기록만 보여요. Firebase를 연결하면 반 전체 기기의 기록이 모여요.</p>
       </section>
 
+      {csv && (
+        <div className="sheet-backdrop" style={{ position: 'fixed' }} onClick={() => setCsv(null)}>
+          <section className="records panel" onClick={(e) => e.stopPropagation()} aria-label="학습 기록 CSV">
+            <header className="records-head">
+              <h2 className="title">학습 기록 (CSV)</h2>
+              <button className="btn btn-icon btn-ghost" onClick={() => setCsv(null)} aria-label="닫기">✕</button>
+            </header>
+            <p className="muted">파일이 저장되지 않았다면 아래 내용을 복사해 엑셀이나 구글 시트에 붙여 넣으세요.</p>
+            <textarea id="csv-text" className="csv-box" readOnly value={csv} onFocus={(e) => e.target.select()} />
+            <button
+              className="btn btn-primary"
+              onClick={(e) => {
+                const ta = document.getElementById('csv-text');
+                navigator.clipboard?.writeText(csv).then(
+                  () => (e.target.textContent = '복사했어요 ✓'),
+                  () => ta.select(),
+                ) ?? ta.select();
+              }}
+            >
+              전체 복사
+            </button>
+          </section>
+        </div>
+      )}
+
+      <section className="t-panel">
+        <div className="t-panel-head">
+          <h2>출제 단원</h2>
+          <span className="muted">매일 {Object.values(MISSION_COUNTS).reduce((a, b) => a + b, 0)}문제 = {SUBJECTS.map((s) => `${SUBJECT_META[s].label} ${MISSION_COUNTS[s]}`).join(' · ')}</span>
+        </div>
+        <p className="muted">단원을 고르면 <b>고른 단원에서만</b> 문제가 나와요(여러 개 가능). 아무것도 고르지 않으면 학기 시작일로 진도를 계산해 지금 단원 위주로 내고 지난 단원을 복습시켜요.</p>
+        <div className="unit-picker">
+          {SUBJECTS.map((s) => (
+            <div key={s} className="unit-row">
+              <span className="unit-subj" style={{ '--c': SUBJECT_META[s].color }}>{SUBJECT_META[s].icon} {SUBJECT_META[s].label}</span>
+              <div className="unit-chips">
+                <button className={`unit-chip auto ${chosen(s).length ? '' : 'on'}`} onClick={() => setSettings({ override: { [s]: null } })}>
+                  날짜로 자동
+                </button>
+                {UNIT_TITLES[s].map((t, i) => (
+                  <button key={t} className={`unit-chip ${chosen(s).includes(i) ? 'on' : ''}`} onClick={() => toggleUnit(s, i)} aria-pressed={chosen(s).includes(i)}>
+                    {i + 1}. {t}
+                  </button>
+                ))}
+              </div>
+              <span className="unit-now">{chosen(s).length ? '고른 단원만' : `지금: ${titles[s]}`}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="t-panel">
         <h2>설정</h2>
         <div className="t-settings">
           <label htmlFor="sem-start">2학기 시작일</label>
           <input id="sem-start" type="date" value={settings.semesterStart} onChange={(e) => e.target.value && setSettings({ semesterStart: e.target.value })} />
           <span className="muted">지금 {pos.week + 1}주차</span>
-
-          <label htmlFor="unit-math">수학 단원</label>
-          {unitSelect('math', MATH_UNITS.map((u) => u.title))}
-          <span className="muted">지금: {titles.math}</span>
-
-          <label htmlFor="unit-social">사회 단원</label>
-          {unitSelect('social', SCHEDULE.social.titles)}
-          <span className="muted">지금: {titles.social}</span>
-
-          <label htmlFor="unit-science">과학 단원</label>
-          {unitSelect('science', SCHEDULE.science.titles)}
-          <span className="muted">지금: {titles.science}</span>
 
           <label htmlFor="travel">친구 별 여행</label>
           <button id="travel" className={`toggle ${settings.travelOpen ? 'on' : ''}`} onClick={() => setSettings({ travelOpen: !settings.travelOpen })} aria-pressed={settings.travelOpen}>
