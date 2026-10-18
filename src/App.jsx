@@ -48,7 +48,7 @@ export default function App() {
   const ownerId = screen === 'visit' ? visiting : profile?.sid;
 
   return (
-    <div className={`app paper-grain screen-${screen}`}>
+    <div className={`app screen-${screen}`}>
       <div className="canvas-wrap">
         <Canvas dpr={low ? [1, 1.25] : [1, 2]} camera={{ fov: 45, position: [0, 4, 7] }} gl={{ antialias: !low, powerPreference: 'high-performance' }}>
           <Suspense fallback={null}>

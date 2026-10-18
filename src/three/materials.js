@@ -86,9 +86,6 @@ export function planetMaterial(base, shade) {
         col *= 0.92 + pig2 * 0.18;
         float pool = smoothstep(0.02, 0.0, abs(fract(pig * 3.0) - 0.5) - 0.47);
         col = mix(col, uShade, pool * 0.25);
-        // 종이 결
-        float grain = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
-        col += (grain - 0.5) * 0.04;
         // 대기 가장자리 네온
         float rim = pow(1.0 - max(dot(n, normalize(vView)), 0.0), 3.0);
         col += uRim * rim * (0.55 + uHighlight * 0.6);
@@ -152,8 +149,6 @@ export function nebulaMaterial(colors) {
         col = mix(col, uA, smoothstep(0.08, 0.5, n2) * 0.38);
         col = mix(col, uB, smoothstep(0.12, 0.55, n3) * 0.32);
         col = mix(col, uC, smoothstep(0.25, 0.6, n1 * n2 * 4.0) * 0.22);
-        float grain = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
-        col += (grain - 0.5) * 0.025;
         gl_FragColor = vec4(col, 1.0);
         #include <colorspace_fragment>
       }`,
