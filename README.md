@@ -1,7 +1,7 @@
 # 나의 작은 별 (Daily Study)
 
 매일 아침 미션을 풀고 별가루를 모아 나만의 3D 별과 캐릭터를 꾸미고, 추진기를 메고 친구 별로 여행하는 초등 아침 학습 앱입니다.
-지금은 **5학년 2학기(2022 개정) 샘플 1개 반 · 로컬 데모** 단계예요.
+지금은 **5학년 2학기(2022 개정) 샘플 1개 반** 단계예요. 키 없이도 한 기기에서 바로 돌아가고, Firebase 키만 넣으면 반 전체 기기가 실시간으로 연결돼요 → [`docs/FIREBASE.md`](docs/FIREBASE.md)
 
 ## 실행
 
@@ -61,14 +61,17 @@ src/
   ui/         로그인, HUD, 미션, 꾸미기, 여행, 기록, 선생님 화면
 ```
 
-## Firebase로 옮길 때 바꿀 곳 (화면 코드는 그대로)
+## 반 전체 연결 (Firebase)
 
-| 지금 (로컬) | 교체 대상 |
-|---|---|
-| `store/profileStore.js` localStorage | Firestore `classes/{classId}/students`, `planets` |
-| `store/classSettings.js` | Firestore `classes/{classId}.settings` |
-| `services/presence.js` BroadcastChannel + 데모 봇 | Realtime DB `presence/{classId}/{planetId}/{sid}` |
-| `ui/Login.jsx` 학급코드+번호, 선생님 비밀번호 | Google / 쎈에듀 로그인, 교사 권한 |
-| `useGame.completeMission` 보상 계산 | Cloud Functions (보상 조작 방지) |
+설정 방법은 [`docs/FIREBASE.md`](docs/FIREBASE.md). 키가 없으면 각 기기 localStorage + 데모 친구로 동작하고, 키가 있으면 아래처럼 바뀌어요 (화면 코드는 그대로).
+
+| 담당 | 키 없음 (로컬) | 키 있음 (`services/cloud.js`) |
+|---|---|---|
+| 학생 별·기록 `store/profileStore.js` | localStorage | Firestore `classes/{classId}/students` |
+| 학급 설정 `store/classSettings.js` | localStorage | Firestore `classes/{classId}` |
+| 하트 | localStorage | Firestore `classes/{classId}/hearts` (increment) |
+| 실시간 함께 있기 `services/presence.js` | BroadcastChannel + 데모 봇 | Realtime DB `presence/{classId}` |
+
+판매 단계에서 남은 것: Google/쎈에듀 로그인과 교사 권한, 보안 규칙 좁히기, 보상 계산을 Cloud Functions로 옮기기.
 
 배포 계획(웹·Android·iOS)과 아이디어 메모는 `docs/ROADMAP.md`.
