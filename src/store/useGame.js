@@ -102,6 +102,13 @@ export const useGame = create((set, get) => {
       return gain;
     },
 
+    finishOnboarding() {
+      update((p) => {
+        p.onboarded = true;
+        return p;
+      });
+    },
+
     // 지금 있는 별에서 추진기를 메고 이륙
     launch() {
       const { visiting, profile } = get();

@@ -232,12 +232,14 @@ function Peer({ sid, ghost }) {
 }
 
 /* ---------- 미션 중엔 별을 카드 옆(가로)·위(세로)로 비켜 그린다 ---------- */
-function MissionViewOffset({ active, look }) {
+function MissionViewOffset({ active, look, decor }) {
   const { camera, size } = useThree();
   const k = useRef(0);
   useFrame((_, dt) => {
-    const goal = active || look ? 1 : 0;
-    if (Math.abs(k.current - goal) < 0.001 && !active && !look) {
+    const { width: vw, height: vh } = size;
+    const side = vw >= 900 && vw / vh > 1.1;
+    const goal = active || look || (decor && side) ? 1 : 0;
+    if (Math.abs(k.current - goal) < 0.001 && goal === 0) {
       if (camera.view?.enabled) {
         camera.clearViewOffset();
         k.current = 0;
@@ -249,8 +251,10 @@ function MissionViewOffset({ active, look }) {
     const wide = w / h > 1.1;
     // 확대 없이 화면만 비켜 그린다. 가로: 별을 왼쪽으로 / 세로: 별을 위로
     // 내 모습 꾸미기: 아래 꾸미기 창 위쪽에 캐릭터가 오도록 장면을 내린다
-    const ox = look ? 0 : wide ? w * 0.21 * k.current : 0;
-    const oy = look ? -h * 0.3 * k.current : wide ? 0 : h * 0.2 * k.current;
+    // 넓은 화면은 꾸미기 창이 오른쪽에 있으니 왼쪽으로, 좁은 화면은 아래 창 위로
+    const sideDecor = w >= 900 && wide;
+    const ox = look || decor ? (sideDecor ? w * 0.2 * k.current : 0) : wide ? w * 0.21 * k.current : 0;
+    const oy = look ? (sideDecor ? 0 : -h * 0.3 * k.current) : wide ? 0 : h * 0.2 * k.current;
     camera.setViewOffset(w, h, ox, oy, w, h);
   });
   useEffect(() => () => camera.clearViewOffset(), [camera]);
@@ -368,7 +372,7 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
         lookFocus={lookFocus}
       />
       {inMission && <MissionOrbit />}
-      <MissionViewOffset active={!!inMission} look={lookFocus} />
+      <MissionViewOffset active={!!inMission} look={lookFocus} decor={decorating} />
       {peerIds.map((sid, i) => (
         <Peer key={sid} sid={sid} ghost={i >= MAX_PEERS} />
       ))}

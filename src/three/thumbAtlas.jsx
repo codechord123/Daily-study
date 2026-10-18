@@ -1,39 +1,24 @@
-// 상점·가방의 소품 썸네일: 실제 3D 모델을 한 번만 그려 스프라이트 한 장으로 만든다.
-// (소품마다 WebGL 캔버스를 띄우면 크롬북이 버티지 못한다)
+// 썸네일 스프라이트: 실제 3D 모델을 한 번만 그려 그림 한 장으로 만든다.
+// (선택지마다 WebGL 캔버스를 띄우면 크롬북이 버티지 못한다)
 import { createRoot } from '@react-three/fiber';
 import { ITEMS } from '../data/items';
 import { MODELS } from './items/models';
+import Character from './Character';
+import Pet from './Pet';
+import Planet from './Planet';
+import { OPTION_SLOTS, DEFAULT_CHARACTER } from '../data/character';
+import { PLANET_DECO } from '../theme/tokens';
 
-export const THUMB = 128;
-export const COLS = 6;
-const ROWS = Math.ceil(ITEMS.length / COLS);
+export const THUMB = 112; // 칸 하나 크기(px)
+const COLS = 10;
 
-function AtlasScene() {
-  return (
-    <>
-      <ambientLight intensity={1} color="#d9d3ff" />
-      <directionalLight position={[3, 5, 4]} intensity={1.8} color="#fff1d6" />
-      {ITEMS.map((it, i) => {
-        const Model = MODELS[it.model];
-        const x = (i % COLS) - (COLS - 1) / 2;
-        const y = (ROWS - 1) / 2 - Math.floor(i / COLS);
-        return (
-          <group key={it.id} position={[x, y - 0.4, 0]} rotation={[0.35, -0.55, 0]} scale={1.9}>
-            <Model />
-          </group>
-        );
-      })}
-    </>
-  );
-}
-
-let atlasPromise;
-export function getAtlas() {
-  if (atlasPromise) return atlasPromise;
-  atlasPromise = new Promise((resolve) => {
-    const canvas = document.createElement('canvas');
+// 칸 목록 → 그림 한 장. cells: [{ key, node }]
+function render(cells) {
+  return new Promise((resolve) => {
+    const rows = Math.ceil(cells.length / COLS);
     const width = COLS * THUMB;
-    const height = ROWS * THUMB;
+    const height = rows * THUMB;
+    const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     const root = createRoot(canvas);
@@ -47,17 +32,85 @@ export function getAtlas() {
         events: undefined,
       })
       .then(() => {
-        root.render(<AtlasScene />);
-        // 몇 프레임 그린 뒤 이미지로 떠내고 정리
+        root.render(
+          <>
+            <ambientLight intensity={1} color="#d9d3ff" />
+            <directionalLight position={[3, 5, 4]} intensity={1.8} color="#fff1d6" />
+            {cells.map((c, i) => (
+              <group key={c.key} position={[(i % COLS) - (COLS - 1) / 2, (rows - 1) / 2 - Math.floor(i / COLS), 0]}>
+                {c.node}
+              </group>
+            ))}
+          </>,
+        );
         let n = 0;
         const tick = () => {
-          if (++n < 6) return requestAnimationFrame(tick);
+          if (++n < 8) return requestAnimationFrame(tick);
           const url = canvas.toDataURL('image/png');
           root.unmount();
-          resolve({ url, width, height });
+          resolve({ url, width, height, index: Object.fromEntries(cells.map((c, i) => [c.key, i])) });
         };
         requestAnimationFrame(tick);
       });
   });
-  return atlasPromise;
 }
+
+// ---------- 그릴 내용 ----------
+const HEAD_SLOTS = new Set(['hat', 'eyes', 'hairStyle']);
+
+function charCell(slot, id) {
+  if (slot === 'pet')
+    return id === 'none' ? null : (
+      <group position={[-0.3 * 2.6, -0.32, 0]} rotation={[0.25, -0.5, 0]} scale={2.6}>
+        <Pet type={id} />
+      </group>
+    );
+  const look = { ...DEFAULT_CHARACTER, [slot]: id };
+  if (slot === 'hat' || slot === 'eyes') look.hairStyle = 'bob';
+  if (slot === 'acc' && id.endsWith('Wings')) look.acc = id;
+  const back = slot === 'cape' || (slot === 'acc' && id.endsWith('Wings')) || id === 'backpack';
+  const head = HEAD_SLOTS.has(slot);
+  return (
+    <group position={head ? [0, -0.37 * 2.3 - 0.06, 0] : [0, -0.48, 0]} rotation={[0.15, back ? Math.PI * 0.8 : -0.35, 0]} scale={head ? 2.3 : 1.45}>
+      <Character look={look} noPet />
+    </group>
+  );
+}
+
+function decoCell(slot, id) {
+  const props = { tint: 'mint', ring: 'none', moon: 'none', aura: 'cyan', pattern: 'none', [slot]: id };
+  return (
+    <group rotation={[0.35, 0.3, 0]}>
+      <Planet {...props} radius={slot === 'ring' || slot === 'moon' ? 0.25 : 0.4} detail={32} />
+    </group>
+  );
+}
+
+const cache = {};
+let queue = Promise.resolve();
+// 그래픽 부담을 줄이려고 한 번에 한 장씩 차례로 만든다
+export function getAtlas(kind = 'items') {
+  if (cache[kind]) return cache[kind];
+  let cells;
+  if (kind === 'items') {
+    cells = ITEMS.map((it) => {
+      const Model = MODELS[it.model];
+      return { key: it.id, node: <group position={[0, -0.4, 0]} rotation={[0.35, -0.55, 0]} scale={1.9}><Model /></group> };
+    });
+  } else if (kind === 'char') {
+    cells = Object.entries(OPTION_SLOTS).flatMap(([slot, def]) =>
+      def.options.map((o) => ({ key: `${slot}:${o.id}`, node: charCell(slot, o.id) })).filter((c) => c.node),
+    );
+  } else {
+    cells = Object.entries(PLANET_DECO).flatMap(([slot, list]) => list.map((o) => ({ key: `${slot}:${o.id}`, node: decoCell(slot, o.id) })));
+  }
+  cache[kind] = queue = queue.then(() => render(cells));
+  return cache[kind];
+}
+
+// 로그인 뒤 한가할 때 미리 만들어 두기
+export function prewarmAtlases() {
+  const idle = window.requestIdleCallback ?? ((fn) => setTimeout(fn, 1500));
+  idle(() => ['items', 'char', 'deco'].forEach((k) => getAtlas(k)));
+}
+export { COLS };

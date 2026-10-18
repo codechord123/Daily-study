@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import Planet from './Planet';
+import Planet, { TAP_SLOP } from './Planet';
 import Character from './Character';
 import { ROSTER, spacePosition, SPACE_BOUNDS, studentById } from '../data/classroom';
 import { getPlanet, onPlanetChange } from '../store/profileStore';
@@ -26,7 +26,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 
 export const PLANET_POS = Object.fromEntries(ROSTER.map((s, i) => [s.id, new THREE.Vector3(...spacePosition(i))]));
 
-function FlightPlanet({ student, isMine, isTarget, online, playerPos, low }) {
+function FlightPlanet({ student, isMine, isTarget, isPicked, online, playerPos, low }) {
   const [planet, setPlanet] = useState(() => getPlanet(student.id));
   const [near, setNear] = useState(false);
   const [labelOn, setLabelOn] = useState(true);
@@ -53,13 +53,27 @@ function FlightPlanet({ student, isMine, isTarget, online, playerPos, low }) {
   });
 
   return (
-    <group position={center}>
+    <group
+      position={center}
+      onClick={(e) => {
+        if (e.delta > TAP_SLOP) return;
+        e.stopPropagation();
+        useUI.getState().setFlightPick(student.id);
+      }}
+      onPointerOver={() => (document.body.style.cursor = 'pointer')}
+      onPointerOut={() => (document.body.style.cursor = '')}
+    >
       <group ref={spin}>
         <Planet tint={planet.tint} ring={planet.ring} moon={planet.moon} aura={planet.aura} pattern={planet.pattern} items={near ? planet.items : null} detail={near ? 64 : 28} highlight={online ? 1 : 0} />
       </group>
       {(isMine || online > 0) && (
         <mesh rotation={[Math.PI / 2, 0, 0]} material={glow(isMine ? NEON.gold : NEON.cyan, 1.2)}>
           <torusGeometry args={[R * 1.5, 0.05, 6, 64]} />
+        </mesh>
+      )}
+      {isPicked && !isTarget && (
+        <mesh rotation={[Math.PI / 2, 0, 0]} material={glow('#ffffff', 1.3)}>
+          <torusGeometry args={[R * 1.75, 0.04, 6, 64]} />
         </mesh>
       )}
       {isTarget && (
@@ -104,6 +118,7 @@ function FlyingPeer({ sid }) {
 export default function SpaceFlight({ me, launchFrom, onLand, low }) {
   const { camera } = useThree();
   const target = useUI((s) => s.flightTarget);
+  const picked = useUI((s) => s.flightPick);
   const setNear = useUI((s) => s.setNear);
   const peerIds = usePeerIds('space');
   const [online, setOnline] = useState(presence.onlineMap);
@@ -143,7 +158,10 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
   }, []);
   useEffect(() => {
     presence.join(me.sid, 'space', me.planet.character);
-    return () => setNear(null);
+    return () => {
+      setNear(null);
+      useUI.getState().setFlightPick(null);
+    };
   }, [me.sid, me.planet.character, setNear]);
   useEffect(
     () =>
@@ -185,11 +203,19 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
       const autoLift = st.takeoff < 1 ? (1 - st.takeoff) * 1.2 : 0;
 
       st.yaw -= inp.x * TURN_RATE * dt;
-      const want = inp.y >= 0 ? inp.y * MAX_SPEED : inp.y * BACK_SPEED;
-      st.speed = THREE.MathUtils.damp(st.speed, want, inp.y ? 2.2 : 1.4, dt);
-      st.vy = THREE.MathUtils.damp(st.vy, inp.lift * LIFT_SPEED + autoLift * LIFT_SPEED, 3, dt);
-      st.pos.addScaledVector(fwd, st.speed * dt);
-      st.pos.y += st.vy * dt;
+      if (st.boost) {
+        // 지나가기: 입력과 상관없이 별에서 멀어진다
+        st.pos.addScaledVector(st.boost.dir, MAX_SPEED * 1.2 * dt);
+        st.boost.t -= dt;
+        st.speed = MAX_SPEED * 0.6;
+        if (st.boost.t <= 0) st.boost = null;
+      } else {
+        const want = inp.y >= 0 ? inp.y * MAX_SPEED : inp.y * BACK_SPEED;
+        st.speed = THREE.MathUtils.damp(st.speed, want, inp.y ? 2.2 : 1.4, dt);
+        st.vy = THREE.MathUtils.damp(st.vy, inp.lift * LIFT_SPEED + autoLift * LIFT_SPEED, 3, dt);
+        st.pos.addScaledVector(fwd, st.speed * dt);
+        st.pos.y += st.vy * dt;
+      }
 
       // 우주 경계와 별 충돌
       st.pos.y = THREE.MathUtils.clamp(st.pos.y, -25, 25);
@@ -221,11 +247,11 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
         if (key) sound.sfx('near');
       }
       if (input.takeLeaveRequest() && inRange) {
-        // 별 반대쪽으로 방향을 틀고 힘껏 밀어낸다
-        const away = st.pos.clone().sub(PLANET_POS[nearest]);
-        st.yaw = Math.atan2(away.x, away.z);
-        st.speed = MAX_SPEED;
-        st.vy = Math.sign(away.y || 1) * 2;
+        // 별 반대쪽(3D 방향 그대로)으로 1.5초 동안 힘껏 밀어낸다
+        const away = st.pos.clone().sub(PLANET_POS[nearest]).normalize();
+        const flat = Math.hypot(away.x, away.z);
+        if (flat > 0.2) st.yaw = Math.atan2(away.x, away.z);
+        st.boost = { dir: away, t: 1.5 };
         st.ignore = nearest;
         st.near = null;
         setNear(null);
@@ -288,6 +314,7 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
           student={st}
           isMine={st.id === me.sid}
           isTarget={st.id === target}
+          isPicked={st.id === picked}
           online={online[st.id] ?? 0}
           playerPos={playerPos}
           low={low}

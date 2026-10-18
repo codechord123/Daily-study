@@ -4,7 +4,19 @@ import { useUI } from '../store/useUI';
 import { ITEMS, ITEM_BY_ID, ITEM_CATEGORIES } from '../data/items';
 import { OPTION_SLOTS, COLOR_SLOTS, PALETTE, LOOK_GROUPS, normalizeLook, SPECIES_WITH_HAIR } from '../data/character';
 import { PLANET_TINTS, PLANET_DECO } from '../theme/tokens';
-import ItemThumb from './ItemThumb';
+import ItemThumb, { Thumb } from './ItemThumb';
+
+// 그림 카드 하나: 썸네일 + 이름 + 가격(안 가진 것만)
+function OptCard({ kind, k, name, price, owned, on, onClick }) {
+  return (
+    <button className={`opt-card ${on ? 'on' : ''} ${owned ? '' : 'locked'}`} onClick={onClick} data-nosfx>
+      <Thumb kind={kind} k={k} size={56} fallback={<span className="opt-none">없음</span>} />
+      <span className="opt-name">{name}</span>
+      {!owned && <span className="opt-price">✦{price}</span>}
+      {on && <span className="opt-check" aria-hidden>✓</span>}
+    </button>
+  );
+}
 import { sfx } from '../services/sound';
 
 const TABS = [
@@ -110,13 +122,9 @@ function Tints() {
         return (
           <div key={slot} className="look-row">
             <span className="look-label">{DECO_LABEL[slot]}</span>
-            <div className="swatches">
+            <div className="opt-grid">
               {parts.map((p) => (
-                <button key={p.id} className={`pill ${cur === p.id ? 'on' : ''}`} onClick={() => pickDeco(slot, p)} data-nosfx>
-                  {p.color && p.color !== 'rainbow' && <span className="pill-dot" style={{ background: p.color }} />}
-                  {p.name}
-                  {!owned(slot, p) && <small> ✦{p.price}</small>}
-                </button>
+                <OptCard key={p.id} kind="deco" k={`${slot}:${p.id}`} name={p.name} price={p.price} owned={owned(slot, p)} on={cur === p.id} onClick={() => pickDeco(slot, p)} />
               ))}
             </div>
           </div>
@@ -183,12 +191,9 @@ function Looks() {
         ) : (
           <div key={slot} className="look-row">
             <span className="look-label">{OPTION_SLOTS[slot].label}</span>
-            <div className="swatches">
+            <div className="opt-grid">
               {OPTION_SLOTS[slot].options.map((p) => (
-                <button key={p.id} className={`pill ${look[slot] === p.id ? 'on' : ''}`} onClick={() => tryWear(slot, p)}>
-                  {p.name}
-                  {!owned(slot, p) && <small> ✦{p.price}</small>}
-                </button>
+                <OptCard key={p.id} kind="char" k={`${slot}:${p.id}`} name={p.name} price={p.price} owned={owned(slot, p)} on={look[slot] === p.id} onClick={() => tryWear(slot, p)} />
               ))}
             </div>
           </div>
@@ -249,7 +254,7 @@ export default function DecorPanel({ onDone }) {
               </button>
             ))}
           </div>
-          <button className="btn btn-primary btn-sm" onClick={onDone}>다 꾸몄어요</button>
+          <button className="btn btn-primary btn-sm" onClick={onDone}>완료</button>
         </header>
         {hint && <p className={`decor-hint ${heldItem || movingUid ? 'is-active' : ''}`}>{hint}</p>}
         <div className="decor-body">

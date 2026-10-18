@@ -6,7 +6,7 @@ import { getHearts, addHeart, onPlanetChange } from '../store/profileStore';
 import * as presence from '../services/presence';
 import DecorPanel from './DecorPanel';
 import TopBar from './TopBar';
-import FriendPicker from './FriendPicker';
+import TravelSheet from './TravelSheet';
 import ZoomButtons from './ZoomButtons';
 import { getSettings, onSettings } from '../store/classSettings';
 
@@ -47,8 +47,8 @@ function EmoteBar({ onEmote }) {
 }
 
 export default function PlanetHud({ ownerId, onEmote }) {
-  const { profile, mode, setMode, visit, launch, startMission, canGiveHeart, markHeartGiven, missionDoneToday } = useGame();
-  const { clearDecor, showToast } = useUI();
+  const { profile, mode, setMode, startMission, canGiveHeart, markHeartGiven, missionDoneToday } = useGame();
+  const { clearDecor, showToast, startWarp } = useUI();
   const isMine = ownerId === profile.sid;
   const owner = studentById(ownerId);
   const here = useHereCount(ownerId);
@@ -108,10 +108,7 @@ export default function PlanetHud({ ownerId, onEmote }) {
                 )}
                 <button className="btn" onClick={() => setMode('decorate')}>🎨 꾸미기</button>
                 {travelOpen ? (
-                  <>
-                    <button className="btn" onClick={launch}>🚀 여행</button>
-                    <button className="btn" onClick={() => setPicking((p) => !p)}>⚡ 바로 가기</button>
-                  </>
+                  <button className="btn" onClick={() => setPicking(true)}>🚀 여행</button>
                 ) : (
                   <span className="chip locked">🔒 지금은 여행 시간이 아니에요</span>
                 )}
@@ -121,17 +118,12 @@ export default function PlanetHud({ ownerId, onEmote }) {
                 <button className="btn btn-heart" data-nosfx onClick={giveHeart} disabled={!canGiveHeart(ownerId)}>
                   {canGiveHeart(ownerId) ? '❤️ 하트 남기기' : '❤️ 하트 보냄'}
                 </button>
-                {travelOpen && (
-                  <>
-                    <button className="btn" onClick={launch}>🚀 날아가기</button>
-                    <button className="btn" onClick={() => setPicking((p) => !p)}>⚡ 바로 가기</button>
-                  </>
-                )}
-                <button className="btn" onClick={() => visit(profile.sid)}>🏠 내 별</button>
+                {travelOpen && <button className="btn" onClick={() => setPicking(true)}>🚀 여행</button>}
+                <button className="btn" onClick={() => startWarp(profile.sid)}>🏠 내 별로</button>
               </>
             )}
           </div>
-          {picking && <FriendPicker meId={profile.sid} here={ownerId} onClose={() => setPicking(false)} />}
+          {picking && <TravelSheet here={ownerId} onClose={() => setPicking(false)} />}
           <p className="walk-hint">별을 누르면 그곳으로 걸어가요 · 끌어서 별을 돌려 봐요</p>
         </>
       )}

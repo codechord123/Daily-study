@@ -13,6 +13,9 @@ import Toast from './ui/Toast';
 import WarpOverlay from './ui/WarpOverlay';
 import RecordsSheet from './ui/RecordsSheet';
 import TeacherView from './ui/TeacherView';
+import Onboarding from './ui/Onboarding';
+import SceneGuard, { webglAvailable } from './ui/SceneGuard';
+import { prewarmAtlases } from './three/thumbAtlas';
 import { useGame } from './store/useGame';
 import { useUI } from './store/useUI';
 import * as presence from './services/presence';
@@ -24,8 +27,14 @@ export default function App() {
   const quality = useUI((s) => s.quality);
   const low = quality === 'low';
   const [emote, setEmote] = useState(null);
+  const [ready, setReady] = useState(false); // 3D 첫 화면이 그려졌는지
+  const [lost, setLost] = useState(false); // 그래픽 연결이 끊김
+  const [gl3d] = useState(webglAvailable);
 
   useEffect(() => restoreSession(), [restoreSession]);
+  useEffect(() => {
+    if (profile && gl3d) prewarmAtlases();
+  }, [!!profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (screen === 'login') presence.leave();
@@ -54,7 +63,20 @@ export default function App() {
   return (
     <div className={`app screen-${screen}`}>
       <div className="canvas-wrap">
-        <Canvas dpr={low ? [1, 1.25] : [1, 2]} camera={{ fov: 45, position: [0, 4, 7] }} gl={{ antialias: !low, powerPreference: 'high-performance' }}>
+        {gl3d ? (
+        <SceneGuard>
+        <Canvas
+          dpr={low ? [1, 1.25] : [1, 2]}
+          camera={{ fov: 45, position: [0, 4, 7] }}
+          gl={{ antialias: !low, powerPreference: 'high-performance' }}
+          onCreated={({ gl }) => {
+            requestAnimationFrame(() => setReady(true));
+            gl.domElement.addEventListener('webglcontextlost', (e) => {
+              e.preventDefault();
+              setLost(true);
+            });
+          }}
+        >
           <Suspense fallback={null}>
             <SpaceBackdrop low={low} />
             {!profile && <LoginBackdrop />}
@@ -68,6 +90,24 @@ export default function App() {
             )}
           </Suspense>
         </Canvas>
+        </SceneGuard>
+        ) : (
+          <div className="scene-fallback">
+            <p>이 기기에서는 3D 별을 보여 줄 수 없어요.<br />미션과 기록은 그대로 할 수 있어요.</p>
+          </div>
+        )}
+        {gl3d && !ready && (
+          <div className="splash" aria-live="polite">
+            <div className="splash-star" />
+            <p>별을 불러오는 중…</p>
+          </div>
+        )}
+        {lost && (
+          <div className="splash">
+            <p>화면이 잠깐 멈췄어요.</p>
+            <button className="btn btn-primary" onClick={() => location.reload()}>다시 불러오기</button>
+          </div>
+        )}
       </div>
 
       <div className="ui-layer">
@@ -77,6 +117,7 @@ export default function App() {
         {profile && screen === 'space' && <FlightHud />}
         {profile && screen === 'mission' && <MissionView key={missionMode?.at ?? 'daily'} />}
         {profile && sheet === 'records' && screen !== 'mission' && <RecordsSheet />}
+        {profile && !profile.onboarded && screen === 'home' && <Onboarding />}
         <WarpOverlay />
         <Toast />
       </div>

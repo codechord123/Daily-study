@@ -37,6 +37,8 @@ export const useUI = create((set) => ({
   // 우주 비행
   flightTarget: null, // 목적지 별 sid (화살표 안내)
   setFlightTarget: (sid) => set({ flightTarget: sid }),
+  flightPick: null, // 비행 중 3D에서 누른 별
+  setFlightPick: (sid) => set({ flightPick: sid }),
   near: null, // 착륙 가능한 거리에 있는 별 sid
   setNear: (sid) => set({ near: sid }),
 

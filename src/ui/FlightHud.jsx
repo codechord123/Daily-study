@@ -4,7 +4,7 @@ import { useUI } from '../store/useUI';
 import { studentById } from '../data/classroom';
 import * as input from '../services/flightInput';
 import TopBar from './TopBar';
-import FriendPicker from './FriendPicker';
+import TravelSheet from './TravelSheet';
 import ZoomButtons from './ZoomButtons';
 
 const JOY_R = 52; // 조이스틱이 움직이는 반경(px)
@@ -72,8 +72,9 @@ function HoldButton({ value, children, label }) {
 }
 
 export default function FlightHud() {
-  const { profile, visit } = useGame();
-  const { near, flightTarget, setFlightTarget } = useUI();
+  const { profile } = useGame();
+  const { near, flightTarget, setFlightTarget, flightPick, setFlightPick, startWarp } = useUI();
+  const pickName = flightPick && (flightPick === profile.sid ? '내 별' : `${studentById(flightPick)?.nickname}의 별`);
   const [picking, setPicking] = useState(false);
   const nearName = near && (near === profile.sid ? '내 별' : `${studentById(near)?.nickname}의 별`);
   const targetName = flightTarget && (flightTarget === profile.sid ? '내 별' : studentById(flightTarget)?.nickname);
@@ -96,10 +97,34 @@ export default function FlightHud() {
         <button className={`chip target-chip ${flightTarget ? 'on' : ''}`} onClick={() => setPicking((p) => !p)}>
           🧭 {targetName ? `목적지: ${targetName}` : '목적지 고르기'}
         </button>
-        <button className="chip" onClick={() => visit(profile.sid)}>🏠 바로 집으로</button>
+        <button className="chip" onClick={() => startWarp(profile.sid)}>🏠 바로 집으로</button>
       </div>
-      {picking && <FriendPicker meId={profile.sid} guide onClose={() => setPicking(false)} />}
+      {picking && <TravelSheet flying onClose={() => setPicking(false)} />}
 
+      {flightPick && !near && (
+        <div className="pick-card panel rise" key={flightPick}>
+          <span className="pick-title">{pickName}</span>
+          <button
+            className="sc-btn"
+            onClick={() => {
+              setFlightTarget(flightPick);
+              setFlightPick(null);
+            }}
+          >
+            🧭 길 안내
+          </button>
+          <button
+            className="sc-btn sc-warp"
+            onClick={() => {
+              startWarp(flightPick);
+              setFlightPick(null);
+            }}
+          >
+            ⚡ 바로 가기
+          </button>
+          <button className="btn btn-icon btn-ghost" onClick={() => setFlightPick(null)} aria-label="닫기">✕</button>
+        </div>
+      )}
       {near && (
         <div className="land-wrap">
           <button className="mission-cta land-cta rise" onClick={input.requestLand}>
