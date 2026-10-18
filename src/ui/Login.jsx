@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { ROSTER, SAMPLE_CLASS } from '../data/classroom';
 import { useGame } from '../store/useGame';
 import { loadProfile } from '../store/profileStore';
+import { getSettings } from '../store/classSettings';
 
 // 샘플 로그인: 학급 코드 → 내 번호. (나중에 Google/쎈에듀 로그인으로 교체)
 export default function Login() {
   const login = useGame((s) => s.login);
+  const go = useGame((s) => s.go);
+  const [pin, setPin] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState('code');
   const [err, setErr] = useState('');
@@ -25,7 +28,25 @@ export default function Login() {
         <h1 className="title login-title">나의 작은 별</h1>
       </header>
 
-      {step === 'code' ? (
+      {step === 'teacher' ? (
+        <form
+          className="panel login-card rise"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (pin === getSettings().teacherPin) go('teacher');
+            else setErr('비밀번호가 맞지 않아요');
+          }}
+        >
+          <label className="field-label" htmlFor="pin">선생님 비밀번호</label>
+          <input id="pin" className="code-input" type="password" inputMode="numeric" value={pin} onChange={(e) => setPin(e.target.value)} maxLength={8} autoComplete="off" />
+          {err && <p className="field-err">{err}</p>}
+          <button className="btn btn-primary btn-block" type="submit" disabled={!pin}>
+            선생님 화면 열기
+          </button>
+          <p className="field-hint">샘플 비밀번호는 <b>0000</b> 이에요</p>
+          <button type="button" className="btn btn-ghost" onClick={() => (setStep('code'), setErr(''))}>← 학생 로그인</button>
+        </form>
+      ) : step === 'code' ? (
         <form className="panel login-card rise" onSubmit={submitCode} style={{ animationDelay: '120ms' }}>
           <label className="field-label" htmlFor="code">학급 코드</label>
           <input
@@ -43,6 +64,9 @@ export default function Login() {
             들어가기
           </button>
           <p className="field-hint">샘플 학급 코드는 <b>STAR5</b> 예요</p>
+          <button type="button" className="btn btn-ghost teacher-link" onClick={() => (setStep('teacher'), setErr(''))}>
+            🧑‍🏫 선생님이세요?
+          </button>
         </form>
       ) : (
         <div className="panel login-card login-pick rise">

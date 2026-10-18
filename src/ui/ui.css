@@ -604,3 +604,57 @@
   .records { padding: var(--s-4); }
   .topbar .chip-btn { display: none; }
 }
+
+/* ================= 선생님 화면 ================= */
+.teacher {
+  position: absolute; inset: 0; overflow-y: auto; z-index: 5;
+  background: rgba(10, 13, 38, 0.96);
+  padding: calc(var(--s-5) + env(safe-area-inset-top)) max(16px, 4vw) var(--s-6);
+  display: grid; gap: var(--s-5); align-content: start; user-select: text;
+}
+.teacher-head { display: flex; justify-content: space-between; align-items: end; gap: var(--s-3); flex-wrap: wrap; }
+.teacher-head h1 { margin: 2px 0 0; font-size: clamp(26px, 3vw, 34px); }
+.t-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-3); }
+.t-card { display: grid; gap: 6px; padding: var(--s-4); border-radius: var(--r-md); background: rgba(255,255,255,.05); border: 1px solid var(--panel-line); align-content: start; }
+.t-card b { font-family: var(--font-title); font-size: 34px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.t-card b small { font-size: 18px; color: var(--ink-muted); }
+.t-card span { color: var(--ink-muted); font-size: 14px; }
+.t-card.wide { grid-column: span 1; }
+.t-label { font-size: 14px; color: var(--ink) !important; font-weight: 700; }
+.t-subj { display: grid; gap: 6px; }
+.t-subj-item { display: grid; grid-template-columns: 34px 1fr 40px; gap: 6px; align-items: center; font-size: 13px; }
+.t-subj-item em { font-style: normal; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-muted); }
+.t-weak { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+.t-weak em { font-style: normal; color: var(--bad); margin-left: 4px; }
+.t-panel { display: grid; gap: var(--s-3); padding: var(--s-4); border-radius: var(--r-lg); background: rgba(255,255,255,.04); border: 1px solid var(--panel-line); }
+.t-panel h2 { margin: 0; font-size: 18px; }
+.t-panel-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.t-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.t-table-wrap { overflow-x: auto; }
+.t-table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; min-width: 760px; }
+.t-table th { text-align: left; font-weight: 600; color: var(--ink-muted); padding: 8px; border-bottom: 1px solid var(--panel-line); white-space: nowrap; }
+.t-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,.05); white-space: nowrap; }
+.t-table tr.none td { color: rgba(169,176,214,.5); }
+.t-table td.low { color: var(--bad); font-weight: 700; }
+.ok-pill { padding: 2px 8px; border-radius: 999px; background: rgba(143,227,176,.18); color: var(--good); }
+.no-pill { padding: 2px 8px; border-radius: 999px; background: rgba(255,154,154,.15); color: var(--bad); }
+.demo-tag { margin-left: 6px; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: rgba(195,178,236,.25); color: var(--lavender); }
+.small-note { font-size: 13px; }
+.t-settings { display: grid; grid-template-columns: 140px minmax(0, 260px) 1fr; gap: var(--s-3) var(--s-4); align-items: center; }
+.t-settings label { font-size: 15px; }
+.t-settings input, .t-settings select {
+  height: 44px; padding: 0 12px; border-radius: var(--r-sm); border: 1px solid var(--panel-line);
+  background: rgba(0,0,0,.3); color: var(--ink); font-family: inherit; font-size: 15px; color-scheme: dark;
+}
+.toggle { width: 56px; height: 32px; border-radius: 16px; border: 1px solid var(--panel-line); background: rgba(255,255,255,.1); position: relative; cursor: pointer; padding: 0; }
+.toggle span { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: var(--ink-muted); transition: transform 200ms var(--ease-soft), background 200ms; }
+.toggle.on { background: rgba(143,227,176,.35); }
+.toggle.on span { transform: translateX(24px); background: var(--good); }
+.teacher-link { font-size: 14px; color: var(--ink-muted); min-height: 40px; }
+.chip.locked { color: var(--ink-muted); min-height: 52px; }
+@media (max-width: 900px) { .t-cards { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) {
+  .t-cards { grid-template-columns: 1fr; }
+  .t-settings { grid-template-columns: 1fr; gap: 6px; }
+  .t-settings .muted { margin-bottom: var(--s-2); }
+}

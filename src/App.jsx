@@ -12,6 +12,7 @@ import MissionView from './ui/MissionView';
 import Toast from './ui/Toast';
 import WarpOverlay from './ui/WarpOverlay';
 import RecordsSheet from './ui/RecordsSheet';
+import TeacherView from './ui/TeacherView';
 import { useGame } from './store/useGame';
 import { useUI } from './store/useUI';
 import * as presence from './services/presence';
@@ -70,7 +71,8 @@ export default function App() {
       </div>
 
       <div className="ui-layer">
-        {!profile && <Login />}
+        {!profile && screen !== 'teacher' && <Login />}
+        {screen === 'teacher' && <TeacherView />}
         {profile && (screen === 'home' || screen === 'visit') && <PlanetHud ownerId={ownerId} onEmote={sendEmote} />}
         {profile && screen === 'space' && <FlightHud />}
         {profile && screen === 'mission' && <MissionView key={missionMode?.at ?? 'daily'} />}

@@ -2,7 +2,8 @@
 // 날짜로 2학기 진도(지금 단원)를 계산해, 지금 배우는 단원 위주로 + 지난 단원 복습을 섞는다.
 import { seeded, shuffle, randInt } from './rng';
 import { makeMathSet, MATH_UNITS } from './mathGen';
-import { SEMESTER, SCHEDULE, SOCIAL, SCIENCE, KOREAN, ENGLISH_WORDS, ENGLISH_EXPRESSIONS } from '../data/missions/grade5s2';
+import { getSettings } from '../store/classSettings';
+import { SCHEDULE, SOCIAL, SCIENCE, KOREAN, ENGLISH_WORDS, ENGLISH_EXPRESSIONS } from '../data/missions/grade5s2';
 
 const INQUIRY_ROTATION = [
   ['korean', 'social', 'science'],
@@ -24,12 +25,15 @@ function unitAt(weeks, week) {
 
 /** 날짜 → 2학기 몇 주차, 과목별 지금 단원 */
 export function curriculumPosition(dateKey) {
-  const week = Math.max(0, Math.floor((new Date(dateKey) - new Date(SEMESTER.start)) / WEEK_MS));
+  const { semesterStart, override } = getSettings();
+  const week = Math.max(0, Math.floor((new Date(dateKey) - new Date(semesterStart)) / WEEK_MS));
+  // 선생님이 단원을 직접 정했으면 그것을 따른다
+  const pick = (key, auto) => (override?.[key] ?? null) === null ? auto : override[key];
   return {
     week,
-    math: unitAt(SCHEDULE.math, week),
-    social: unitAt(SCHEDULE.social.weeks, week),
-    science: unitAt(SCHEDULE.science.weeks, week),
+    math: pick('math', unitAt(SCHEDULE.math, week)),
+    social: pick('social', unitAt(SCHEDULE.social.weeks, week)),
+    science: pick('science', unitAt(SCHEDULE.science.weeks, week)),
   };
 }
 
@@ -56,13 +60,13 @@ export function englishSet(r, count, week) {
     const pool = shuffle(r, ENGLISH_WORDS.filter((w) => w[0] !== en)).slice(0, 3);
     const right = toKo ? ko : en;
     const choices = shuffle(r, [right, ...pool.map((w) => (toKo ? w[1] : w[0]))]);
-    return { subject: 'english', kind: 'choice', prompt: toKo ? en : ko, sub: toKo ? '이 단어의 뜻은?' : '알맞은 영어 단어는?', big: true, choices, answer: choices.indexOf(right) };
+    return { subject: 'english', unit: '단어', kind: 'choice', prompt: toKo ? en : ko, sub: toKo ? '이 단어의 뜻은?' : '알맞은 영어 단어는?', big: true, choices, answer: choices.indexOf(right) };
   });
   // 마지막 한 문제는 생활 표현
   const [en, ko] = ENGLISH_EXPRESSIONS[randInt(r, 0, ENGLISH_EXPRESSIONS.length - 1)];
   const others = shuffle(r, ENGLISH_EXPRESSIONS.filter((e) => e[0] !== en)).slice(0, 3).map((e) => e[1]);
   const choices = shuffle(r, [ko, ...others]);
-  qs.push({ subject: 'english', kind: 'choice', prompt: en, sub: '이 표현의 뜻은?', choices, answer: choices.indexOf(ko) });
+  qs.push({ subject: 'english', unit: '생활 표현', kind: 'choice', prompt: en, sub: '이 표현의 뜻은?', choices, answer: choices.indexOf(ko) });
   return qs;
 }
 
