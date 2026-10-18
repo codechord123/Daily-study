@@ -143,7 +143,7 @@ export const SCIENCE = [
   { unit: 3, kind: 'ox', prompt: '석회수와 비눗물은 염기성 용액이다.', answer: true },
   { unit: 3, kind: 'choice', prompt: '속이 쓰릴 때 먹는 제산제는 어떤 성질을 이용한 것일까요?', choices: ['염기성으로 위산(산성)을 약하게 한다', '산성을 더 강하게 한다', '물에 녹지 않는다', '색깔을 바꾼다'], answer: 0 },
   { unit: 3, kind: 'ox', prompt: '삶은 달걀흰자는 묽은 수산화 나트륨 용액에 넣으면 녹는다.', answer: true },
-  { unit: 3, kind: 'choice', prompt: '변기용 세제(산성)를 쓴 뒤 남은 성분을 약하게 하는 데 쓸 수 있는 것은?', choices: ['염기성 세제', '식초', '레몬즙', '탄산수'], answer: 0 },
+  { unit: 3, kind: 'choice', prompt: '양치할 때 쓰는 치약은 주로 어떤 성질을 띨까요?', choices: ['약한 염기성', '강한 산성', '약한 산성', '성질이 없다'], answer: 0, explain: '치약은 약한 염기성이라 입속의 산성 물질을 약하게 해 줘요.' },
 ];
 
 export const KOREAN = [
