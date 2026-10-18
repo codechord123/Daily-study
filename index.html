@@ -17,7 +17,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- 앱 파일을 받는 동안 보이는 화면 (React가 그리면 자동으로 바뀜) -->
+      <div style="position:fixed;inset:0;display:grid;place-items:center;background:#0b0f2a;color:#f4efe6;font-family:'Gowun Dodum',system-ui,sans-serif;text-align:center">
+        <div>
+          <div style="font-size:56px;animation:ds-spin 2.4s linear infinite">⭐</div>
+          <p style="margin:16px 0 0;font-size:18px">별을 불러오는 중…</p>
+          <p style="margin:6px 0 0;font-size:14px;color:#a9b0d6">처음 한 번은 조금 걸릴 수 있어요</p>
+        </div>
+      </div>
+      <style>@keyframes ds-spin{to{transform:rotate(360deg)}}</style>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
