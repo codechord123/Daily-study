@@ -1,6 +1,7 @@
 // 캐릭터: 종족 × 옷 × 머리 × 소품 × 펫 조합. 모두 기본 도형이라 가볍다.
 import { useEffect, useReducer, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import { toon, glow } from './materials';
 import { normalizeLook, SPECIES_WITH_HAIR } from '../data/character';
@@ -734,6 +735,8 @@ function Jetpack({ thrustRef }) {
 }
 
 
+const _tagPos = new THREE.Vector3();
+
 export default function Character({ look: rawLook, movingRef, moving, name, emote, emoteAt, isMe, scale = 1, jetpack, thrustRef, noPet }) {
   const body = useRef();
   const legL = useRef();
@@ -746,7 +749,15 @@ export default function Character({ look: rawLook, movingRef, moving, name, emot
   const hasLegs = species !== 'ghost';
   const showHair = SPECIES_WITH_HAIR.has(species);
 
-  useFrame(({ clock }) => {
+  // 이름표·말풍선: 멀면 작아지고, 가까워도 원래 크기 이상 커지지 않게 (확대·내 모습에서 화면을 가리지 않게)
+  const tagAnchor = useRef();
+  const tagEl = useRef();
+  useFrame(({ clock, camera }) => {
+    if (tagAnchor.current && tagEl.current) {
+      const d = tagAnchor.current.getWorldPosition(_tagPos).distanceTo(camera.position);
+      const k = Math.min(1, Math.max(0.3, 6 / (2 * Math.tan((camera.fov * Math.PI) / 360) * d)));
+      tagEl.current.style.transform = `scale(${k.toFixed(3)})`;
+    }
     const t = clock.elapsedTime;
     const isMoving = movingRef ? movingRef.current : moving;
     const sp = isMoving ? 11 : 2;
@@ -820,12 +831,14 @@ export default function Character({ look: rawLook, movingRef, moving, name, emot
       {!noPet && look.pet !== 'none' && <Pet type={look.pet} color={look.petColor} movingRef={movingRef} moving={moving} flying={jetpack} />}
 
       {(name || emote) && (
-        <Html position={[0, 0.72, 0]} center distanceFactor={6} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
-          <div className="char-tag">
+        <group ref={tagAnchor} position={[0, 0.72, 0]}>
+          <Html center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+          <div className="char-tag" ref={tagEl}>
             <div className="emote-bubble" key={emoteAt} style={{ display: showEmote ? undefined : 'none' }}>{emote}</div>
             {name && <div className={`name-tag ${isMe ? 'is-me' : ''}`}>{name}</div>}
           </div>
-        </Html>
+          </Html>
+        </group>
       )}
     </group>
   );

@@ -26,6 +26,7 @@ export default function TravelSheet({ flying, here, onClose }) {
   };
   const fly = (sid) => {
     setFlightTarget(sid);
+    if (flying) useUI.getState().setAutopilot(true); // 비행 중에 고르면 자동으로 날아간다 (조종하면 직접)
     onClose();
     if (!flying) launch();
   };
@@ -54,7 +55,15 @@ export default function TravelSheet({ flying, here, onClose }) {
           </button>
         )}
         <p className="travel-hint">
-          <b>⚡ 바로 가기</b> 순간이동해요 · <b>{flying ? '🧭 길 안내' : '🚀 날아서'}</b> 화살표를 따라 직접 날아가요
+          <b>⚡ 바로 가기</b> 순간이동해요 · {flying ? (
+            <>
+              <b>🛸 날아가기</b> 자동으로 날아가요 (조종하면 직접)
+            </>
+          ) : (
+            <>
+              <b>🚀 날아서</b> 화살표를 따라 직접 날아가요 (가는 길에 🛸 자동 비행)
+            </>
+          )}
         </p>
         <div className="star-grid">
           {list.map((s) => (
@@ -66,7 +75,7 @@ export default function TravelSheet({ flying, here, onClose }) {
               </div>
               <div className="star-card-actions">
                 <button className="sc-btn sc-warp" onClick={() => warp(s.id)}>⚡ 바로 가기</button>
-                <button className="sc-btn" onClick={() => fly(s.id)}>{flying ? '🧭 길 안내' : '🚀 날아서'}</button>
+                <button className="sc-btn" onClick={() => fly(s.id)}>{flying ? '🛸 날아가기' : '🚀 날아서'}</button>
               </div>
             </div>
           ))}

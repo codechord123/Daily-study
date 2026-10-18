@@ -73,7 +73,7 @@ function HoldButton({ value, children, label }) {
 
 export default function FlightHud() {
   const { profile } = useGame();
-  const { near, flightTarget, setFlightTarget, flightPick, setFlightPick, startWarp } = useUI();
+  const { near, flightTarget, setFlightTarget, flightPick, setFlightPick, startWarp, autopilot, setAutopilot } = useUI();
   const pickName = flightPick && (flightPick === profile.sid ? '내 별' : `${studentById(flightPick)?.nickname}의 별`);
   const [picking, setPicking] = useState(false);
   const nearName = near && (near === profile.sid ? '내 별' : `${studentById(near)?.nickname}의 별`);
@@ -97,8 +97,14 @@ export default function FlightHud() {
         <button className={`chip target-chip ${flightTarget ? 'on' : ''}`} onClick={() => setPicking((p) => !p)}>
           🧭 {targetName ? `목적지: ${targetName}` : '목적지 고르기'}
         </button>
+        {flightTarget && !near && (
+          <button className={`chip auto-chip ${autopilot ? 'on' : ''}`} onClick={() => setAutopilot(!autopilot)} aria-pressed={autopilot}>
+            {autopilot ? '🛸 자동 멈추기' : '🛸 자동 비행'}
+          </button>
+        )}
         <button className="chip" onClick={() => startWarp(profile.sid)}>🏠 바로 집으로</button>
       </div>
+      {autopilot && flightTarget && !near && <p className="auto-hint rise">조이스틱이나 방향키를 움직이면 직접 조종해요</p>}
       {picking && <TravelSheet flying onClose={() => setPicking(false)} />}
 
       {flightPick && !near && (
@@ -108,10 +114,11 @@ export default function FlightHud() {
             className="sc-btn"
             onClick={() => {
               setFlightTarget(flightPick);
+              setAutopilot(true);
               setFlightPick(null);
             }}
           >
-            🧭 길 안내
+            🛸 날아가기
           </button>
           <button
             className="sc-btn sc-warp"

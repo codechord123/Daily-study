@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { priceOf } from '../store/classSettings';
 import { useGame } from '../store/useGame';
 import { useUI } from '../store/useUI';
@@ -208,12 +208,23 @@ function Looks() {
 export default function DecorPanel({ onDone }) {
   const [tab, setTab] = useState('bag');
   const [folded, setFolded] = useState(false); // 휴대폰: 창을 접어 별을 크게 본다
+  // 소품 도구 막대를 꾸미기 창 바로 위에 붙이려고 창의 실제 높이를 CSS 변수로 알려 준다
+  const panelRef = useRef(null);
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const root = document.documentElement;
+    const ro = new ResizeObserver(() => root.style.setProperty('--decor-h', `${el.offsetHeight}px`));
+    ro.observe(el);
+    return () => (ro.disconnect(), root.style.removeProperty('--decor-h'));
+  }, []);
   const { rotateItem, storeItem, recolorItem, resizeItem } = useGame();
   const { heldItem, selectedUid, movingUid, hold, startMove, clearDecor, setLookFocus } = useUI();
   useEffect(() => {
     setLookFocus(tab === 'me');
+    if (tab === 'me') clearDecor(); // 내 모습을 볼 때 소품 도구가 캐릭터를 가리지 않게
     return () => setLookFocus(false);
-  }, [tab, setLookFocus]);
+  }, [tab, setLookFocus, clearDecor]);
 
   const hint = movingUid
     ? '옮길 곳을 별 위에서 눌러요'
@@ -248,7 +259,7 @@ export default function DecorPanel({ onDone }) {
         </div>
       )}
 
-      <section className={`decor panel rise ${folded ? 'is-folded' : ''}`} aria-label="별 꾸미기">
+      <section ref={panelRef} className={`decor panel rise ${folded ? 'is-folded' : ''}`} aria-label="별 꾸미기">
         <header className="decor-head">
           <div className="tabs" role="tablist">
             {TABS.map((t) => (

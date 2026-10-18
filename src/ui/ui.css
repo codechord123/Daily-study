@@ -201,7 +201,7 @@
 
 .item-tools {
   position: absolute; left: 0; right: 0; margin: 0 auto; width: max-content;
-  bottom: calc(46vh + var(--s-5) + env(safe-area-inset-bottom));
+  bottom: calc(var(--decor-h, 46vh) + var(--s-4) + 10px + env(safe-area-inset-bottom));
   display: flex; gap: 6px; padding: 6px; border-radius: 999px; max-width: calc(100% - 32px); flex-wrap: wrap; justify-content: center;
 }
 .item-tools .btn { min-height: 44px; font-size: 15px; padding: 0 16px; }
@@ -305,6 +305,13 @@
 .choice.right .choice-key { background: #f0b43c; color: #fff; }
 .choice.wrong { border-color: #c9a7e8; background: #f1eafb; animation: shake 360ms; }
 .choice.dim { opacity: .4; transform: scale(.98); }
+/* 정답·내가 고른 오답을 글자로도 표시 (색만으로 구분하기 어려운 아이를 위해) */
+.choice.right::after, .choice.wrong::after {
+  position: absolute; top: -9px; right: 8px; padding: 1px 8px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; line-height: 18px; letter-spacing: 0; pointer-events: none;
+}
+.choice.right::after { content: '✓ 정답'; background: #f0b43c; color: #fff; }
+.choice.wrong::after { content: '✗ 내 답'; background: #9b7cc4; color: #fff; }
 @keyframes right-pop { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
 @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 .ox-btn { justify-content: center; min-height: 120px; font-size: 60px; font-family: var(--font-title); }
@@ -407,7 +414,7 @@
   .mission-cta { padding-right: 18px; }
   .walk-hint { display: none; }
   .decor { max-height: 52vh; }
-  .item-tools { bottom: calc(52vh + var(--s-5)); }
+  .item-tools { bottom: calc(var(--decor-h, 52vh) + var(--s-4) + 10px + env(safe-area-inset-bottom)); }
 }
 
 /* 세로 화면: 위쪽엔 3D 별, 아래쪽에 카드 */
@@ -437,6 +444,12 @@
 }
 .flight-tools .chip { cursor: pointer; min-height: 44px; color: var(--ink); }
 .target-chip.on { border-color: var(--gold); color: var(--gold); box-shadow: var(--glow-gold); }
+.auto-chip.on { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 0 2px rgba(120,230,255,.25), 0 0 18px rgba(120,230,255,.35); }
+.auto-hint {
+  position: absolute; left: 0; right: 0; margin: 0 auto; width: max-content; max-width: calc(100% - 32px);
+  bottom: calc(176px + env(safe-area-inset-bottom)); padding: 6px 14px; border-radius: 999px;
+  background: rgba(10,14,40,.7); color: var(--ink-muted); font-size: 14px; text-align: center; pointer-events: none;
+}
 .map-label.is-target { border: 1px solid var(--gold); color: var(--gold); box-shadow: var(--glow-gold); }
 
 .picker {
@@ -506,7 +519,7 @@
 .lift-btn:active { background: rgba(111,243,255,.25); box-shadow: var(--glow-cyan); }
 
 @media (max-width: 640px) {
-  .flight-tools { top: calc(150px + env(safe-area-inset-top)); left: var(--s-4); }
+  .flight-tools { top: calc(150px + env(safe-area-inset-top)); left: var(--s-4); max-width: calc(100% - 96px); }
   .picker { top: calc(200px + env(safe-area-inset-top)); left: var(--s-4); }
   .joy { left: var(--s-4); width: 124px; height: 124px; }
   .lift { right: var(--s-4); }
@@ -811,6 +824,5 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
   .opt-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .item-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .swatches .swatch { width: 38px; height: 38px; }
-  .item-tools { bottom: calc(46vh + var(--s-4)); }
+  .item-tools { bottom: calc(var(--decor-h, 46vh) + var(--s-4) + 10px + env(safe-area-inset-bottom)); }
 }
-.ui-layer:has(.decor.is-folded) .item-tools { bottom: calc(96px + env(safe-area-inset-bottom)); }

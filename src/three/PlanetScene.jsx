@@ -60,7 +60,7 @@ function Player({ look, name, controlsActive, controls, targetRef, emote, inMiss
   const react = useRef(); // 미션 반응(점프·갸웃) 전용
   const fx = useUI((s) => s.mission.fx);
   // 가까이 따라갈 때는 내 이름표가 머리를 가리므로 숨긴다
-  const close = useUI((s) => s.zoom < FOLLOW_ZOOM) && !inMission && !lookFocus;
+  const close = (useUI((s) => s.zoom < FOLLOW_ZOOM) && !inMission) || lookFocus; // 내 모습 꾸미기도 가까이 본다
   // 여러 명이 같은 자리에 겹쳐 생기지 않게 카메라 앞쪽 근처에 흩어 놓는다
   const pos = useRef(latLonToVec(45 + Math.random() * 15, (Math.random() - 0.5) * 70));
   const facing = useRef(new THREE.Vector3(0, 0, 1));
@@ -358,6 +358,16 @@ function ZoomSync({ controls, posing }) {
     const fit = aspect < 1 ? Math.min(1.7, 0.75 / aspect) : 1;
     goal.current = THREE.MathUtils.clamp(BASE_DIST * fit * zoom, 4.2, 16);
   }, [zoom, size]);
+  // 미션·내 모습 꾸미기가 끝나면 원래 보던 거리로 돌아간다
+  const wasPosing = useRef(posing);
+  useEffect(() => {
+    const ended = wasPosing.current && !posing;
+    wasPosing.current = posing;
+    if (!ended || useUI.getState().zoom < FOLLOW_ZOOM) return;
+    const aspect = size.width / size.height;
+    const fit = aspect < 1 ? Math.min(1.7, 0.75 / aspect) : 1;
+    goal.current = THREE.MathUtils.clamp(BASE_DIST * fit * useUI.getState().zoom, 4.2, 16);
+  }, [posing, size]);
   useFrame((_, dt) => {
     if (goal.current === null || posing) return;
     const d = THREE.MathUtils.damp(camera.position.length(), goal.current, 6, dt);
@@ -460,7 +470,8 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
       />
       {inMission && <MissionOrbit />}
       <MissionViewOffset active={!!inMission} look={lookFocus} decor={decorating} />
-      {peerIds.map((sid, i) => (
+      {/* 내 모습을 꾸밀 때는 친구가 앞을 가리지 않게 잠깐 숨긴다 */}
+      {!lookFocus && peerIds.map((sid, i) => (
         <Peer key={sid} sid={sid} ghost={i >= MAX_PEERS} />
       ))}
       <OrbitControls

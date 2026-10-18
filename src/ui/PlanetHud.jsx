@@ -7,6 +7,7 @@ import * as presence from '../services/presence';
 import DecorPanel from './DecorPanel';
 import TopBar from './TopBar';
 import TravelSheet from './TravelSheet';
+import { loadProgress } from './MissionView';
 import ZoomButtons from './ZoomButtons';
 import { getSettings, onSettings } from '../store/classSettings';
 
@@ -54,6 +55,7 @@ export default function PlanetHud({ ownerId, onEmote }) {
   const here = useHereCount(ownerId);
   const hearts = useHearts(ownerId);
   const done = missionDoneToday();
+  const progress = !done && profile ? (loadProgress(profile.sid)?.results.length ?? 0) : 0;
   const decorating = isMine && mode === 'decorate';
   const [picking, setPicking] = useState(false);
   // 내 별에 돌아오면 그사이 받은 하트를 알려 준다
@@ -106,8 +108,17 @@ export default function PlanetHud({ ownerId, onEmote }) {
                   <button className="mission-cta" onClick={() => startMission({ type: 'daily', at: Date.now() })}>
                     <span className="mission-cta-star">✦</span>
                     <span>
-                      <b>오늘의 미션</b>
-                      <small>20문제 · 약 15분 · 별가루 받기</small>
+                      {progress ? (
+                        <>
+                          <b>이어서 풀기</b>
+                          <small>{progress}/20문제 풀었어요 · 별가루 받기</small>
+                        </>
+                      ) : (
+                        <>
+                          <b>오늘의 미션</b>
+                          <small>20문제 · 약 15분 · 별가루 받기</small>
+                        </>
+                      )}
                     </span>
                   </button>
                 ) : (

@@ -117,6 +117,25 @@ function Result({ correct, total, reward, practice, mode, wrongCount, reviewGain
   );
 }
 
+// 오늘 아침 미션을 풀다 나가도 이어서 풀 수 있게 이 기기에 저장 (날짜가 바뀌면 무시)
+const progressKey = (sid) => `ds:progress:${sid}:${todayKey()}`;
+export function loadProgress(sid) {
+  try {
+    const v = JSON.parse(localStorage.getItem(progressKey(sid)) ?? 'null');
+    return Array.isArray(v?.results) ? v : null;
+  } catch {
+    return null;
+  }
+}
+function saveProgress(sid, results) {
+  try {
+    if (results) localStorage.setItem(progressKey(sid), JSON.stringify({ results }));
+    else localStorage.removeItem(progressKey(sid));
+  } catch {
+    /* noop */
+  }
+}
+
 export default function MissionView() {
   const { profile, go, setMode, completeMission, missionDoneToday, missionMode, noteWrong, clearWrong, startMission } = useGame();
   const { setMission, missionFx, openSheet } = useUI();
@@ -130,8 +149,10 @@ export default function MissionView() {
   }, [mode, missionMode, profile.sid]); // eslint-disable-line react-hooks/exhaustive-deps
   const [reviewGain, setReviewGain] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
-  const [idx, setIdx] = useState(0);
-  const [results, setResults] = useState([]);
+  const saved = useMemo(() => (mode === 'daily' && !practice ? loadProgress(profile.sid) : null), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const resumeAt = saved ? Math.min(saved.results.length, questions.length - 1) : 0;
+  const [idx, setIdx] = useState(resumeAt);
+  const [results, setResults] = useState(() => (saved ? saved.results.slice(0, resumeAt) : []));
   const [feedback, setFeedback] = useState(null); // { ok, picked, cheer }
   const [num, setNum] = useState('');
   const [burst, setBurst] = useState(null);
@@ -157,7 +178,8 @@ export default function MissionView() {
 
   // 3D 장면에 미션 시작·종료 알림
   useEffect(() => {
-    setMission({ results: [], total: questions.length, fx: null });
+    setMission({ results, total: questions.length, fx: null });
+    if (saved?.results.length) useUI.getState().showToast(`지난번에 이어서 ${resumeAt + 1}번부터 풀어요`);
     return () => setMission({ results: [], total: 0, fx: null });
   }, [questions.length, setMission]);
 
@@ -168,6 +190,7 @@ export default function MissionView() {
       const next = [...results, ok];
       setResults(next);
       setMission({ results: next });
+      if (mode === 'daily' && !practice) saveProgress(profile.sid, next);
       missionFx(ok ? 'correct' : 'wrong');
       if (ok) sfx('correct', combo + 1);
       else sfx('wrong');
@@ -209,6 +232,7 @@ export default function MissionView() {
         if (results[i]) t[0] += 1;
       });
       setReward(completeMission({ correct, total: questions.length, subjects }));
+      saveProgress(profile.sid, null);
     }
     setWrongCount((useGame.getState().profile.wrongNotes ?? []).filter((n) => !n.cleared).length);
     missionFx('complete');
@@ -285,7 +309,16 @@ export default function MissionView() {
   return (
     <div className={`mission ${finished ? 'is-finished' : ''}`}>
       <header className="mission-head">
-        <button className="btn btn-icon btn-ghost" onClick={() => go('home')} aria-label="나가기">✕</button>
+        <button
+          className="btn btn-icon btn-ghost"
+          onClick={() => {
+            if (mode === 'daily' && !practice && !finished && results.length) useUI.getState().showToast(`${results.length}문제까지 저장했어요. 다음에 이어서 풀어요`);
+            go('home');
+          }}
+          aria-label="나가기"
+        >
+          ✕
+        </button>
         <div className="track" aria-label={`${Math.min(idx + 1, questions.length)} / ${questions.length}`}>
           {questions.map((qq, i) => (
             <span

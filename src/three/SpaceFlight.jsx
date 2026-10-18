@@ -116,6 +116,33 @@ function FlyingPeer({ sid }) {
   );
 }
 
+const _to = new THREE.Vector3();
+const _rel = new THREE.Vector3();
+/** 자동 비행 입력: 조이스틱을 대신 움직인 값 { x, y, lift } */
+function autopilotInput(st, center) {
+  if (!center) return { x: 0, y: 0, lift: 0 };
+  _to.copy(center).add(UP_GOAL).sub(st.pos);
+  const flat = Math.hypot(_to.x, _to.z);
+  let dyaw = Math.atan2(_to.x, _to.z) - st.yaw;
+  dyaw = Math.atan2(Math.sin(dyaw), Math.cos(dyaw)); // -π~π
+  const x = THREE.MathUtils.clamp(-dyaw * 2.5, -1, 1);
+  // 방향이 많이 틀어졌으면 천천히, 가까워지면 속도를 줄인다
+  const y = (Math.abs(dyaw) > 1.2 ? 0.2 : 1) * THREE.MathUtils.clamp(flat / 6, 0.3, 1);
+  let lift = THREE.MathUtils.clamp(_to.y / 2, -1, 1);
+  // 가는 길 앞에 다른 별이 있으면 위로 넘어간다
+  const fwd = _rel.set(Math.sin(st.yaw), 0, Math.cos(st.yaw));
+  for (const sid in PLANET_POS) {
+    const c = PLANET_POS[sid];
+    if (c === center) continue;
+    const ahead = (c.x - st.pos.x) * fwd.x + (c.z - st.pos.z) * fwd.z;
+    if (ahead < 0 || ahead > 7) continue;
+    const side = Math.hypot(c.x - (st.pos.x + fwd.x * ahead), c.z - (st.pos.z + fwd.z * ahead));
+    if (side < R + 1.6 && st.pos.y < c.y + R + 1.6) lift = 1;
+  }
+  return { x, y, lift };
+}
+const UP_GOAL = new THREE.Vector3(0, R + 1.6, 0);
+
 export default function SpaceFlight({ me, launchFrom, onLand, low }) {
   const { camera } = useThree();
   const target = useUI((s) => s.flightTarget);
@@ -184,8 +211,15 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
   useFrame((state, rawDt) => {
     const dt = Math.min(rawDt, 0.1); // 느린 기기에서도 실제 시간에 가깝게, 단 순간이동은 막음
     const st = s.current;
-    const inp = input.read();
+    let inp = input.read();
     const fwd = new THREE.Vector3(Math.sin(st.yaw), 0, Math.cos(st.yaw));
+
+    // 자동 비행: 목적지 별 위쪽을 향해 방향·속도·높이를 대신 조종한다. 직접 조종하면 바로 꺼진다
+    const ui = useUI.getState();
+    if (ui.autopilot && ui.flightTarget && !st.landing && !st.boost) {
+      if (Math.abs(inp.x) > 0.05 || Math.abs(inp.y) > 0.05 || inp.lift) ui.setAutopilot(false);
+      else inp = autopilotInput(st, PLANET_POS[ui.flightTarget]);
+    }
 
     if (st.landing) {
       // 착륙 연출: 별 꼭대기로 빨려 들어가듯 내려앉는다
