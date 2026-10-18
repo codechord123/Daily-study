@@ -4,6 +4,7 @@ import { useUI } from '../store/useUI';
 import { ITEMS, ITEM_BY_ID, ITEM_CATEGORIES, CHAR_PARTS } from '../data/items';
 import { PLANET_TINTS } from '../theme/tokens';
 import ItemThumb from './ItemThumb';
+import { sfx } from '../services/sound';
 
 const TABS = [
   { id: 'bag', label: '가방' },
@@ -56,6 +57,7 @@ function Shop({ onBought }) {
               onClick={() => {
                 if (short) return showToast(`별가루가 ${it.price - profile.stardust}개 더 필요해요`);
                 if (buyItem(it.id)) {
+                  sfx('buy');
                   showToast(`${it.name}을(를) 가방에 넣었어요`);
                   onBought(it.id);
                 }
@@ -96,7 +98,13 @@ function Looks() {
   const owned = (slot, p) => p.price === 0 || profile.ownedParts.includes(`${slot}:${p.id}`);
   const tryWear = (slot, p) => {
     if (!owned(slot, p) && profile.stardust < p.price) return showToast(`별가루가 ${p.price - profile.stardust}개 더 필요해요`);
-    if (wearPart(slot, p.id) && !owned(slot, p)) showToast('새 옷을 샀어요!');
+    const bought = !owned(slot, p);
+    if (wearPart(slot, p.id)) {
+      if (bought) {
+        sfx('buy');
+        showToast('새 옷을 샀어요!');
+      } else sfx('rotate');
+    }
   };
   return (
     <div className="looks">
@@ -148,11 +156,13 @@ export default function DecorPanel({ onDone }) {
     <>
       {selectedUid && !movingUid && (
         <div className="item-tools panel rise">
-          <button className="btn" onClick={() => rotateItem(selectedUid, 45)}>↻ 돌리기</button>
+          <button className="btn" data-nosfx onClick={() => (sfx('rotate'), rotateItem(selectedUid, 45))}>↻ 돌리기</button>
           <button className="btn" onClick={() => startMove(selectedUid)}>✥ 옮기기</button>
           <button
             className="btn"
+            data-nosfx
             onClick={() => {
+              sfx('store');
               storeItem(selectedUid);
               clearDecor();
             }}

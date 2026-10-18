@@ -13,6 +13,7 @@ import * as input from '../services/flightInput';
 import * as presence from '../services/presence';
 import { usePeerIds } from './PlanetScene';
 import { useUI } from '../store/useUI';
+import * as sound from '../services/sound';
 
 const R = PLANET_RADIUS;
 const CHAR_SCALE = 1.3;
@@ -133,6 +134,11 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
 
   useEffect(() => input.attach(), []);
   useEffect(() => {
+    sound.sfx('takeoff');
+    sound.jetStart();
+    return () => sound.jetStop();
+  }, []);
+  useEffect(() => {
     if (import.meta.env.DEV) window.__flight = s.current; // 테스트용
   }, []);
   useEffect(() => {
@@ -212,13 +218,17 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
       if (key !== st.near) {
         st.near = key;
         setNear(key);
+        if (key) sound.sfx('near');
       }
       if (input.takeLandRequest() && inRange) {
         st.landing = { sid: nearest, from: st.pos.clone(), t: 0 };
+        sound.sfx('land');
         setNear(null);
       }
       thrust.current = Math.min(1, Math.max(Math.abs(st.speed) / MAX_SPEED, Math.abs(st.vy) / LIFT_SPEED, 0.15));
     }
+
+    sound.jetSet(thrust.current);
 
     // 캐릭터 자세: 앞으로 갈수록 숙이고, 돌 때 기울어진다
     body.current.position.copy(st.pos);

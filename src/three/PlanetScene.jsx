@@ -14,6 +14,7 @@ import { getPlanet, onPlanetChange } from '../store/profileStore';
 import { studentById } from '../data/classroom';
 import Sparks from './Sparks';
 import MissionOrbit from './MissionOrbit';
+import { sfx } from '../services/sound';
 
 const R = PLANET_RADIUS;
 const WALK_SPEED = 0.9; // 라디안/초
@@ -302,11 +303,13 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
     if (heldItem) {
       const uid = placeItem(heldItem, lat, lon);
       if (uid) {
+        sfx('place');
         select(uid);
         showToast('별에 놓았어요');
       }
     } else if (movingUid) {
       moveItem(movingUid, lat, lon);
+      sfx('place');
       select(movingUid);
     } else clearDecor();
   };

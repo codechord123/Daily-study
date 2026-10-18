@@ -4,6 +4,7 @@ import { useUI } from '../store/useUI';
 import { buildDailyMission, isCorrect } from '../engine/dailyMission';
 import { SUBJECT_META } from '../data/missions/grade5';
 import RichText from './RichText';
+import { sfx } from '../services/sound';
 
 const KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'];
 const CHEERS = ['정답이에요!', '멋져요!', '바로 그거예요!', '똑똑해요!', '반짝반짝!'];
@@ -58,6 +59,12 @@ function RewardRow({ label, value, delay }) {
 function Result({ correct, total, reward, practice, onExit }) {
   const totalV = useCountUp(reward?.total ?? 0, 1100, 1300);
   const stars = Math.round((correct / total) * 5);
+  useEffect(() => {
+    const ts = [];
+    for (let i = 0; i < stars; i++) ts.push(setTimeout(() => sfx('star'), 300 + i * 140));
+    if (reward) [500, 750, 1000, 1300, 2400].forEach((ms) => ts.push(setTimeout(() => sfx('coin'), ms)));
+    return () => ts.forEach(clearTimeout);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="mission-result">
       <div className="result-stars" aria-label={`별 ${stars}개`}>
@@ -128,20 +135,26 @@ export default function MissionView() {
       setResults(next);
       setMission({ results: next });
       missionFx(ok ? 'correct' : 'wrong');
+      if (ok) sfx('correct', combo + 1);
+      else sfx('wrong');
       setFeedback({ ok, picked: value, cheer: CHEERS[Math.floor(Math.random() * CHEERS.length)] });
       if (ok) {
         const r = (el ?? cardRef.current)?.getBoundingClientRect();
         if (r) setBurst({ x: r.left + r.width / 2, y: r.top + r.height / 2, id: performance.now() });
       }
     },
-    [feedback, finished, q, results, setMission, missionFx],
+    [feedback, finished, q, results, combo, setMission, missionFx],
   );
 
   const next = useCallback(() => {
     setFeedback(null);
     setNum('');
     setBurst(null);
-    if (idx + 1 < questions.length) return setIdx(idx + 1);
+    if (idx + 1 < questions.length) {
+      sfx('page');
+      return setIdx(idx + 1);
+    }
+    sfx('complete');
     const correct = results.filter(Boolean).length;
     if (!practice) setReward(completeMission({ correct, total: questions.length }));
     missionFx('complete');
@@ -151,6 +164,7 @@ export default function MissionView() {
   const pressKey = useCallback(
     (k) => {
       if (feedback) return;
+      sfx('key');
       if (k === '⌫') return setNum((s) => s.slice(0, -1));
       setNum((s) => {
         if (k === '.' && (s.includes('.') || !s)) return s;
@@ -220,7 +234,7 @@ export default function MissionView() {
         </span>
       </header>
 
-      <div className="mission-stage">
+      <div className="mission-stage" data-nosfx>
         {finished ? (
           <Result correct={results.filter(Boolean).length} total={questions.length} reward={reward} practice={practice} onExit={exit} />
         ) : (

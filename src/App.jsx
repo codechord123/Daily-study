@@ -13,6 +13,7 @@ import Toast from './ui/Toast';
 import { useGame } from './store/useGame';
 import { useUI } from './store/useUI';
 import * as presence from './services/presence';
+import { sfx, playMusic } from './services/sound';
 
 export default function App() {
   const { profile, screen, visiting, launchFrom, restoreSession, visit } = useGame();
@@ -24,9 +25,21 @@ export default function App() {
 
   useEffect(() => {
     if (screen === 'login') presence.leave();
+    playMusic(screen === 'visit' ? 'home' : screen);
   }, [screen]);
 
+  // 버튼을 누르면 작은 탭 소리 (자기 소리가 있는 버튼은 data-nosfx)
+  useEffect(() => {
+    const onClick = (e) => {
+      const b = e.target.closest?.('button');
+      if (b && !b.disabled && !b.closest('[data-nosfx]')) sfx('tap');
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, []);
+
   const sendEmote = (e) => {
+    sfx(e === '❤️' ? 'heart' : 'emote');
     presence.sendEmote(e);
     setEmote({ e, at: Date.now() });
   };

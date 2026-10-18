@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import * as sound from '../services/sound';
 import { useGame } from '../store/useGame';
 import { useUI } from '../store/useUI';
 
@@ -7,6 +8,8 @@ export default function TopBar() {
   const { profile, logout } = useGame();
   const { quality, setQuality } = useUI();
   const [open, setOpen] = useState(false);
+  const [snd, setSnd] = useState(sound.getPrefs);
+  useEffect(() => sound.onPrefs(setSnd), []);
   return (
     <div className="topbar">
       <span className="chip chip-gold" aria-label="별가루">✦ {profile.stardust}</span>
@@ -16,6 +19,12 @@ export default function TopBar() {
         <div className="menu panel">
           <button className="menu-item" onClick={() => setQuality(quality === 'low' ? 'high' : 'low')}>
             화질: {quality === 'low' ? '가볍게' : '선명하게'} <small>바꾸기</small>
+          </button>
+          <button className="menu-item" onClick={() => sound.setPref('sfx', !snd.sfx)}>
+            효과음: {snd.sfx ? '켜짐' : '꺼짐'} <small>바꾸기</small>
+          </button>
+          <button className="menu-item" onClick={() => sound.setPref('music', !snd.music)}>
+            배경음악: {snd.music ? '켜짐' : '꺼짐'} <small>바꾸기</small>
           </button>
           <button className="menu-item" onClick={logout}>로그아웃</button>
         </div>

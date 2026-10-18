@@ -33,7 +33,7 @@ function EmoteBar({ onEmote }) {
     setTimeout(() => setCool(false), 1200); // 연타 방지
   };
   return (
-    <div className="emote-bar panel" role="group" aria-label="이모트">
+    <div className="emote-bar panel" role="group" aria-label="이모트" data-nosfx>
       {EMOTES.map((e) => (
         <button key={e} className="emote-btn" onClick={() => send(e)} disabled={cool} aria-label={`이모트 ${e}`}>
           {e}
@@ -104,7 +104,7 @@ export default function PlanetHud({ ownerId, onEmote }) {
               </>
             ) : (
               <>
-                <button className="btn btn-heart" onClick={giveHeart} disabled={!canGiveHeart(ownerId)}>
+                <button className="btn btn-heart" data-nosfx onClick={giveHeart} disabled={!canGiveHeart(ownerId)}>
                   {canGiveHeart(ownerId) ? '❤️ 하트 남기기' : '❤️ 하트 보냄'}
                 </button>
                 <button className="btn" onClick={launch}>🚀 날아가기</button>
