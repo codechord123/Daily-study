@@ -52,6 +52,8 @@ const NOISE = /* glsl */ `
   float fbm(vec3 p){ float a=0.5, s=0.0; for(int i=0;i<4;i++){ s+=a*noise(p); p*=2.03; a*=0.5; } return s; }
 `;
 
+export const PATTERN_ID = { none: 0, dots: 1, stripes: 2, craters: 3, swirl: 4, stars: 5 };
+
 export function planetMaterial(base, shade) {
   return new THREE.ShaderMaterial({
     uniforms: {
@@ -60,6 +62,7 @@ export function planetMaterial(base, shade) {
       uLight: { value: new THREE.Vector3(0.6, 0.8, 0.5).normalize() },
       uRim: { value: new THREE.Color('#9fe9ff') },
       uHighlight: { value: 0 },
+      uPattern: { value: 0 },
     },
     vertexShader: /* glsl */ `
       varying vec3 vN; varying vec3 vLocal; varying vec3 vView;
@@ -71,9 +74,20 @@ export function planetMaterial(base, shade) {
         gl_Position = projectionMatrix * viewMatrix * wp;
       }`,
     fragmentShader: /* glsl */ `
-      uniform vec3 uBase; uniform vec3 uShade; uniform vec3 uLight; uniform vec3 uRim; uniform float uHighlight;
+      uniform vec3 uBase; uniform vec3 uShade; uniform vec3 uLight; uniform vec3 uRim; uniform float uHighlight; uniform float uPattern;
       varying vec3 vN; varying vec3 vLocal; varying vec3 vView;
       ${NOISE}
+      vec3 rnd3(vec3 p){ return fract(sin(vec3(dot(p,vec3(127.1,311.7,74.7)),dot(p,vec3(269.5,183.3,246.1)),dot(p,vec3(113.5,271.9,124.6))))*43758.5453); }
+      // 세포 노이즈: 가장 가까운 점까지 거리
+      float cell(vec3 p){
+        vec3 i = floor(p); vec3 f = fract(p); float d = 9.0;
+        for(int x=-1;x<=1;x++) for(int y=-1;y<=1;y++) for(int z=-1;z<=1;z++){
+          vec3 g = vec3(float(x),float(y),float(z));
+          vec3 o = rnd3(i+g)*0.8+0.1;
+          d = min(d, length(g+o-f));
+        }
+        return d;
+      }
       void main(){
         vec3 n = normalize(vN);
         float pig = fbm(vLocal * 1.6);
@@ -86,6 +100,28 @@ export function planetMaterial(base, shade) {
         col *= 0.92 + pig2 * 0.18;
         float pool = smoothstep(0.02, 0.0, abs(fract(pig * 3.0) - 0.5) - 0.47);
         col = mix(col, uShade, pool * 0.25);
+        // 무늬
+        vec3 dir = normalize(vLocal);
+        float lat = asin(clamp(dir.y,-1.0,1.0));
+        float lon = atan(dir.x, dir.z);
+        if (uPattern > 0.5 && uPattern < 1.5) {          // 물방울
+          float d = cell(dir * 5.0);
+          col = mix(col, uBase * 1.18 + 0.05, smoothstep(0.28, 0.22, d) * 0.8);
+        } else if (uPattern > 1.5 && uPattern < 2.5) {   // 줄무늬
+          float b = sin(lat * 14.0 + pig * 2.0);
+          col = mix(col, uShade, smoothstep(0.3, 0.6, b) * 0.35);
+        } else if (uPattern > 2.5 && uPattern < 3.5) {   // 분화구
+          float d = cell(dir * 3.5);
+          col = mix(col, uShade, smoothstep(0.3, 0.18, d) * 0.45);
+          col = mix(col, uBase * 1.2, smoothstep(0.02, 0.0, abs(d - 0.3)) * 0.5);
+        } else if (uPattern > 3.5 && uPattern < 4.5) {   // 소용돌이
+          float s = sin(lat * 9.0 + lon * 3.0 + pig * 4.0);
+          col = mix(col, mix(uBase, uRim, 0.35), smoothstep(0.5, 0.9, s) * 0.5);
+        } else if (uPattern > 4.5) {                      // 반짝 별무늬
+          float d = cell(dir * 9.0);
+          col += uRim * smoothstep(0.12, 0.0, d) * 1.4;
+        }
+
         // 대기 가장자리 네온
         float rim = pow(1.0 - max(dot(n, normalize(vView)), 0.0), 3.0);
         col += uRim * rim * (0.55 + uHighlight * 0.6);

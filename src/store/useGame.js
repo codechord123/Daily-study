@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { ITEM_BY_ID, CHAR_PARTS } from '../data/items';
+import { ITEM_BY_ID } from '../data/items';
+import { OPTION_SLOTS, COLOR_SLOTS } from '../data/character';
 import { PLANET_DECO } from '../theme/tokens';
 import { loadProfile, newProfile, saveProfile } from './profileStore';
 
@@ -147,6 +148,25 @@ export const useGame = create((set, get) => {
       });
     },
 
+    // 소품 색 바꾸기 (8단계를 돌아가며)
+    recolorItem(uid) {
+      update((p) => {
+        const it = p.planet.items.find((i) => i.uid === uid);
+        if (!it) return null;
+        it.hue = ((it.hue ?? 0) + 1) % 8;
+        return p;
+      });
+    },
+    // 소품 크기: 작게 → 보통 → 크게
+    resizeItem(uid) {
+      update((p) => {
+        const it = p.planet.items.find((i) => i.uid === uid);
+        if (!it) return null;
+        it.size = ((it.size ?? 1) + 1) % 3;
+        return p;
+      });
+    },
+
     // 별에서 치우면 가방으로 돌아간다 (별가루 손해 없음)
     storeItem(uid) {
       update((p) => {
@@ -163,6 +183,26 @@ export const useGame = create((set, get) => {
         p.planet.tint = tint;
         return p;
       });
+    },
+
+    // 색은 무료: 팔레트에서 마음대로
+    setLookColor(slot, hex) {
+      update((p) => {
+        if (!COLOR_SLOTS[slot]) return null;
+        p.planet.character = { ...p.planet.character, [slot]: hex };
+        return p;
+      });
+    },
+    // 한 번에 여러 부위 바꾸기 (랜덤 꾸미기: 이미 가진 것·무료만)
+    setLook(patch) {
+      update((p) => {
+        p.planet.character = { ...p.planet.character, ...patch };
+        return p;
+      });
+    },
+    ownsPart(slot, id) {
+      const part = OPTION_SLOTS[slot]?.options.find((x) => x.id === id);
+      return !!part && (part.price === 0 || get().profile.ownedParts.includes(`${slot}:${id}`));
     },
 
     // 별 고리·위성·빛 무리: 산 것은 언제든 바꿔 달 수 있다
@@ -188,7 +228,7 @@ export const useGame = create((set, get) => {
     wearPart(slot, id) {
       let ok = false;
       update((p) => {
-        const part = CHAR_PARTS[slot].find((x) => x.id === id);
+        const part = OPTION_SLOTS[slot]?.options.find((x) => x.id === id);
         if (!part) return null;
         const key = `${slot}:${id}`;
         const owned = part.price === 0 || p.ownedParts.includes(key);

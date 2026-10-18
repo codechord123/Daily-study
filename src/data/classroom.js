@@ -1,4 +1,5 @@
-import { DEFAULT_CHARACTER, CHAR_PARTS, ITEMS } from './items';
+import { ITEMS } from './items';
+import { DEFAULT_CHARACTER, OPTION_SLOTS, COLOR_SLOTS, PALETTE } from './character';
 import { PLANET_TINTS, PLANET_DECO } from '../theme/tokens';
 
 // 샘플 학급 (5학년 별빛반). 실명 대신 교사가 정한 별명을 쓴다.
@@ -50,12 +51,16 @@ export function samplePlanet(studentId) {
     });
   }
   const character = { ...DEFAULT_CHARACTER };
-  for (const slot of Object.keys(CHAR_PARTS)) character[slot] = pick(r, CHAR_PARTS[slot]).id;
+  for (const [slot, def] of Object.entries(OPTION_SLOTS)) character[slot] = pick(r, def.options).id;
+  for (const slot of Object.keys(COLOR_SLOTS)) character[slot] = pick(r, PALETTE);
+  if (r() < 0.5) character.species = 'human';
+  if (r() < 0.4) character.pet = 'none';
   return {
     tint: pick(r, PLANET_TINTS).id,
     ring: r() < 0.35 ? pick(r, PLANET_DECO.ring).id : 'none',
     moon: r() < 0.35 ? pick(r, PLANET_DECO.moon).id : 'none',
     aura: pick(r, PLANET_DECO.aura).id,
+    pattern: r() < 0.4 ? pick(r, PLANET_DECO.pattern).id : 'none',
     items,
     character,
     hearts: Math.floor(r() * 12),

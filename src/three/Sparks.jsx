@@ -7,7 +7,7 @@ const COUNT = 48;
 
 // 부드러운 원형 점 텍스처 (한 번만 생성)
 let dotTex;
-function dotTexture() {
+export function dotTexture() {
   if (dotTex) return dotTex;
   const c = document.createElement('canvas');
   c.width = c.height = 64;

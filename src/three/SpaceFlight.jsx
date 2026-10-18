@@ -55,7 +55,7 @@ function FlightPlanet({ student, isMine, isTarget, online, playerPos, low }) {
   return (
     <group position={center}>
       <group ref={spin}>
-        <Planet tint={planet.tint} ring={planet.ring} moon={planet.moon} aura={planet.aura} items={near ? planet.items : null} detail={near ? 64 : 28} highlight={online ? 1 : 0} />
+        <Planet tint={planet.tint} ring={planet.ring} moon={planet.moon} aura={planet.aura} pattern={planet.pattern} items={near ? planet.items : null} detail={near ? 64 : 28} highlight={online ? 1 : 0} />
       </group>
       {(isMine || online > 0) && (
         <mesh rotation={[Math.PI / 2, 0, 0]} material={glow(isMine ? NEON.gold : NEON.cyan, 1.2)}>
@@ -259,7 +259,8 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
     }
 
     // 뒤에서 따라가는 카메라
-    const camGoal = st.pos.clone().addScaledVector(fwd, -5.2).addScaledVector(UP, 2.1);
+    const z = useUI.getState().zoom;
+    const camGoal = st.pos.clone().addScaledVector(fwd, -5.2 * z).addScaledVector(UP, 2.1 * z);
     if (st.landing) camGoal.copy(PLANET_POS[st.landing.sid]).add(new THREE.Vector3(0, R + 4, 6));
     camera.position.lerp(camGoal, 1 - Math.exp(-dt * (st.landing ? 2 : 3.2)));
     // 카메라가 별 속으로 들어가 화면이 가려지지 않게 밀어낸다

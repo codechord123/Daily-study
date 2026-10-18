@@ -51,6 +51,14 @@ export const useUI = create((set) => ({
   startWarp: (sid) => set({ warp: { sid, at: Date.now() } }),
   endWarp: () => set({ warp: null }),
 
+  // 확대·축소: 1이 기본, 작을수록 가까이(크게)
+  zoom: 1,
+  zoomBy: (k) => set((s) => ({ zoom: Math.min(2.2, Math.max(0.55, s.zoom * k)) })),
+  resetZoom: () => set({ zoom: 1 }),
+
+  lookFocus: false, // '내 모습' 꾸미기 중: 카메라가 캐릭터 정면으로
+  setLookFocus: (v) => set({ lookFocus: v }),
+
   sheet: null, // 'shop' | 'bag' | 'style' | null
   openSheet: (sheet) => set({ sheet }),
 

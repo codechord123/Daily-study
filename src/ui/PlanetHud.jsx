@@ -7,6 +7,7 @@ import * as presence from '../services/presence';
 import DecorPanel from './DecorPanel';
 import TopBar from './TopBar';
 import FriendPicker from './FriendPicker';
+import ZoomButtons from './ZoomButtons';
 
 const EMOTES = ['👋', '❤️', '⭐', '😄', '🎉'];
 
@@ -87,6 +88,7 @@ export default function PlanetHud({ ownerId, onEmote }) {
       ) : (
         <>
           <EmoteBar onEmote={onEmote} />
+          <ZoomButtons />
           <div className="dock">
             {isMine ? (
               <>

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGame } from '../store/useGame';
 import { useUI } from '../store/useUI';
-import { ITEMS, ITEM_BY_ID, ITEM_CATEGORIES, CHAR_PARTS, SLOT_LABEL, DEFAULT_CHARACTER } from '../data/items';
+import { ITEMS, ITEM_BY_ID, ITEM_CATEGORIES } from '../data/items';
+import { OPTION_SLOTS, COLOR_SLOTS, PALETTE, LOOK_GROUPS, normalizeLook, SPECIES_WITH_HAIR } from '../data/character';
 import { PLANET_TINTS, PLANET_DECO } from '../theme/tokens';
 import ItemThumb from './ItemThumb';
 import { sfx } from '../services/sound';
@@ -73,7 +74,7 @@ function Shop({ onBought }) {
   );
 }
 
-const DECO_LABEL = { ring: '고리', moon: '위성', aura: '빛 무리' };
+const DECO_LABEL = { pattern: '무늬', ambient: '주변 효과', ring: '고리', moon: '위성', aura: '빛 무리' };
 
 function Tints() {
   const { profile, setTint, setPlanetPart } = useGame();
@@ -126,55 +127,85 @@ function Tints() {
 }
 
 function Looks() {
-  const { profile, wearPart } = useGame();
+  const { profile, wearPart, setLookColor, setLook, ownsPart } = useGame();
   const showToast = useUI((s) => s.showToast);
-  const look = { ...DEFAULT_CHARACTER, ...profile.planet.character };
+  const [group, setGroup] = useState('body');
+  const look = normalizeLook(profile.planet.character);
   const owned = (slot, p) => p.price === 0 || profile.ownedParts.includes(`${slot}:${p.id}`);
   const tryWear = (slot, p) => {
     if (!owned(slot, p) && profile.stardust < p.price) return showToast(`별가루가 ${p.price - profile.stardust}개 더 필요해요`);
     const bought = !owned(slot, p);
     if (wearPart(slot, p.id)) {
-      if (bought) {
-        sfx('buy');
-        showToast('새 옷을 샀어요!');
-      } else sfx('rotate');
+      sfx(bought ? 'buy' : 'rotate');
+      if (bought) showToast(`${p.name}을(를) 얻었어요!`);
     }
   };
+  // 🎲 가진 것·무료 중에서 무작위로 조합
+  const randomize = () => {
+    const patch = {};
+    for (const [slot, def] of Object.entries(OPTION_SLOTS)) {
+      const mine = def.options.filter((p) => ownsPart(slot, p.id));
+      patch[slot] = mine[Math.floor(Math.random() * mine.length)].id;
+    }
+    for (const slot of Object.keys(COLOR_SLOTS)) patch[slot] = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+    setLook(patch);
+    sfx('star');
+  };
+  const slots = LOOK_GROUPS.find((g) => g.id === group).slots.filter((s) => s !== 'hairStyle' && s !== 'hair' ? true : SPECIES_WITH_HAIR.has(look.species));
+
   return (
     <div className="looks" data-nosfx>
-      {Object.entries(CHAR_PARTS).map(([slot, parts]) => (
-        <div key={slot} className="look-row">
-          <span className="look-label">{SLOT_LABEL[slot]}</span>
-          <div className="swatches">
-            {parts.map((p) =>
-              p.color && !p.name ? (
+      <div className="seg">
+        {LOOK_GROUPS.map((g) => (
+          <button key={g.id} className={`seg-btn ${group === g.id ? 'on' : ''}`} onClick={() => setGroup(g.id)}>
+            {g.label}
+          </button>
+        ))}
+        <button className="seg-btn dice" onClick={randomize} title="가진 것 중에서 무작위로 꾸미기">🎲 랜덤</button>
+      </div>
+      {!SPECIES_WITH_HAIR.has(look.species) && group === 'head' && <p className="empty small">이 종족은 머리카락 대신 귀가 있어요. 머리 장식은 쓸 수 있어요!</p>}
+      {slots.map((slot) =>
+        COLOR_SLOTS[slot] ? (
+          <div key={slot} className="look-row">
+            <span className="look-label">{COLOR_SLOTS[slot].label}</span>
+            <div className="palette">
+              {PALETTE.map((hex) => (
                 <button
-                  key={p.id}
-                  className={`swatch ${look[slot] === p.id ? 'on' : ''}`}
-                  style={{ background: p.color }}
-                  onClick={() => tryWear(slot, p)}
-                  aria-label={`${SLOT_LABEL[slot]} ${p.id}`}
-                >
-                  {!owned(slot, p) && <span className="swatch-price">✦{p.price}</span>}
-                </button>
-              ) : (
+                  key={hex}
+                  className={`dot ${look[slot] === hex ? 'on' : ''}`}
+                  style={{ background: hex }}
+                  onClick={() => (sfx('key'), setLookColor(slot, hex))}
+                  aria-label={`${COLOR_SLOTS[slot].label} ${hex}`}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div key={slot} className="look-row">
+            <span className="look-label">{OPTION_SLOTS[slot].label}</span>
+            <div className="swatches">
+              {OPTION_SLOTS[slot].options.map((p) => (
                 <button key={p.id} className={`pill ${look[slot] === p.id ? 'on' : ''}`} onClick={() => tryWear(slot, p)}>
                   {p.name}
                   {!owned(slot, p) && <small> ✦{p.price}</small>}
                 </button>
-              ),
-            )}
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ),
+      )}
     </div>
   );
 }
 
 export default function DecorPanel({ onDone }) {
   const [tab, setTab] = useState('bag');
-  const { rotateItem, storeItem } = useGame();
-  const { heldItem, selectedUid, movingUid, hold, startMove, clearDecor } = useUI();
+  const { rotateItem, storeItem, recolorItem, resizeItem } = useGame();
+  const { heldItem, selectedUid, movingUid, hold, startMove, clearDecor, setLookFocus } = useUI();
+  useEffect(() => {
+    setLookFocus(tab === 'me');
+    return () => setLookFocus(false);
+  }, [tab, setLookFocus]);
 
   const hint = movingUid
     ? '옮길 곳을 별 위에서 눌러요'
@@ -191,6 +222,8 @@ export default function DecorPanel({ onDone }) {
       {selectedUid && !movingUid && (
         <div className="item-tools panel rise">
           <button className="btn" data-nosfx onClick={() => (sfx('rotate'), rotateItem(selectedUid, 45))}>↻ 돌리기</button>
+          <button className="btn" data-nosfx onClick={() => (sfx('star'), recolorItem(selectedUid))}>🎨 색</button>
+          <button className="btn" data-nosfx onClick={() => (sfx('rotate'), resizeItem(selectedUid))}>⤢ 크기</button>
           <button className="btn" onClick={() => startMove(selectedUid)}>✥ 옮기기</button>
           <button
             className="btn"

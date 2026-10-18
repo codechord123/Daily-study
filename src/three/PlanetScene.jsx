@@ -21,7 +21,8 @@ const WALK_SPEED = 0.9; // 라디안/초
 const MAX_PEERS = 8; // 한 별에 정상 표시할 최대 친구 수
 const CHAR_SCALE = 1.3;
 const MISSION_DIST = 8; // 가로 화면
-const MISSION_DIST_TALL = 13.5; // 세로 화면: 위쪽 40%에 별 전체가 들어오게
+const MISSION_DIST_TALL = 13.5;
+const LOOK_DIST = 5.2; // 내 모습 꾸미기: 캐릭터를 크게 // 세로 화면: 위쪽 40%에 별 전체가 들어오게
 
 /** 내 별이면 내 프로필에서, 친구 별이면 저장소에서 읽고 변경을 구독 */
 export function usePlanetData(ownerId) {
@@ -51,7 +52,7 @@ export function usePeerIds(planetId) {
 }
 
 /* ---------- 나 (조작 가능한 캐릭터) ---------- */
-function Player({ look, name, controlsActive, targetRef, emote, inMission }) {
+function Player({ look, name, controlsActive, targetRef, emote, inMission, lookFocus }) {
   const group = useRef();
   const react = useRef(); // 미션 반응(점프·갸웃) 전용
   const fx = useUI((s) => s.mission.fx);
@@ -79,8 +80,9 @@ function Player({ look, name, controlsActive, targetRef, emote, inMission }) {
   }, []);
 
   useFrame((state, dt) => {
-    const k = inMission ? {} : keys.current;
-    if (inMission) {
+    const posing = inMission || lookFocus;
+    const k = posing ? {} : keys.current;
+    if (posing) {
       // 어린왕자 그림처럼: 카메라에서 봤을 때 별 꼭대기로 걸어가 선다
       const camDir = camera.position.clone().normalize();
       const top = new THREE.Vector3(0, 1, 0).sub(camDir.clone().multiplyScalar(camDir.y)).normalize();
@@ -111,7 +113,7 @@ function Player({ look, name, controlsActive, targetRef, emote, inMission }) {
     group.current.position.copy(p).multiplyScalar(R);
     group.current.quaternion.slerp(lookAlongSurface(p, facing.current), 1 - Math.exp(-dt * 12));
 
-    if (inMission) {
+    if (posing) {
       // 카메라는 거의 옆에서(살짝 위) 별을 본다
       if (!controlsActive.current) {
         const cur = camera.position.clone().normalize();
@@ -120,7 +122,7 @@ function Player({ look, name, controlsActive, targetRef, emote, inMission }) {
         flat.normalize();
         const want = flat.multiplyScalar(Math.cos(0.22)).add(new THREE.Vector3(0, Math.sin(0.22), 0));
         cur.lerp(want, 1 - Math.exp(-dt * 2)).normalize();
-        const dist = THREE.MathUtils.damp(camera.position.length(), missionDist, 2, dt);
+        const dist = THREE.MathUtils.damp(camera.position.length(), lookFocus ? LOOK_DIST : missionDist, 2, dt);
         camera.position.copy(cur.multiplyScalar(dist));
       }
       // 도착하면 카메라 쪽을 바라본다
@@ -151,7 +153,7 @@ function Player({ look, name, controlsActive, targetRef, emote, inMission }) {
     r.rotation.z = tiltZ;
 
     // 걷는 동안 카메라가 부드럽게 따라온다 (직접 돌리는 중엔 멈춤)
-    if (moving.current && !controlsActive.current && !inMission) {
+    if (moving.current && !controlsActive.current && !posing) {
       const dist = camera.position.length();
       const want = p.clone().add(new THREE.Vector3(0, 0.35, 0)).normalize();
       const cur = camera.position.clone().normalize();
@@ -230,12 +232,12 @@ function Peer({ sid, ghost }) {
 }
 
 /* ---------- 미션 중엔 별을 카드 옆(가로)·위(세로)로 비켜 그린다 ---------- */
-function MissionViewOffset({ active }) {
+function MissionViewOffset({ active, look }) {
   const { camera, size } = useThree();
   const k = useRef(0);
   useFrame((_, dt) => {
-    const goal = active ? 1 : 0;
-    if (Math.abs(k.current - goal) < 0.001 && !active) {
+    const goal = active || look ? 1 : 0;
+    if (Math.abs(k.current - goal) < 0.001 && !active && !look) {
       if (camera.view?.enabled) {
         camera.clearViewOffset();
         k.current = 0;
@@ -246,11 +248,33 @@ function MissionViewOffset({ active }) {
     const { width: w, height: h } = size;
     const wide = w / h > 1.1;
     // 확대 없이 화면만 비켜 그린다. 가로: 별을 왼쪽으로 / 세로: 별을 위로
-    const ox = wide ? w * 0.21 * k.current : 0;
-    const oy = wide ? 0 : h * 0.2 * k.current;
+    // 내 모습 꾸미기: 아래 꾸미기 창 위쪽에 캐릭터가 오도록 장면을 내린다
+    const ox = look ? 0 : wide ? w * 0.21 * k.current : 0;
+    const oy = look ? -h * 0.3 * k.current : wide ? 0 : h * 0.2 * k.current;
     camera.setViewOffset(w, h, ox, oy, w, h);
   });
   useEffect(() => () => camera.clearViewOffset(), [camera]);
+  return null;
+}
+
+/* ---------- ＋/－ 버튼·휠 확대: 카메라 거리를 부드럽게 바꾼다 ---------- */
+function ZoomSync({ controls, posing }) {
+  const { camera } = useThree();
+  const zoom = useUI((s) => s.zoom);
+  const last = useRef(zoom);
+  const goal = useRef(null);
+  useEffect(() => {
+    if (zoom === last.current) return;
+    goal.current = THREE.MathUtils.clamp(camera.position.length() * (zoom / last.current), 4.2, 16);
+    last.current = zoom;
+  }, [zoom, camera]);
+  useFrame((_, dt) => {
+    if (goal.current === null || posing) return;
+    const d = THREE.MathUtils.damp(camera.position.length(), goal.current, 6, dt);
+    camera.position.setLength(d);
+    controls.current?.update();
+    if (Math.abs(d - goal.current) < 0.01) goal.current = null;
+  });
   return null;
 }
 
@@ -288,6 +312,7 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
   const controlsActive = useRef(false);
   const walkTarget = useRef(null);
   const decorating = editable && mode === 'decorate';
+  const lookFocus = useUI((s) => s.lookFocus) && decorating;
 
   // 이 별에 들어왔다고 알림
   useEffect(() => {
@@ -325,6 +350,8 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
         ring={planet.ring}
         moon={planet.moon}
         aura={planet.aura}
+        pattern={planet.pattern}
+        ambient={planet.ambient}
         items={planet.items}
         selectedUid={decorating ? selectedUid : null}
         onItemTap={decorating ? select : undefined}
@@ -338,9 +365,10 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
         targetRef={walkTarget}
         emote={emote}
         inMission={inMission}
+        lookFocus={lookFocus}
       />
       {inMission && <MissionOrbit />}
-      <MissionViewOffset active={!!inMission} />
+      <MissionViewOffset active={!!inMission} look={lookFocus} />
       {peerIds.map((sid, i) => (
         <Peer key={sid} sid={sid} ghost={i >= MAX_PEERS} />
       ))}
@@ -356,6 +384,7 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
         onEnd={() => (controlsActive.current = false)}
       />
       <CameraIntro controls={controls} />
+      <ZoomSync controls={controls} posing={inMission || lookFocus} />
     </>
   );
 }

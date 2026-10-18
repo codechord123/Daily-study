@@ -60,6 +60,22 @@ export const PLANET_DECO = {
     { id: 'heart', name: '하트 위성', color: '#ff8fb1', price: 80 },
     { id: 'twins', name: '쌍둥이 달', color: '#ffe08a', price: 100 },
   ],
+  pattern: [
+    { id: 'none', name: '민무늬', price: 0 },
+    { id: 'dots', name: '물방울', price: 40 },
+    { id: 'stripes', name: '줄무늬', price: 40 },
+    { id: 'craters', name: '분화구', price: 50 },
+    { id: 'swirl', name: '소용돌이', price: 60 },
+    { id: 'stars', name: '반짝 별무늬', price: 80 },
+  ],
+  ambient: [
+    { id: 'none', name: '없음', price: 0 },
+    { id: 'fireflies', name: '반딧불', color: '#ffd76a', price: 60 },
+    { id: 'snow', name: '눈송이', color: '#ffffff', price: 60 },
+    { id: 'petals', name: '꽃잎', color: '#ffb3d0', price: 60 },
+    { id: 'bubbles', name: '비눗방울', color: '#9fe9ff', price: 60 },
+    { id: 'leaves', name: '단풍잎', color: '#ff9a4a', price: 60 },
+  ],
   aura: [
     { id: 'cyan', name: '하늘빛', color: '#7fdcff', price: 0 },
     { id: 'gold', name: '금빛', color: '#ffd76a', price: 30 },

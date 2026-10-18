@@ -5,6 +5,7 @@ import { studentById } from '../data/classroom';
 import * as input from '../services/flightInput';
 import TopBar from './TopBar';
 import FriendPicker from './FriendPicker';
+import ZoomButtons from './ZoomButtons';
 
 const JOY_R = 52; // 조이스틱이 움직이는 반경(px)
 
@@ -114,6 +115,7 @@ export default function FlightHud() {
         </div>
       )}
 
+      <ZoomButtons wheel />
       <Joystick />
       <div className="lift">
         <HoldButton value={1} label="위로">▲</HoldButton>
