@@ -14,11 +14,56 @@ function gradientMap() {
 
 const cache = new Map();
 
+// 툰 재질 다듬기: 가장자리에 하늘빛이 받쳐 배경에서 또렷하게 떠오르고,
+// 그늘진 면은 보랏빛으로 물들어 수채화처럼 (계산은 픽셀당 몇 줄이라 크롬북에서도 가볍다)
+export function addRim(m) {
+  if (m.userData.rim) return m;
+  m.userData.rim = true;
+  m.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace(
+      '#include <tonemapping_fragment>',
+      `{
+        vec3 nV = normalize(normal);
+        float facing = clamp(dot(nV, normalize(vViewPosition)), 0.0, 1.0);
+        float rim = pow(1.0 - facing, 2.6);
+        float lum = dot(gl_FragColor.rgb, vec3(0.299, 0.587, 0.114));
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, gl_FragColor.rgb * vec3(0.86, 0.84, 1.08), smoothstep(0.55, 0.15, lum) * 0.5);
+        gl_FragColor.rgb += vec3(0.62, 0.86, 1.0) * rim * 0.38;
+      }
+      #include <tonemapping_fragment>`,
+    );
+  };
+  m.customProgramCacheKey = () => 'toon-rim';
+  return m;
+}
+
 // 같은 색은 재질을 공유해서 draw 비용을 줄인다
 export function toon(color) {
   const key = `t:${color}`;
-  if (!cache.has(key)) cache.set(key, new THREE.MeshToonMaterial({ color, gradientMap: gradientMap() }));
+  if (!cache.has(key)) cache.set(key, addRim(new THREE.MeshToonMaterial({ color, gradientMap: gradientMap() })));
   return cache.get(key);
+}
+
+// 발밑 그림자: 가운데가 진하고 가장자리로 번지는 둥근 얼룩 (모두 같은 재질 하나)
+let shadowMat;
+export function blobShadow() {
+  if (shadowMat) return shadowMat;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(255,255,255,1)');
+  grd.addColorStop(0.3, 'rgba(255,255,255,0.7)');
+  grd.addColorStop(0.65, 'rgba(255,255,255,0.18)');
+  grd.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 64, 64);
+  const tex = new THREE.CanvasTexture(c);
+  shadowMat = new THREE.MeshBasicMaterial({
+    color: '#241a52', alphaMap: tex, transparent: true, opacity: 0.3, depthWrite: false,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+  });
+  return shadowMat;
 }
 
 // 빛나는 재질: 블룸이 잡도록 톤매핑 제외, 밝기 1 초과
@@ -96,6 +141,9 @@ export function planetMaterial(base, shade) {
         float ndl = dot(n, uLight) + pig * 0.35;
         float lit = smoothstep(-0.15, 0.1, ndl) * 0.55 + smoothstep(0.45, 0.6, ndl) * 0.45;
         vec3 col = mix(uShade, uBase, lit);
+        // 그늘 깊은 곳은 보랏빛, 밝은 쪽은 살짝 따뜻하게
+        col = mix(col, col * vec3(0.78, 0.76, 1.0), smoothstep(0.1, -0.5, ndl) * 0.55);
+        col *= mix(1.0, 1.06, smoothstep(0.3, 0.9, ndl));
         // 물감이 고인 듯한 얼룩과 테두리
         col *= 0.92 + pig2 * 0.18;
         float pool = smoothstep(0.02, 0.0, abs(fract(pig * 3.0) - 0.5) - 0.47);
@@ -122,6 +170,9 @@ export function planetMaterial(base, shade) {
           col += uRim * smoothstep(0.12, 0.0, d) * 1.4;
         }
 
+        // 물기 어린 윤기: 빛이 반사되는 자리에 부드러운 하이라이트 (둥글게 보이게)
+        vec3 hv = normalize(uLight + normalize(vView));
+        col += vec3(1.0, 0.97, 0.9) * pow(max(dot(n, hv), 0.0), 28.0) * 0.22 * (0.6 + pig2 * 0.8);
         // 대기 가장자리 네온
         float rim = pow(1.0 - max(dot(n, normalize(vView)), 0.0), 3.0);
         col += uRim * rim * (0.55 + uHighlight * 0.6);

@@ -1,8 +1,9 @@
 // 한 별 위의 장면: 별 + 소품 + 나 + 같은 별에 있는 친구들
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import Planet from './Planet';
+import Planet, { cameraLightDir } from './Planet';
+import { blobShadow } from './materials';
 import Character from './Character';
 import { latLonToVec, vecToLatLon, lookAlongSurface, stepToward } from './sphere';
 import { PLANET_RADIUS } from '../theme/tokens';
@@ -257,11 +258,34 @@ function Player({ look, name, targetRef, emote, inMission, lookFocus }) {
 
   return (
     <group ref={group}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]} material={blobShadow()} scale={0.46} renderOrder={1}>
+        <planeGeometry args={[1, 1]} />
+      </mesh>
       <group ref={react}>
         <Character look={look} movingRef={moving} name={close ? null : name} isMe emote={emote?.e} emoteAt={emote?.at} scale={CHAR_SCALE} />
       </group>
       <Sparks trigger={fx && fx.kind !== 'wrong' ? fx.at : 0} position={[0, 0.55, 0]} power={fx?.kind === 'complete' ? 1.6 : 1} />
     </group>
+  );
+}
+
+/* ---------- 빛: 보는 쪽 왼쪽 위에서 따뜻한 빛, 반대편 아래에서 푸른 보조광 ---------- */
+function CameraLights() {
+  const key = useRef();
+  const fill = useRef();
+  const dir = useMemo(() => new THREE.Vector3(), []);
+  useFrame(({ camera }) => {
+    cameraLightDir(camera, dir);
+    key.current?.position.copy(dir).multiplyScalar(12);
+    fill.current?.position.copy(dir).multiplyScalar(-10).add(camera.up.clone().multiplyScalar(-3));
+  });
+  return (
+    <>
+      <hemisphereLight args={['#d9d2ff', '#4a3f7a', 0.55]} />
+      <ambientLight intensity={0.45} color="#c9c3ff" />
+      <directionalLight ref={key} intensity={1.7} color="#fff1d6" />
+      <directionalLight ref={fill} intensity={0.4} color="#7fb6ff" />
+    </>
   );
 }
 
@@ -305,6 +329,11 @@ function Peer({ sid, ghost }) {
   if (!info) return null;
   return (
     <group ref={group} visible={false}>
+      {!ghost && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]} material={blobShadow()} scale={0.46} renderOrder={1}>
+          <planeGeometry args={[1, 1]} />
+        </mesh>
+      )}
       {ghost ? (
         <mesh position={[0, 0.25, 0]}>
           <sphereGeometry args={[0.1, 10, 8]} />
@@ -405,6 +434,7 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
     if (heldItem) {
       const uid = placeItem(heldItem, lat, lon);
       if (uid) {
+        useUI.setState({ popUid: uid });
         sfx('place');
         select(uid);
         showToast('별에 놓았어요');
@@ -419,9 +449,7 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
 
   return (
     <>
-      <ambientLight intensity={0.85} color="#c9c3ff" />
-      <directionalLight position={[6, 8, 5]} intensity={1.6} color="#fff1d6" />
-      <directionalLight position={[-6, -3, -4]} intensity={0.35} color="#7fb6ff" />
+      <CameraLights />
       <Planet
         tint={planet.tint}
         ring={planet.ring}

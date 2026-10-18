@@ -764,6 +764,9 @@ export default function Character({ look: rawLook, movingRef, moving, name, emot
     if (body.current) {
       body.current.position.y =
         species === 'ghost' ? 0.05 + Math.sin(t * 2) * 0.02 : isMoving ? Math.abs(Math.sin(t * sp)) * 0.035 : Math.sin(t * sp) * 0.006;
+      // 숨 쉬듯 살짝 부풀고, 걸을 땐 발 디딜 때마다 통통 눌린다
+      const sq = isMoving ? 1 - Math.max(0, Math.cos(t * sp * 2)) * 0.05 : 1 + Math.sin(t * 2.1) * 0.018;
+      body.current.scale.set(1 + (1 - sq) * 0.6, sq, 1 + (1 - sq) * 0.6);
     }
     const swing = jetpack ? 0.25 + Math.sin(t * 2.5) * 0.12 : isMoving ? Math.sin(t * sp) * 0.6 : 0;
     if (legL.current) legL.current.rotation.x = swing;
