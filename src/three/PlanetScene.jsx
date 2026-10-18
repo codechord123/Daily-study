@@ -2,11 +2,11 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
 import Planet from './Planet';
 import Character from './Character';
 import { latLonToVec, vecToLatLon, lookAlongSurface, stepToward } from './sphere';
 import { PLANET_RADIUS } from '../theme/tokens';
+import { createRig, rigDrag, rigUpdate, rigAdopt } from './cameraRig';
 import * as presence from '../services/presence';
 import { useGame } from '../store/useGame';
 import { useUI } from '../store/useUI';
@@ -25,6 +25,7 @@ const MISSION_DIST_TALL = 13.5;
 const LOOK_DIST = 5.2; // 내 모습 꾸미기: 캐릭터를 크게
 const BASE_DIST = 8.54; // 기본 카메라 거리
 let hinted = false; // 확대 카메라 안내는 한 번만
+const WORLD_UP = new THREE.Vector3(0, 1, 0);
 const FOLLOW_ZOOM = 0.8; // 이보다 더 확대하면 캐릭터 뒤를 따라가는 카메라 // 세로 화면: 위쪽 40%에 별 전체가 들어오게
 
 /** 내 별이면 내 프로필에서, 친구 별이면 저장소에서 읽고 변경을 구독 */
@@ -55,7 +56,7 @@ export function usePeerIds(planetId) {
 }
 
 /* ---------- 나 (조작 가능한 캐릭터) ---------- */
-function Player({ look, name, controlsActive, controls, targetRef, emote, inMission, lookFocus }) {
+function Player({ look, name, targetRef, emote, inMission, lookFocus }) {
   const group = useRef();
   const react = useRef(); // 미션 반응(점프·갸웃) 전용
   const fx = useUI((s) => s.mission.fx);
@@ -68,9 +69,15 @@ function Player({ look, name, controlsActive, controls, targetRef, emote, inMiss
   const keys = useRef({});
   const lastSent = useRef(0);
   const { camera, size, gl } = useThree();
-  // 확대(따라가기) 카메라: 캐릭터에서 카메라 쪽 수평 방향 + 올려다보는 각도. 드래그로 돌린다
-  const cam = useRef({ on: false, back: new THREE.Vector3(), pitch: 0.55, dragAt: -99 });
-  if (import.meta.env.DEV) window.__planetCam = { camera, cam: cam.current, pos }; // 테스트용
+  // 별 위 카메라 (멀리 보기 ↔ 따라가기를 하나로). 처음엔 멀리서 날아 들어온다
+  const rig = useRef(null);
+  if (!rig.current) {
+    camera.position.set(0, 4.6, 7.2).setLength(22);
+    camera.up.set(0, 1, 0);
+    rig.current = createRig(camera);
+  }
+  const wasPosing = useRef(false);
+  if (import.meta.env.DEV) window.__planetCam = { camera, rig: rig.current, pos }; // 테스트용
   const missionDist = size.width / size.height > 1.1 ? MISSION_DIST : MISSION_DIST_TALL;
 
   useEffect(() => {
@@ -87,25 +94,31 @@ function Player({ look, name, controlsActive, controls, targetRef, emote, inMiss
     };
   }, []);
 
-  // 따라가기 카메라 드래그: 한 손가락/마우스로 캐릭터 주위를 돌린다 (두 손가락은 확대)
+  // 카메라 끌기: 한 손가락/마우스로 돌린다 (두 손가락은 확대, 소품을 끄는 중엔 멈춤)
   useEffect(() => {
     const el = gl.domElement;
     const pts = new Map();
-    const down = (e) => pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const down = (e) => {
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY, t: performance.now() });
+      rig.current.dragging = pts.size === 1;
+      rig.current.vYaw = rig.current.vPitch = 0;
+    };
     const move = (e) => {
       const last = pts.get(e.pointerId);
       if (!last) return;
+      const now = performance.now();
       const dx = e.clientX - last.x;
       const dy = e.clientY - last.y;
-      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      const c = cam.current;
-      if (!c.on || pts.size !== 1 || useUI.getState().draggingItem) return;
-      const n = pos.current;
-      c.back.applyAxisAngle(n, -dx * 0.009);
-      c.pitch = THREE.MathUtils.clamp(c.pitch + dy * 0.006, 0.3, 1.35);
-      c.dragAt = performance.now();
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY, t: now });
+      const ui = useUI.getState();
+      if (pts.size !== 1 || ui.draggingItem) return;
+      rigDrag(rig.current, dx, dy, now - last.t, el.clientHeight);
     };
-    const up = (e) => pts.delete(e.pointerId);
+    const up = (e) => {
+      pts.delete(e.pointerId);
+      rig.current.dragging = pts.size === 1;
+      if (pts.size) rig.current.vYaw = rig.current.vPitch = 0;
+    };
     el.addEventListener('pointerdown', down);
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
@@ -153,8 +166,11 @@ function Player({ look, name, controlsActive, controls, targetRef, emote, inMiss
     group.current.quaternion.slerp(lookAlongSurface(p, facing.current), 1 - Math.exp(-dt * 12));
 
     if (posing) {
-      // 카메라는 거의 옆에서(살짝 위) 별을 본다
-      if (!controlsActive.current) {
+      // 카메라는 거의 옆에서(살짝 위) 별을 본다. 좌우로 끌면 돌려 볼 수 있다
+      {
+        const rg = rig.current;
+        if (rg.yaw) camera.position.applyAxisAngle(WORLD_UP, rg.yaw);
+        rg.yaw = rg.pitch = 0;
         const cur = camera.position.clone().normalize();
         const flat = new THREE.Vector3(cur.x, 0, cur.z);
         if (flat.lengthSq() < 1e-4) flat.set(0, 0, 1);
@@ -163,6 +179,8 @@ function Player({ look, name, controlsActive, controls, targetRef, emote, inMiss
         cur.lerp(want, 1 - Math.exp(-dt * 2)).normalize();
         const dist = THREE.MathUtils.damp(camera.position.length(), lookFocus ? LOOK_DIST : missionDist, 2, dt);
         camera.position.copy(cur.multiplyScalar(dist));
+        camera.up.lerp(WORLD_UP, 1 - Math.exp(-dt * 8)).normalize();
+        camera.lookAt(0, 0, 0);
       }
       // 도착하면 카메라 쪽을 바라본다
       if (!targetRef.current) {
@@ -191,54 +209,26 @@ function Player({ look, name, controlsActive, controls, targetRef, emote, inMiss
     r.rotation.y = spinY;
     r.rotation.z = tiltZ;
 
-    // 많이 확대하면: 별 중심이 아니라 캐릭터 뒤에서 따라가는 카메라
-    const z = useUI.getState().zoom;
-    const follow = z < FOLLOW_ZOOM && !posing;
-    if (controls.current) controls.current.enabled = !follow;
-    const c = cam.current;
-    if (follow) {
-      const head = p.clone().multiplyScalar(R + 0.35);
-      if (!c.on) {
-        // 들어올 때: 지금 카메라가 있는 쪽에서 시작 (갑자기 휙 돌지 않게)
-        c.on = true;
-        if (!hinted) {
-          hinted = true;
-          useUI.getState().showToast?.('끌어서 둘러보기 · 탭해서 걷기');
-        }
-        c.back.copy(camera.position).sub(head);
-        c.pitch = 0.62; // 방향은 이어받고, 높이는 캐릭터 뒤 살짝 위로
+    // 별 위 카메라: 확대 값 하나로 멀리 보기 ↔ 캐릭터 따라가기를 이어서 움직인다
+    if (wasPosing.current && !posing) rigAdopt(rig.current, camera, p, R); // 미션·내 모습 뒤 지금 자리에서 이어받기
+    wasPosing.current = posing;
+    if (!posing) {
+      const aspect = size.width / size.height;
+      const fit = aspect < 1 ? Math.min(1.7, 0.75 / aspect) : 1;
+      rigUpdate(rig.current, camera, {
+        dt,
+        p,
+        facing: facing.current,
+        moving: moving.current,
+        zoom: useUI.getState().zoom,
+        R,
+        base: BASE_DIST * fit,
+        decorating: useGame.getState().mode === 'decorate',
+      });
+      if (!hinted && rig.current.f > 0.5) {
+        hinted = true;
+        useUI.getState().showToast('끌어서 둘러보기 · 탭해서 걷기');
       }
-      // 별 위를 걸어도 방향을 유지하도록 접평면에 다시 눕힌다
-      c.back.sub(p.clone().multiplyScalar(c.back.dot(p)));
-      if (c.back.lengthSq() < 1e-6) c.back.copy(facing.current).negate();
-      c.back.normalize();
-      // 걷는 중이고 최근에 직접 돌리지 않았으면 천천히 캐릭터 뒤로 돌아간다
-      if (moving.current && performance.now() - c.dragAt > 1500) {
-        c.back.lerp(facing.current.clone().negate(), 1 - Math.exp(-dt * 1.2)).normalize();
-      }
-      const dist = THREE.MathUtils.mapLinear(z, 0.55, FOLLOW_ZOOM, 2.6, 4.6);
-      const want = head
-        .clone()
-        .addScaledVector(c.back, Math.cos(c.pitch) * dist)
-        .addScaledVector(p, Math.sin(c.pitch) * dist);
-      // 땅속으로 들어가지 않게
-      if (want.length() < R + 0.4) want.setLength(R + 0.4);
-      camera.position.lerp(want, 1 - Math.exp(-dt * 6));
-      camera.up.lerp(p, 1 - Math.exp(-dt * 4)).normalize();
-      // 발밑 쪽을 바라봐서 캐릭터가 화면 가운데 위쪽, 아래 버튼 위로 땅이 보이게
-      camera.lookAt(p.clone().multiplyScalar(R - 0.15));
-    } else if (c.on) {
-      c.on = false;
-      camera.up.set(0, 1, 0);
-    }
-
-    // 걷는 동안 카메라가 부드럽게 따라온다 (직접 돌리는 중엔 멈춤)
-    if (moving.current && !controlsActive.current && !posing && !follow) {
-      const dist = camera.position.length();
-      const want = p.clone().add(new THREE.Vector3(0, 0.35, 0)).normalize();
-      const cur = camera.position.clone().normalize();
-      cur.lerp(want, 1 - Math.exp(-dt * 1.4)).normalize();
-      camera.position.copy(cur.multiplyScalar(dist));
     }
 
     // 실시간 위치 전송: 초당 5회
@@ -341,65 +331,6 @@ function MissionViewOffset({ active, look, decor }) {
   return null;
 }
 
-/* ---------- ＋/－ 버튼·휠 확대: 카메라 거리를 부드럽게 바꾼다 ---------- */
-function ZoomSync({ controls, posing }) {
-  const { camera, size } = useThree();
-  const zoom = useUI((s) => s.zoom);
-  const last = useRef(zoom);
-  const goal = useRef(null);
-  useEffect(() => {
-    if (zoom === last.current) return;
-    last.current = zoom;
-    if (zoom < FOLLOW_ZOOM) {
-      goal.current = null; // 가까이: 캐릭터 따라가기 카메라가 맡는다
-      return;
-    }
-    const aspect = size.width / size.height;
-    const fit = aspect < 1 ? Math.min(1.7, 0.75 / aspect) : 1;
-    goal.current = THREE.MathUtils.clamp(BASE_DIST * fit * zoom, 4.2, 16);
-  }, [zoom, size]);
-  // 미션·내 모습 꾸미기가 끝나면 원래 보던 거리로 돌아간다
-  const wasPosing = useRef(posing);
-  useEffect(() => {
-    const ended = wasPosing.current && !posing;
-    wasPosing.current = posing;
-    if (!ended || useUI.getState().zoom < FOLLOW_ZOOM) return;
-    const aspect = size.width / size.height;
-    const fit = aspect < 1 ? Math.min(1.7, 0.75 / aspect) : 1;
-    goal.current = THREE.MathUtils.clamp(BASE_DIST * fit * useUI.getState().zoom, 4.2, 16);
-  }, [posing, size]);
-  useFrame((_, dt) => {
-    if (goal.current === null || posing) return;
-    const d = THREE.MathUtils.damp(camera.position.length(), goal.current, 6, dt);
-    camera.position.setLength(d);
-    controls.current?.update();
-    if (Math.abs(d - goal.current) < 0.01) goal.current = null;
-  });
-  return null;
-}
-
-/* ---------- 카메라: 멀리서 날아 들어오는 연출 ---------- */
-function CameraIntro({ controls }) {
-  const { camera, size } = useThree();
-  const aspect = size.width / size.height;
-  const fit = aspect < 1 ? Math.min(1.7, 0.75 / aspect) : 1;
-  const t = useRef(0);
-  useEffect(() => {
-    camera.position.set(0, 6, 22);
-    t.current = 0;
-  }, [camera]);
-  useFrame((_, dt) => {
-    if (t.current >= 1) return;
-    t.current = Math.min(1, t.current + dt / 1.4);
-    const e = 1 - Math.pow(1 - t.current, 3);
-    const from = new THREE.Vector3(0, 6, 22);
-    const to = new THREE.Vector3(0, 4.6, 7.2).multiplyScalar(fit);
-    camera.position.lerpVectors(from, to, e);
-    controls.current?.update();
-  });
-  return null;
-}
-
 export default function PlanetScene({ ownerId, editable, emote, inMission }) {
   const profile = useGame((s) => s.profile);
   const mode = useGame((s) => s.mode);
@@ -408,8 +339,6 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
   const { heldItem, selectedUid, movingUid, select, clearDecor, showToast } = useUI();
   const planet = usePlanetData(ownerId);
   const peerIds = usePeerIds(ownerId);
-  const controls = useRef();
-  const controlsActive = useRef(false);
   const walkTarget = useRef(null);
   const decorating = editable && mode === 'decorate';
   const lookFocus = useUI((s) => s.lookFocus) && decorating;
@@ -423,7 +352,6 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
   const { camera: cam, gl } = useThree();
   const startItemDrag = (uid, ev) => {
     if (!decorating) return;
-    if (controls.current) controls.current.enabled = false;
     useUI.getState().setDraggingItem(true);
     const el = gl.domElement;
     const ray = new THREE.Raycaster();
@@ -444,7 +372,6 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', end);
       window.removeEventListener('pointercancel', end);
-      if (controls.current) controls.current.enabled = true;
       useUI.getState().setDraggingItem(false);
       if (moved) sfx('place');
     };
@@ -496,8 +423,6 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
       <Player
         look={profile.planet.character}
         name={studentById(profile.sid)?.nickname}
-        controlsActive={controlsActive}
-        controls={controls}
         targetRef={walkTarget}
         emote={emote}
         inMission={inMission}
@@ -509,20 +434,7 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
       {!lookFocus && peerIds.map((sid, i) => (
         <Peer key={sid} sid={sid} ghost={i >= MAX_PEERS} />
       ))}
-      <OrbitControls
-        ref={controls}
-        enablePan={false}
-        enableZoom={false}
-        minDistance={4.2}
-        maxDistance={inMission ? 16 : 14}
-        enableDamping
-        dampingFactor={0.08}
-        rotateSpeed={0.6}
-        onStart={() => (controlsActive.current = true)}
-        onEnd={() => (controlsActive.current = false)}
-      />
-      <CameraIntro controls={controls} />
-      <ZoomSync controls={controls} posing={inMission || lookFocus} />
+
     </>
   );
 }
