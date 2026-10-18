@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ROSTER, SAMPLE_CLASS } from '../data/classroom';
 import { useGame } from '../store/useGame';
 import { loadProfile } from '../store/profileStore';
 import { getSettings } from '../store/classSettings';
 import { cloudEnabled, cloudReady } from '../services/cloud';
 import { useEffect } from 'react';
+
+// 받침이 있으면 '으로', 없거나 ㄹ 받침이면 '로'
+const withRo = (word) => {
+  const c = word.charCodeAt(word.length - 1) - 0xac00;
+  if (c < 0 || c > 11171) return '(으)로';
+  const jong = c % 28;
+  return jong === 0 || jong === 8 ? '로' : '으로';
+};
 
 // 샘플 로그인: 학급 코드 → 내 번호. (나중에 Google/쎈에듀 로그인으로 교체)
 export default function Login() {
@@ -21,6 +29,14 @@ export default function Login() {
     };
   }, []);
   const [code, setCode] = useState('');
+  // 이 기기에서 마지막으로 들어온 학생 (매일 아침 번호를 다시 찾지 않게)
+  const last = useMemo(() => {
+    try {
+      return ROSTER.find((s) => s.id === localStorage.getItem('ds:last-sid')) ?? null;
+    } catch {
+      return null;
+    }
+  }, []);
   const [step, setStep] = useState('code');
   const [err, setErr] = useState('');
 
@@ -75,6 +91,11 @@ export default function Login() {
             들어가기
           </button>
           <p className="field-hint">샘플 학급 코드는 <b>STAR5</b> 예요</p>
+          {last && (
+            <button type="button" className="btn btn-block login-last" onClick={() => login(last.id)} disabled={!ready}>
+              ▶ {last.number}번 {last.nickname}{withRo(last.nickname)} 이어서 들어가기
+            </button>
+          )}
           <button type="button" className="btn btn-ghost teacher-link" onClick={() => (setStep('teacher'), setErr(''))}>
             🧑‍🏫 선생님이세요?
           </button>

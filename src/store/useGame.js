@@ -53,6 +53,7 @@ export const useGame = create((set, get) => {
       saveProfile(profile);
       try {
         sessionStorage.setItem(SESSION_KEY, sid);
+        localStorage.setItem('ds:last-sid', sid); // 다음 아침에 한 번에 들어오기
       } catch {
         /* noop */
       }
