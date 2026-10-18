@@ -59,6 +59,8 @@ function Player({ look, name, controlsActive, controls, targetRef, emote, inMiss
   const group = useRef();
   const react = useRef(); // 미션 반응(점프·갸웃) 전용
   const fx = useUI((s) => s.mission.fx);
+  // 가까이 따라갈 때는 내 이름표가 머리를 가리므로 숨긴다
+  const close = useUI((s) => s.zoom < FOLLOW_ZOOM) && !inMission && !lookFocus;
   // 여러 명이 같은 자리에 겹쳐 생기지 않게 카메라 앞쪽 근처에 흩어 놓는다
   const pos = useRef(latLonToVec(45 + Math.random() * 15, (Math.random() - 0.5) * 70));
   const facing = useRef(new THREE.Vector3(0, 0, 1));
@@ -204,7 +206,7 @@ function Player({ look, name, controlsActive, controls, targetRef, emote, inMiss
           useUI.getState().showToast?.('끌어서 둘러보기 · 탭해서 걷기');
         }
         c.back.copy(camera.position).sub(head);
-        c.pitch = THREE.MathUtils.clamp(Math.asin(THREE.MathUtils.clamp(c.back.clone().normalize().dot(p), -1, 1)), 0.45, 1.2);
+        c.pitch = 0.62; // 방향은 이어받고, 높이는 캐릭터 뒤 살짝 위로
       }
       // 별 위를 걸어도 방향을 유지하도록 접평면에 다시 눕힌다
       c.back.sub(p.clone().multiplyScalar(c.back.dot(p)));
@@ -250,7 +252,7 @@ function Player({ look, name, controlsActive, controls, targetRef, emote, inMiss
   return (
     <group ref={group}>
       <group ref={react}>
-        <Character look={look} movingRef={moving} name={name} isMe emote={emote?.e} emoteAt={emote?.at} scale={CHAR_SCALE} />
+        <Character look={look} movingRef={moving} name={close ? null : name} isMe emote={emote?.e} emoteAt={emote?.at} scale={CHAR_SCALE} />
       </group>
       <Sparks trigger={fx && fx.kind !== 'wrong' ? fx.at : 0} position={[0, 0.55, 0]} power={fx?.kind === 'complete' ? 1.6 : 1} />
     </group>
