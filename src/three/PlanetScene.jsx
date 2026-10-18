@@ -94,29 +94,39 @@ function Player({ look, name, targetRef, emote, inMission, lookFocus }) {
     };
   }, []);
 
-  // 카메라 끌기: 한 손가락/마우스로 돌린다 (두 손가락은 확대, 소품을 끄는 중엔 멈춤)
+  // 카메라 끌기: 한 손가락/마우스로 돌리고, 두 손가락은 비틀어 돌리기 + 함께 밀어 돌리기 (벌리기·오므리기는 확대)
   useEffect(() => {
     const el = gl.domElement;
     const pts = new Map();
     const down = (e) => {
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY, t: performance.now() });
-      rig.current.dragging = pts.size === 1;
+      rig.current.dragging = pts.size > 0;
       rig.current.vYaw = rig.current.vPitch = 0;
     };
+    const angle = (a, b) => Math.atan2(b.y - a.y, b.x - a.x);
     const move = (e) => {
       const last = pts.get(e.pointerId);
       if (!last) return;
       const now = performance.now();
+      const before = pts.size === 2 ? [...pts.values()].map((v) => ({ ...v })) : null;
       const dx = e.clientX - last.x;
       const dy = e.clientY - last.y;
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY, t: now });
-      const ui = useUI.getState();
-      if (pts.size !== 1 || ui.draggingItem) return;
-      rigDrag(rig.current, dx, dy, now - last.t, el.clientHeight);
+      if (useUI.getState().draggingItem) return;
+      if (pts.size === 1) return rigDrag(rig.current, dx, dy, now - last.t, el.clientHeight);
+      if (pts.size === 2 && before) {
+        const after = [...pts.values()];
+        // 비틀기: 두 손가락 사이 각도가 바뀐 만큼 별을 돌린다 (돌린 방향 그대로 따라 돈다)
+        let da = angle(after[0], after[1]) - angle(before[0], before[1]);
+        da = Math.atan2(Math.sin(da), Math.cos(da));
+        rig.current.yaw += da;
+        // 두 손가락을 함께 밀면 한 손가락처럼 돌린다 (가운데 점의 움직임, 손가락 하나 몫이라 절반)
+        rigDrag(rig.current, dx / 2, dy / 2, 0, el.clientHeight);
+      }
     };
     const up = (e) => {
       pts.delete(e.pointerId);
-      rig.current.dragging = pts.size === 1;
+      rig.current.dragging = pts.size > 0;
       if (pts.size) rig.current.vYaw = rig.current.vPitch = 0;
     };
     el.addEventListener('pointerdown', down);
