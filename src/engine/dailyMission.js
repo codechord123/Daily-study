@@ -100,6 +100,13 @@ function speedQuestion(r) {
 const BANKS = { korean: KOREAN, social: SOCIAL, science: SCIENCE };
 
 // 은행 과목(국어·사회·과학) count문제, 같은 문제 겹치지 않게
+/** 정답이 늘 같은 자리에 오지 않게 보기 순서를 섞는다 */
+function shuffleChoices(r, q) {
+  if (q.kind !== 'choice') return q;
+  const order = shuffle(r, q.choices.map((_, i) => i));
+  return { ...q, choices: order.map((i) => q.choices[i]), answer: order.indexOf(q.answer) };
+}
+
 function bankSet(r, subject, count, pos, reviewRate = 0.4) {
   const bank = BANKS[subject];
   const out = [];
@@ -117,7 +124,7 @@ function bankSet(r, subject, count, pos, reviewRate = 0.4) {
     if (!pool.length) continue;
     const q = pool[randInt(r, 0, pool.length - 1)];
     seen.add(q.prompt);
-    out.push({ subject, ...q, unit: UNIT_TITLES[subject][q.unit] });
+    out.push({ subject, ...shuffleChoices(r, q), unit: UNIT_TITLES[subject][q.unit] });
   }
   return out;
 }
