@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import Planet, { cameraLightDir } from './Planet';
 import { blobShadow } from './materials';
+import { DistantPlanets } from './SkyExtras';
 import Character from './Character';
 import { latLonToVec, vecToLatLon, lookAlongSurface, stepToward } from './sphere';
 import { PLANET_RADIUS } from '../theme/tokens';
@@ -450,6 +451,7 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
   return (
     <>
       <CameraLights />
+      <DistantPlanets ownerId={ownerId} count={useUI.getState().quality === 'low' ? 5 : 9} />
       <Planet
         tint={planet.tint}
         ring={planet.ring}

@@ -236,6 +236,29 @@ export function nebulaMaterial(colors) {
         col = mix(col, uA, smoothstep(0.08, 0.5, n2) * 0.38);
         col = mix(col, uB, smoothstep(0.12, 0.55, n3) * 0.32);
         col = mix(col, uC, smoothstep(0.25, 0.6, n1 * n2 * 4.0) * 0.22);
+
+        // 은하수: 하늘을 비스듬히 가로지르는 띠 (가운데 밝고, 먼지 구름이 군데군데 가린다)
+        vec3 axis = normalize(vec3(0.35, 0.82, -0.45));
+        float band = 1.0 - abs(dot(d, axis));
+        float milky = pow(smoothstep(0.55, 1.0, band), 3.0);
+        float dust = fbm(d * 7.0 + 11.0);
+        milky *= 0.55 + 0.6 * smoothstep(-0.2, 0.4, dust);
+        col += mix(vec3(0.45, 0.38, 0.85), vec3(0.85, 0.7, 0.92), smoothstep(0.9, 1.0, band)) * milky * 0.2;
+        col *= 1.0 - smoothstep(0.15, 0.45, fbm(d * 11.0 - 3.0)) * milky * 0.35; // 먼지 띠
+
+        // 반짝이는 잔별: 방향을 격자로 나눠 칸마다 별 하나 (은하수 쪽에 더 많이)
+        for (int L = 0; L < 2; L++) {
+          float sc = L == 0 ? 90.0 : 170.0;
+          vec3 g = d * sc;
+          vec3 cell0 = floor(g);
+          vec3 r = fract(sin(vec3(dot(cell0, vec3(127.1, 311.7, 74.7)), dot(cell0, vec3(269.5, 183.3, 246.1)), dot(cell0, vec3(113.5, 271.9, 124.6)))) * 43758.5453);
+          float keep = step(L == 0 ? 0.93 - milky * 0.1 : 0.9 - milky * 0.25, r.x);
+          float dist = length(fract(g) - (0.25 + r * 0.5));
+          float tw = 0.6 + 0.4 * sin(uTime * (1.5 + r.y * 3.0) + r.z * 40.0);
+          float star = keep * smoothstep(L == 0 ? 0.12 : 0.08, 0.0, dist) * tw;
+          vec3 tint = mix(vec3(0.75, 0.85, 1.0), vec3(1.0, 0.85, 0.7), r.y);
+          col += tint * star * (L == 0 ? 1.1 : 0.55);
+        }
         gl_FragColor = vec4(col, 1.0);
         #include <colorspace_fragment>
       }`,
