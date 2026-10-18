@@ -3,6 +3,7 @@ import { useGame, todayKey } from '../store/useGame';
 import { useUI } from '../store/useUI';
 import { SUBJECT_META } from '../data/missions/grade5';
 import { curriculumPosition, unitTitles } from '../engine/dailyMission';
+import { useEscape } from './useEscape';
 
 const SUBJECTS = ['math', 'english', 'korean', 'social', 'science'];
 const DOW = ['월', '화', '수', '목', '금'];
@@ -50,6 +51,7 @@ export default function RecordsSheet() {
   }, [history]);
 
   const close = () => openSheet(null);
+  useEscape(close);
   const go = (mode) => {
     close();
     startMission({ ...mode, at: Date.now() });

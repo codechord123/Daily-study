@@ -4,6 +4,7 @@ import { useGame } from '../store/useGame';
 import { getPlanet } from '../store/profileStore';
 import { PLANET_TINTS } from '../theme/tokens';
 import * as presence from '../services/presence';
+import { useEscape } from './useEscape';
 
 // 여행 창 하나로: 별을 고르고 ⚡ 바로 가기 / 🚀 날아서 가기(비행 중엔 🧭 길 안내)
 function Swatch({ sid }) {
@@ -20,6 +21,7 @@ export default function TravelSheet({ flying, here, onClose }) {
     ...ROSTER.filter((s) => s.id !== profile.sid).sort((a, b) => (online[b.id] ?? 0) - (online[a.id] ?? 0)),
   ].filter((s) => s.id !== here);
 
+  useEscape(onClose);
   const warp = (sid) => {
     onClose();
     startWarp(sid);

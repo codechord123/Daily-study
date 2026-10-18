@@ -26,7 +26,7 @@ function hueMaterial(base, step) {
 // 손가락이 조금 움직여도 "탭"으로 인정하는 거리(px). 그 이상이면 화면 돌리기로 본다.
 export const TAP_SLOP = 8;
 
-const PlacedItem = memo(function PlacedItem({ item, radius, selected, onTap }) {
+const PlacedItem = memo(function PlacedItem({ item, radius, selected, onTap, onDrag }) {
   const Model = MODELS[ITEM_BY_ID[item.itemId]?.model];
   const body = useRef();
   const hue = item.hue ?? 0;
@@ -48,6 +48,15 @@ const PlacedItem = memo(function PlacedItem({ item, radius, selected, onTap }) {
     <group
       position={position}
       quaternion={quaternion}
+      // 고른 소품은 눌러서 바로 끌어 옮길 수 있다
+      onPointerDown={
+        selected && onDrag
+          ? (e) => {
+              e.stopPropagation();
+              onDrag(item.uid, e.nativeEvent);
+            }
+          : undefined
+      }
       onClick={
         onTap &&
         ((e) => {
@@ -69,7 +78,7 @@ const PlacedItem = memo(function PlacedItem({ item, radius, selected, onTap }) {
   );
 });
 
-export default function Planet({ tint, ring, moon, aura, pattern, ambient, items, radius = PLANET_RADIUS, selectedUid, onItemTap, onSurfaceTap, highlight = 0, detail = 64 }) {
+export default function Planet({ tint, ring, moon, aura, pattern, ambient, items, radius = PLANET_RADIUS, selectedUid, onItemTap, onItemDrag, onSurfaceTap, highlight = 0, detail = 64 }) {
   const t = PLANET_TINTS.find((x) => x.id === tint) ?? PLANET_TINTS[0];
   const mat = useMemo(() => planetMaterial(t.base, t.shade), [t.base, t.shade]);
   const halo = useMemo(() => haloMaterial(auraColor(aura)), [aura]);
@@ -103,7 +112,7 @@ export default function Planet({ tint, ring, moon, aura, pattern, ambient, items
       {amb && <Ambient type={amb.id} color={amb.color} radius={radius} />}
       <Moon type={moon} radius={radius} />
       {items?.map((it) => (
-        <PlacedItem key={it.uid} item={it} radius={radius} selected={it.uid === selectedUid} onTap={onItemTap} />
+        <PlacedItem key={it.uid} item={it} radius={radius} selected={it.uid === selectedUid} onTap={onItemTap} onDrag={onItemDrag} />
       ))}
     </group>
   );

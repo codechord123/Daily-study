@@ -33,6 +33,8 @@ export const useUI = create((set) => ({
   select: (uid) => set({ selectedUid: uid, heldItem: null, movingUid: null }),
   startMove: (uid) => set({ movingUid: uid }),
   clearDecor: () => set({ heldItem: null, selectedUid: null, movingUid: null }),
+  draggingItem: false, // 고른 소품을 끌어 옮기는 중 (카메라 돌리기 멈춤)
+  setDraggingItem: (v) => set({ draggingItem: v }),
 
   // 우주 비행
   flightTarget: null, // 목적지 별 sid (화살표 안내)

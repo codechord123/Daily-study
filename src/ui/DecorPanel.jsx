@@ -19,6 +19,7 @@ function OptCard({ kind, k, name, price, owned, on, onClick }) {
   );
 }
 import { sfx } from '../services/sound';
+import { useEscape } from './useEscape';
 
 const TABS = [
   { id: 'bag', label: '가방' },
@@ -226,12 +227,15 @@ export default function DecorPanel({ onDone }) {
     return () => setLookFocus(false);
   }, [tab, setLookFocus, clearDecor]);
 
+  // Esc: 들고 있던 소품·고른 소품을 내려놓는다
+  useEscape(clearDecor, !!(heldItem || selectedUid || movingUid));
+
   const hint = movingUid
     ? '옮길 곳을 별 위에서 눌러요'
     : heldItem
       ? `별의 원하는 곳을 눌러 ${ITEM_BY_ID[heldItem]?.name}을(를) 놓아요`
       : selectedUid
-        ? '고른 소품을 돌리거나 옮길 수 있어요'
+        ? '고른 소품을 끌어서 옮기거나, 아래 버튼으로 돌리고 꾸밀 수 있어요'
         : tab === 'bag'
           ? '소품을 고르고 별을 눌러 놓아요 · 별 위 소품을 누르면 고칠 수 있어요'
           : null;

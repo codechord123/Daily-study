@@ -99,7 +99,7 @@ function Player({ look, name, controlsActive, controls, targetRef, emote, inMiss
       const dy = e.clientY - last.y;
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       const c = cam.current;
-      if (!c.on || pts.size !== 1) return;
+      if (!c.on || pts.size !== 1 || useUI.getState().draggingItem) return;
       const n = pos.current;
       c.back.applyAxisAngle(n, -dx * 0.009);
       c.pitch = THREE.MathUtils.clamp(c.pitch + dy * 0.006, 0.3, 1.35);
@@ -419,6 +419,40 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
     presence.join(profile.sid, ownerId, profile.planet.character);
   }, [ownerId, profile.sid, profile.planet.character]);
 
+  // 고른 소품 끌어 옮기기: 손가락 아래 별 표면 위치로 계속 옮긴다
+  const { camera: cam, gl } = useThree();
+  const startItemDrag = (uid, ev) => {
+    if (!decorating) return;
+    if (controls.current) controls.current.enabled = false;
+    useUI.getState().setDraggingItem(true);
+    const el = gl.domElement;
+    const ray = new THREE.Raycaster();
+    const sphere = new THREE.Sphere(new THREE.Vector3(), R);
+    const hit = new THREE.Vector3();
+    let moved = false;
+    const move = (e) => {
+      if (e.pointerId !== ev.pointerId) return;
+      const r = el.getBoundingClientRect();
+      ray.setFromCamera({ x: ((e.clientX - r.left) / r.width) * 2 - 1, y: -((e.clientY - r.top) / r.height) * 2 + 1 }, cam);
+      if (!ray.ray.intersectSphere(sphere, hit)) return;
+      const { lat, lon } = vecToLatLon(hit.normalize());
+      moveItem(uid, lat, lon);
+      moved = true;
+    };
+    const end = (e) => {
+      if (e.pointerId !== ev.pointerId) return;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      if (controls.current) controls.current.enabled = true;
+      useUI.getState().setDraggingItem(false);
+      if (moved) sfx('place');
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+  };
+
   const onSurfaceTap = (n) => {
     if (!decorating) {
       walkTarget.current = n;
@@ -455,6 +489,7 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
         items={planet.items}
         selectedUid={decorating ? selectedUid : null}
         onItemTap={decorating ? select : undefined}
+        onItemDrag={decorating ? startItemDrag : undefined}
         onSurfaceTap={onSurfaceTap}
         highlight={decorating && (heldItem || movingUid) ? 1 : 0}
       />
