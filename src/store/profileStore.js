@@ -1,6 +1,7 @@
 // 학생 한 명의 저장 데이터. 지금은 localStorage, 나중에 Firestore로 교체.
 import { DEFAULT_CHARACTER } from '../data/items';
 import { samplePlanet } from '../data/classroom';
+import { uploadProfile, cloudAddHeart, onRemote } from '../services/cloud';
 
 const KEY = (sid) => `ds:profile:${sid}`;
 const listeners = new Set();
@@ -36,13 +37,34 @@ export function loadProfile(sid) {
 }
 
 export function saveProfile(profile) {
+  profile.updatedAt = Date.now();
   try {
     localStorage.setItem(KEY(profile.sid), JSON.stringify(profile));
   } catch {
     /* 저장 실패는 조용히 무시 (메모리 상태는 유지) */
   }
+  uploadProfile(profile); // Firebase가 있으면 올린다
   listeners.forEach((fn) => fn(profile.sid));
 }
+
+// 다른 기기에서 바뀐 프로필: 더 새것일 때만 반영 (내가 올린 것이 되돌아온 경우는 무시)
+const ownListeners = new Set();
+export function onRemoteProfile(fn) {
+  ownListeners.add(fn);
+  return () => ownListeners.delete(fn);
+}
+onRemote('profile', (p) => {
+  if (!p?.sid) return;
+  const local = loadProfile(p.sid);
+  if (local && (local.updatedAt ?? 0) >= (p.updatedAt ?? 0)) return;
+  try {
+    localStorage.setItem(KEY(p.sid), JSON.stringify(p));
+  } catch {
+    /* noop */
+  }
+  listeners.forEach((fn) => fn(p.sid));
+  ownListeners.forEach((fn) => fn(p));
+});
 
 // 친구 별 읽기: 저장된 별이 있으면 그것, 없으면 샘플 별
 export function getPlanet(sid) {
@@ -72,7 +94,17 @@ export function getHearts(sid) {
   }
   return (loadProfile(sid) ? 0 : getPlanet(sid).hearts) + extra;
 }
+onRemote('hearts', (sid, count) => {
+  try {
+    localStorage.setItem(HEART_KEY(sid), String(count));
+  } catch {
+    /* noop */
+  }
+  listeners.forEach((fn) => fn(sid));
+});
+
 export function addHeart(sid) {
+  if (cloudAddHeart(sid)) return; // 학급 서버의 카운터를 올리면 구독으로 돌아온다
   try {
     const n = Number(localStorage.getItem(HEART_KEY(sid)) ?? 0) + 1;
     localStorage.setItem(HEART_KEY(sid), String(n));

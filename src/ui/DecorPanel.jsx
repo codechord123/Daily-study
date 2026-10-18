@@ -205,6 +205,7 @@ function Looks() {
 
 export default function DecorPanel({ onDone }) {
   const [tab, setTab] = useState('bag');
+  const [folded, setFolded] = useState(false); // 휴대폰: 창을 접어 별을 크게 본다
   const { rotateItem, storeItem, recolorItem, resizeItem } = useGame();
   const { heldItem, selectedUid, movingUid, hold, startMove, clearDecor, setLookFocus } = useUI();
   useEffect(() => {
@@ -245,19 +246,22 @@ export default function DecorPanel({ onDone }) {
         </div>
       )}
 
-      <section className="decor panel rise" aria-label="별 꾸미기">
+      <section className={`decor panel rise ${folded ? 'is-folded' : ''}`} aria-label="별 꾸미기">
         <header className="decor-head">
           <div className="tabs" role="tablist">
             {TABS.map((t) => (
-              <button key={t.id} role="tab" aria-selected={tab === t.id} className={`tab ${tab === t.id ? 'on' : ''}`} onClick={() => setTab(t.id)}>
+              <button key={t.id} role="tab" aria-selected={tab === t.id} className={`tab ${tab === t.id ? 'on' : ''}`} onClick={() => (setTab(t.id), setFolded(false))}>
                 {t.label}
               </button>
             ))}
           </div>
+          <button className="fold-btn" onClick={() => setFolded((f) => !f)} aria-label={folded ? '꾸미기 창 펼치기' : '꾸미기 창 접기'} aria-expanded={!folded}>
+            {folded ? '▴ 펼치기' : '▾ 접기'}
+          </button>
           <button className="btn btn-primary btn-sm" onClick={onDone}>완료</button>
         </header>
-        {hint && <p className={`decor-hint ${heldItem || movingUid ? 'is-active' : ''}`}>{hint}</p>}
-        <div className="decor-body">
+        {hint && !folded && <p className={`decor-hint ${heldItem || movingUid ? 'is-active' : ''}`}>{hint}</p>}
+        <div className="decor-body" hidden={folded}>
           {tab === 'bag' && <Bag />}
           {tab === 'shop' && (
             <Shop

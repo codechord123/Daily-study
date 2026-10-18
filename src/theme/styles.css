@@ -38,6 +38,9 @@
 
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; height: 100%; }
+/* 앱 화면 자체는 손가락으로 확대되지 않게 (확대·축소는 3D 별에만) */
+html, body { touch-action: pan-x pan-y; overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
+canvas { touch-action: none; }
 body {
   background: var(--space-deep);
   color: var(--ink);

@@ -1,5 +1,6 @@
 // 학급 설정 (교사가 바꿈). 지금은 이 기기에 저장, 나중에 Firestore classes/{id}.settings
 import { SEMESTER } from '../data/missions/grade5s2';
+import { uploadSettings, onRemote } from '../services/cloud';
 
 const KEY = 'ds:class-settings';
 const DEFAULTS = {
@@ -31,8 +32,19 @@ export function setSettings(patch) {
   } catch {
     /* noop */
   }
+  uploadSettings(current);
   listeners.forEach((fn) => fn(current));
 }
+// 선생님이 다른 기기에서 바꾼 설정
+onRemote('settings', (s) => {
+  current = { ...DEFAULTS, ...s, override: { ...DEFAULTS.override, ...(s.override ?? {}) } };
+  try {
+    localStorage.setItem(KEY, JSON.stringify(current));
+  } catch {
+    /* noop */
+  }
+  listeners.forEach((fn) => fn(current));
+});
 export function onSettings(fn) {
   listeners.add(fn);
   return () => listeners.delete(fn);

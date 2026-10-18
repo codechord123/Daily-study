@@ -3,6 +3,8 @@ import { useGame, todayKey } from '../store/useGame';
 import { ROSTER, samplePlanet } from '../data/classroom';
 import { loadProfile, saveProfile, newProfile } from '../store/profileStore';
 import { getSettings, setSettings, onSettings } from '../store/classSettings';
+import { cloudEnabled, onCloudStatus, getCloudStatus } from '../services/cloud';
+import { onPlanetChange } from '../store/profileStore';
 import { SUBJECT_META } from '../data/missions/grade5';
 import { curriculumPosition, unitTitles, buildDailyMission, UNIT_TITLES, MISSION_COUNTS } from '../engine/dailyMission';
 
@@ -79,6 +81,10 @@ export default function TeacherView() {
   const settings = useSettings();
   const [tick, setTick] = useState(0);
   const [csv, setCsv] = useState(null);
+  const [cloud, setCloud] = useState(getCloudStatus);
+  useEffect(() => onCloudStatus(setCloud), []);
+  // 다른 기기에서 기록이 들어오면 표를 다시 계산
+  useEffect(() => onPlanetChange(() => setTick((x) => x + 1)), []);
   const today = todayKey();
   const pos = curriculumPosition(today);
   const titles = unitTitles(pos);
@@ -249,7 +255,13 @@ export default function TeacherView() {
             </tbody>
           </table>
         </div>
-        <p className="muted small-note">지금은 이 기기에 저장된 기록만 보여요. Firebase를 연결하면 반 전체 기기의 기록이 모여요.</p>
+        <p className="muted small-note">
+          {cloudEnabled
+            ? cloud.connected
+              ? '☁︎ 학급 서버에 연결되어 반 전체 기기의 기록이 실시간으로 모이고 있어요.'
+              : '☁︎ 학급 서버에 연결하는 중이에요…'
+            : '지금은 이 기기에 저장된 기록만 보여요. Firebase를 연결하면 반 전체 기기의 기록이 모여요.'}
+        </p>
       </section>
 
       {csv && (

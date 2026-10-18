@@ -4,6 +4,7 @@
 // 화면 코드는 join / update / subscribe / onlineMap 만 사용한다.
 import { ROSTER } from '../data/classroom';
 import { getPlanet } from '../store/profileStore';
+import { cloudEnabled, presenceSet, presenceLeave, onRemote } from './cloud';
 
 const CHANNEL = 'ds-presence';
 const STALE_MS = 4000;
@@ -42,13 +43,27 @@ export function sendEmote(emote) {
 
 export function leave() {
   if (!me) return;
-  bc?.postMessage({ type: 'leave', sid: me.sid });
+  if (!presenceLeave(me.sid)) bc?.postMessage({ type: 'leave', sid: me.sid });
   me = null;
 }
 
 function broadcast() {
-  if (me) bc?.postMessage({ ...me, t: Date.now() });
+  if (!me) return;
+  if (!presenceSet(me)) bc?.postMessage({ ...me, t: Date.now() });
 }
+
+// Firebase 실시간 DB: 반 전체 접속 상태를 통째로 받는다
+onRemote('presence', (all) => {
+  const now = Date.now();
+  for (const sid of [...peers.keys()]) if (!all[sid] && !peers.get(sid).bot) peers.delete(sid);
+  for (const [sid, st] of Object.entries(all)) {
+    if (sid === me?.sid) continue;
+    // 10초 넘게 소식이 없으면 끊긴 것으로 본다
+    if (now - (st.t ?? 0) > 10000) continue;
+    peers.set(sid, { ...st, seen: now });
+  }
+  emit();
+});
 
 // 1초마다 생존 신호 + 오래된 접속자 정리
 setInterval(() => {
@@ -174,4 +189,5 @@ function startBots() {
   }, 200);
 }
 
-startBots();
+// 데모 봇은 Firebase가 없을 때만 (진짜 친구가 있을 땐 필요 없음)
+if (!cloudEnabled) startBots();

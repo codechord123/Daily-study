@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { ITEM_BY_ID } from '../data/items';
 import { OPTION_SLOTS, COLOR_SLOTS } from '../data/character';
 import { PLANET_DECO } from '../theme/tokens';
-import { loadProfile, newProfile, saveProfile } from './profileStore';
+import { loadProfile, newProfile, saveProfile, onRemoteProfile } from './profileStore';
 
 export const todayKey = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -313,4 +313,10 @@ export const useGame = create((set, get) => {
       });
     },
   };
+});
+
+// 같은 학생이 다른 기기에서 바꾼 내용이 더 새것이면 반영
+onRemoteProfile((p) => {
+  const cur = useGame.getState().profile;
+  if (cur?.sid === p.sid && (p.updatedAt ?? 0) > (cur.updatedAt ?? 0)) useGame.setState({ profile: p });
 });

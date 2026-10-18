@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "presence": {
+      "$classId": {
+        ".read": "auth != null",
+        "$sid": { ".write": "auth != null" }
+      }
+    }
+  }
+}

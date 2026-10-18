@@ -790,3 +790,24 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .track { min-width: 0; }
 .seg-dot { flex: 1 1 0; max-width: 22px; min-width: 5px; }
 .seg-dot.now { max-width: 34px; flex-grow: 1.6; }
+.roster.is-wait { opacity: .5; pointer-events: none; }
+/* 꾸미기 창 접기 */
+.decor-head { flex-wrap: nowrap; min-width: 0; }
+.decor-head .tabs { flex: 1; min-width: 0; }
+.fold-btn { flex: none; height: 36px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--panel-line); background: rgba(255,255,255,.08); font-size: 13px; cursor: pointer; white-space: nowrap; }
+.decor.is-folded { max-height: none; padding-bottom: var(--s-3); }
+.decor-body[hidden] { display: none !important; }
+.decor-body { overflow-x: hidden; }
+.decor, .decor * { min-width: 0; }
+@media (min-width: 900px) and (min-aspect-ratio: 11/10) { .fold-btn { display: none; } }
+/* 휴대폰: 꾸미기 창이 화면 절반을 넘지 않게, 탭은 작게 */
+@media (max-width: 640px) {
+  .decor { max-height: 46vh; padding: var(--s-2) var(--s-3) var(--s-3); }
+  .tab { min-height: 40px; padding: 0 9px; font-size: 14px; }
+  .tabs { gap: 0; }
+  .opt-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .item-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .swatches .swatch { width: 38px; height: 38px; }
+  .item-tools { bottom: calc(46vh + var(--s-4)); }
+}
+.ui-layer:has(.decor.is-folded) .item-tools { bottom: calc(96px + env(safe-area-inset-bottom)); }
