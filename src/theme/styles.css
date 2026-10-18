@@ -1,0 +1,122 @@
+:root {
+  --space-deep: #070a22;
+  --space-mid: #141a45;
+  --panel: rgba(20, 24, 66, 0.72);
+  --panel-solid: #161b4a;
+  --panel-line: rgba(255, 255, 255, 0.12);
+  --paper: #f7efe1;
+  --ink: #f4efe6;
+  --ink-muted: #a9b0d6;
+  --ink-dark: #2a2346;
+  --gold: #ffd76a;
+  --cyan: #6ff3ff;
+  --pink: #ff7ad9;
+  --rose: #f2a7b8;
+  --mint: #a8dcc4;
+  --sky: #9cc8ee;
+  --lavender: #c3b2ec;
+  --good: #8fe3b0;
+  --bad: #ff9a9a;
+
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 28px;
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+
+  --font-title: 'Gowun Batang', serif;
+  --font-ui: 'Gowun Dodum', system-ui, sans-serif;
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --glow-gold: 0 0 18px rgba(255, 215, 106, 0.55);
+  --glow-cyan: 0 0 18px rgba(111, 243, 255, 0.5);
+}
+
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; height: 100%; }
+body {
+  background: var(--space-deep);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  touch-action: manipulation;
+  user-select: none;
+}
+button { font-family: inherit; color: inherit; }
+
+.app { position: fixed; inset: 0; }
+.canvas-wrap { position: absolute; inset: 0; z-index: 0; }
+.ui-layer { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.ui-layer > * { pointer-events: auto; }
+
+/* 종이 질감: 수채화 느낌을 UI 전체에 은은하게 */
+.paper-grain::after {
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* ---------- 공통 패널·버튼 ---------- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+
+.btn {
+  min-height: 48px;
+  padding: 0 var(--s-5);
+  border-radius: 999px;
+  border: 1px solid var(--panel-line);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 17px;
+  cursor: pointer;
+  transition: transform 160ms var(--ease-soft), background 160ms, box-shadow 160ms;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+}
+.btn:hover { background: rgba(255, 255, 255, 0.14); }
+.btn:active { transform: scale(0.96); }
+.btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+
+.btn-primary {
+  background: linear-gradient(135deg, #ffe39a, #ffc46a);
+  color: var(--ink-dark);
+  border: none;
+  font-weight: 700;
+  box-shadow: var(--glow-gold);
+}
+.btn-primary:hover { background: linear-gradient(135deg, #fff0b8, #ffd07e); }
+
+.btn-icon {
+  width: 48px; height: 48px; padding: 0;
+  border-radius: 50%;
+  font-size: 22px;
+}
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(10, 12, 40, 0.6);
+  border: 1px solid var(--panel-line);
+  font-size: 16px;
+}
+.chip-gold { color: var(--gold); text-shadow: 0 0 10px rgba(255, 215, 106, 0.6); }
+
+.title { font-family: var(--font-title); font-weight: 700; letter-spacing: -0.01em; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes pop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes twinkle { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+.rise { animation: rise 420ms var(--ease-soft) both; }
