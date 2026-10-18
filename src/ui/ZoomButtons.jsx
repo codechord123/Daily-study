@@ -14,11 +14,25 @@ export default function ZoomButtons({ wheel }) {
       if (e.target?.tagName !== 'CANVAS') return;
       zoomBy(e.deltaY > 0 ? 1.08 : 0.93);
     };
+    // 두 손가락 벌리기·오므리기
+    let pinch = null;
+    const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const onTouchMove = (e) => {
+      if (e.touches.length !== 2 || e.target?.tagName !== 'CANVAS') return (pinch = null);
+      const d = dist(e.touches);
+      if (pinch) zoomBy(Math.min(1.2, Math.max(0.83, pinch / d)));
+      pinch = d;
+    };
+    const onTouchEnd = (e) => e.touches.length < 2 && (pinch = null);
     window.addEventListener('keydown', onKey);
     if (wheel) window.addEventListener('wheel', onWheel, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
     };
   }, [zoomBy, wheel]);
   return (

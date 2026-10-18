@@ -819,10 +819,10 @@ export default function Character({ look: rawLook, movingRef, moving, name, emot
       </group>
       {!noPet && look.pet !== 'none' && <Pet type={look.pet} color={look.petColor} movingRef={movingRef} moving={moving} flying={jetpack} />}
 
-      {(name || showEmote) && (
+      {(name || emote) && (
         <Html position={[0, 0.72, 0]} center distanceFactor={6} zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
           <div className="char-tag">
-            {showEmote && <div className="emote-bubble" key={emoteAt}>{emote}</div>}
+            <div className="emote-bubble" key={emoteAt} style={{ display: showEmote ? undefined : 'none' }}>{emote}</div>
             {name && <div className={`name-tag ${isMe ? 'is-me' : ''}`}>{name}</div>}
           </div>
         </Html>

@@ -82,12 +82,13 @@ function FlightPlanet({ student, isMine, isTarget, isPicked, online, playerPos, 
           <meshBasicMaterial color={NEON.gold} transparent opacity={0.4} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
         </mesh>
       )}
-      {labelOn && <Html position={[0, R + 1.1, 0]} center zIndexRange={[5, 0]} style={{ pointerEvents: 'none' }}>
+      {/* 이름표는 붙여 둔 채 보이기만 끈다 (붙였다 떼면 React 19에서 충돌) */}
+      <Html position={[0, R + 1.1, 0]} center zIndexRange={[5, 0]} style={{ pointerEvents: 'none', display: labelOn ? 'block' : 'none' }}>
         <div className={`map-label ${isMine ? 'is-me' : ''} ${online ? 'is-online' : ''} ${isTarget ? 'is-target' : ''}`}>
           {isMine ? '내 별' : student.nickname}
           {online > 0 && <span className="map-dot">{online}</span>}
         </div>
-      </Html>}
+      </Html>
     </group>
   );
 }
@@ -205,7 +206,7 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
       st.yaw -= inp.x * TURN_RATE * dt;
       if (st.boost) {
         // 지나가기: 입력과 상관없이 별에서 멀어진다
-        st.pos.addScaledVector(st.boost.dir, MAX_SPEED * 1.2 * dt);
+        st.pos.addScaledVector(st.boost.dir, (st.boost.speed ?? MAX_SPEED * 1.2) * dt);
         st.boost.t -= dt;
         st.speed = MAX_SPEED * 0.6;
         if (st.boost.t <= 0) st.boost = null;
@@ -229,7 +230,12 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
       for (const sid in PLANET_POS) {
         const c = PLANET_POS[sid];
         const d = st.pos.distanceTo(c);
-        if (d < R + 0.7) st.pos.copy(c).add(st.pos.clone().sub(c).setLength(R + 0.7));
+        if (d < R + 0.7) {
+          const out = st.pos.clone().sub(c).normalize();
+          st.pos.copy(c).addScaledVector(out, R + 0.7);
+          // 바깥·위쪽으로 톡 튕겨서, 앞으로 계속 가면 별을 타고 넘어가게 한다
+          st.boost = { dir: out.add(new THREE.Vector3(0, 0.9, 0)).normalize(), t: 0.3, speed: 6 };
+        }
         if (sid === st.ignore) {
           if (d > LAND_RANGE + 1) st.ignore = null;
           continue;
@@ -289,11 +295,23 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
     const camGoal = st.pos.clone().addScaledVector(fwd, -5.2 * z).addScaledVector(UP, 2.1 * z);
     if (st.landing) camGoal.copy(PLANET_POS[st.landing.sid]).add(new THREE.Vector3(0, R + 4, 6));
     camera.position.lerp(camGoal, 1 - Math.exp(-dt * (st.landing ? 2 : 3.2)));
-    // 카메라가 별 속으로 들어가 화면이 가려지지 않게 밀어낸다
-    for (const sid in PLANET_POS) {
-      const c = PLANET_POS[sid];
-      const off = camera.position.clone().sub(c);
-      if (off.length() < R + 1.2) camera.position.copy(c).add(off.setLength(R + 1.2));
+    // 캐릭터와 카메라 사이에 별이 끼면 카메라를 캐릭터 쪽으로 당긴다 (별이 화면을 가리지 않게)
+    if (!st.landing) {
+      const from = st.pos.clone().addScaledVector(UP, 0.4);
+      const ray = camera.position.clone().sub(from);
+      const len = ray.length();
+      ray.normalize();
+      let hit = len;
+      for (const sid in PLANET_POS) {
+        const oc = from.clone().sub(PLANET_POS[sid]);
+        const b = oc.dot(ray);
+        const cc = oc.lengthSq() - (R + 0.6) * (R + 0.6);
+        const disc = b * b - cc;
+        if (disc < 0) continue;
+        const t = -b - Math.sqrt(disc);
+        if (t > 0 && t < hit) hit = t;
+      }
+      if (hit < len) camera.position.copy(from).addScaledVector(ray, Math.max(0.8, hit - 0.3));
     }
     camera.lookAt(st.pos.clone().addScaledVector(UP, 0.6).addScaledVector(fwd, 2));
 

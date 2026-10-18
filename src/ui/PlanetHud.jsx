@@ -98,7 +98,7 @@ export default function PlanetHud({ ownerId, onEmote }) {
       ) : (
         <>
           <EmoteBar onEmote={onEmote} />
-          <ZoomButtons />
+          <ZoomButtons wheel />
           <div className="dock">
             {isMine ? (
               <>

@@ -22,7 +22,9 @@ const MAX_PEERS = 8; // 한 별에 정상 표시할 최대 친구 수
 const CHAR_SCALE = 1.3;
 const MISSION_DIST = 8; // 가로 화면
 const MISSION_DIST_TALL = 13.5;
-const LOOK_DIST = 5.2; // 내 모습 꾸미기: 캐릭터를 크게 // 세로 화면: 위쪽 40%에 별 전체가 들어오게
+const LOOK_DIST = 5.2; // 내 모습 꾸미기: 캐릭터를 크게
+const BASE_DIST = 8.54; // 기본 카메라 거리
+const FOLLOW_ZOOM = 0.8; // 이보다 더 확대하면 캐릭터 뒤를 따라가는 카메라 // 세로 화면: 위쪽 40%에 별 전체가 들어오게
 
 /** 내 별이면 내 프로필에서, 친구 별이면 저장소에서 읽고 변경을 구독 */
 export function usePlanetData(ownerId) {
@@ -52,7 +54,7 @@ export function usePeerIds(planetId) {
 }
 
 /* ---------- 나 (조작 가능한 캐릭터) ---------- */
-function Player({ look, name, controlsActive, targetRef, emote, inMission, lookFocus }) {
+function Player({ look, name, controlsActive, controls, targetRef, emote, inMission, lookFocus }) {
   const group = useRef();
   const react = useRef(); // 미션 반응(점프·갸웃) 전용
   const fx = useUI((s) => s.mission.fx);
@@ -152,8 +154,24 @@ function Player({ look, name, controlsActive, targetRef, emote, inMission, lookF
     r.rotation.y = spinY;
     r.rotation.z = tiltZ;
 
+    // 많이 확대하면: 별 중심이 아니라 캐릭터 뒤에서 따라가는 카메라
+    const z = useUI.getState().zoom;
+    const follow = z < FOLLOW_ZOOM && !posing;
+    if (controls.current) controls.current.enabled = !follow;
+    if (follow) {
+      // 캐릭터 뒤 위쪽에서, 캐릭터 조금 앞을 바라본다 (가는 길이 보이게)
+      const back = THREE.MathUtils.mapLinear(z, 0.55, FOLLOW_ZOOM, 2.4, 4.4);
+      const look = p.clone().multiplyScalar(R + 0.15).addScaledVector(facing.current, 0.2);
+      const want = p
+        .clone()
+        .multiplyScalar(R + 0.6 + back * 0.5)
+        .addScaledVector(facing.current, -back);
+      camera.position.lerp(want, 1 - Math.exp(-dt * 4));
+      camera.lookAt(look);
+    }
+
     // 걷는 동안 카메라가 부드럽게 따라온다 (직접 돌리는 중엔 멈춤)
-    if (moving.current && !controlsActive.current && !posing) {
+    if (moving.current && !controlsActive.current && !posing && !follow) {
       const dist = camera.position.length();
       const want = p.clone().add(new THREE.Vector3(0, 0.35, 0)).normalize();
       const cur = camera.position.clone().normalize();
@@ -263,15 +281,21 @@ function MissionViewOffset({ active, look, decor }) {
 
 /* ---------- ＋/－ 버튼·휠 확대: 카메라 거리를 부드럽게 바꾼다 ---------- */
 function ZoomSync({ controls, posing }) {
-  const { camera } = useThree();
+  const { camera, size } = useThree();
   const zoom = useUI((s) => s.zoom);
   const last = useRef(zoom);
   const goal = useRef(null);
   useEffect(() => {
     if (zoom === last.current) return;
-    goal.current = THREE.MathUtils.clamp(camera.position.length() * (zoom / last.current), 4.2, 16);
     last.current = zoom;
-  }, [zoom, camera]);
+    if (zoom < FOLLOW_ZOOM) {
+      goal.current = null; // 가까이: 캐릭터 따라가기 카메라가 맡는다
+      return;
+    }
+    const aspect = size.width / size.height;
+    const fit = aspect < 1 ? Math.min(1.7, 0.75 / aspect) : 1;
+    goal.current = THREE.MathUtils.clamp(BASE_DIST * fit * zoom, 4.2, 16);
+  }, [zoom, size]);
   useFrame((_, dt) => {
     if (goal.current === null || posing) return;
     const d = THREE.MathUtils.damp(camera.position.length(), goal.current, 6, dt);
@@ -366,6 +390,7 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
         look={profile.planet.character}
         name={studentById(profile.sid)?.nickname}
         controlsActive={controlsActive}
+        controls={controls}
         targetRef={walkTarget}
         emote={emote}
         inMission={inMission}
@@ -379,6 +404,7 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
       <OrbitControls
         ref={controls}
         enablePan={false}
+        enableZoom={false}
         minDistance={4.2}
         maxDistance={inMission ? 16 : 14}
         enableDamping
