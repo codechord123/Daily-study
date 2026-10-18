@@ -153,7 +153,7 @@ export default function FlightHud() {
         <HoldButton value={1} label="위로">▲</HoldButton>
         <HoldButton value={-1} label="아래로">▼</HoldButton>
       </div>
-      <p className="walk-hint">↑ 앞으로 · ←→ 방향 · Space 위로 · Shift 아래로 · Enter 착륙</p>
+      <p className="walk-hint">↑ 앞으로 · ←→ 방향 · Space 위로 · Shift 아래로 · Enter 착륙 · F 자동 비행</p>
     </>
   );
 }

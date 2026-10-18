@@ -230,6 +230,24 @@ export default function DecorPanel({ onDone }) {
 
   const selItem = selectedUid ? profile.planet.items.find((i) => i.uid === selectedUid) : null;
   useEffect(() => setColorOpen(false), [selectedUid]);
+  // 크롬북 단축키: R 돌리기 · C 색 · Delete 가방에 넣기
+  useEffect(() => {
+    if (!selectedUid || movingUid) return;
+    const onKey = (e) => {
+      if (e.target?.tagName === 'INPUT') return;
+      const k = e.key.toLowerCase();
+      if (k === 'r') (sfx('rotate'), rotateItem(selectedUid, 45));
+      else if (k === 'c') (sfx('star'), recolorItem(selectedUid));
+      else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        sfx('store');
+        storeItem(selectedUid);
+        clearDecor();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedUid, movingUid, rotateItem, recolorItem, storeItem, clearDecor]);
   // Esc: 들고 있던 소품·고른 소품을 내려놓는다
   useEscape(clearDecor, !!(heldItem || selectedUid || movingUid));
 
@@ -238,7 +256,7 @@ export default function DecorPanel({ onDone }) {
     : heldItem
       ? `별의 원하는 곳을 눌러 ${ITEM_BY_ID[heldItem]?.name}을(를) 놓아요`
       : selectedUid
-        ? '고른 소품을 끌어서 옮기거나, 아래 버튼으로 돌리고 꾸밀 수 있어요'
+        ? '고른 소품을 끌어서 옮기거나, 버튼으로 돌리고 꾸며요 (키보드 R 돌리기 · C 색 · Delete 넣기)'
         : tab === 'bag'
           ? '소품을 고르고 별을 눌러 놓아요 · 별 위 소품을 누르면 고칠 수 있어요'
           : null;

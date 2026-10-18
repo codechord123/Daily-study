@@ -216,6 +216,7 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
 
     // 자동 비행: 목적지 별 위쪽을 향해 방향·속도·높이를 대신 조종한다. 직접 조종하면 바로 꺼진다
     const ui = useUI.getState();
+    if (input.takeAutoToggle() && ui.flightTarget) ui.setAutopilot(!ui.autopilot);
     if (ui.autopilot && ui.flightTarget && !st.landing && !st.boost) {
       if (Math.abs(inp.x) > 0.05 || Math.abs(inp.y) > 0.05 || inp.lift) ui.setAutopilot(false);
       else inp = autopilotInput(st, PLANET_POS[ui.flightTarget]);

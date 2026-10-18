@@ -5,11 +5,13 @@ const joy = { active: false, x: 0, y: 0 };
 let lift = 0;
 let landRequest = false;
 let leaveRequest = false;
+let autoToggle = false;
 
 const onDown = (e) => {
   if (e.target?.tagName === 'INPUT') return;
   keys[e.code] = true;
   if (e.code === 'Enter' || e.code === 'KeyE') landRequest = true;
+  if (e.code === 'KeyF') autoToggle = true;
   if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
 };
 const onUp = (e) => {
@@ -47,6 +49,12 @@ export function takeLandRequest() {
 }
 export function requestLand() {
   landRequest = true;
+}
+// F 키: 자동 비행 켜고 끄기 (한 번 읽으면 사라짐)
+export function takeAutoToggle() {
+  const r = autoToggle;
+  autoToggle = false;
+  return r;
 }
 // 착륙하지 않고 별에서 멀어지기
 export function requestLeave() {
