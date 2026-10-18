@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { priceOf } from '../store/classSettings';
 import { useGame } from '../store/useGame';
 import { useUI } from '../store/useUI';
 import { ITEMS, ITEM_BY_ID, ITEM_CATEGORIES } from '../data/items';
@@ -61,13 +62,14 @@ function Shop({ onBought }) {
       </div>
       <div className="item-grid">
         {ITEMS.filter((i) => i.category === cat).map((it) => {
-          const short = profile.stardust < it.price;
+          const price = priceOf(it.price);
+          const short = profile.stardust < price;
           return (
             <button
               key={it.id}
               className={`item-card ${short ? 'is-short' : ''}`}
               onClick={() => {
-                if (short) return showToast(`별가루가 ${it.price - profile.stardust}개 더 필요해요`);
+                if (short) return showToast(`별가루가 ${price - profile.stardust}개 더 필요해요`);
                 if (buyItem(it.id)) {
                   sfx('buy');
                   showToast(`${it.name}을(를) 가방에 넣었어요`);
@@ -77,7 +79,7 @@ function Shop({ onBought }) {
             >
               <ItemThumb itemId={it.id} />
               <span className="item-name">{it.name}</span>
-              <span className="item-price">✦ {it.price}</span>
+              <span className="item-price">{price ? `✦ ${price}` : '무료'}</span>
             </button>
           );
         })}
@@ -91,7 +93,7 @@ const DECO_LABEL = { pattern: '무늬', ambient: '주변 효과', ring: '고리'
 function Tints() {
   const { profile, setTint, setPlanetPart } = useGame();
   const showToast = useUI((s) => s.showToast);
-  const owned = (slot, p) => p.price === 0 || profile.ownedParts.includes(`planet:${slot}:${p.id}`);
+  const owned = (slot, p) => priceOf(p.price) === 0 || profile.ownedParts.includes(`planet:${slot}:${p.id}`);
   const pickDeco = (slot, p) => {
     if (!owned(slot, p) && profile.stardust < p.price) return showToast(`별가루가 ${p.price - profile.stardust}개 더 필요해요`);
     const bought = !owned(slot, p);
@@ -139,7 +141,7 @@ function Looks() {
   const showToast = useUI((s) => s.showToast);
   const [group, setGroup] = useState('body');
   const look = normalizeLook(profile.planet.character);
-  const owned = (slot, p) => p.price === 0 || profile.ownedParts.includes(`${slot}:${p.id}`);
+  const owned = (slot, p) => priceOf(p.price) === 0 || profile.ownedParts.includes(`${slot}:${p.id}`);
   const tryWear = (slot, p) => {
     if (!owned(slot, p) && profile.stardust < p.price) return showToast(`별가루가 ${p.price - profile.stardust}개 더 필요해요`);
     const bought = !owned(slot, p);

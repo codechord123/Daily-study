@@ -8,6 +8,7 @@ const DEFAULTS = {
   override: { math: null, social: null, science: null }, // null = 날짜로 자동
   travelOpen: true,
   teacherPin: '0000',
+  freeDecor: true, // 시험 기간: 꾸미기에 별가루가 들지 않음 (선생님 화면에서 끄기)
 };
 const listeners = new Set();
 
@@ -21,6 +22,9 @@ function read() {
 }
 
 let current = read();
+
+/** 꾸미기 값: 무료 꾸미기가 켜져 있으면 0 */
+export const priceOf = (price) => (current.freeDecor ? 0 : price);
 
 export function getSettings() {
   return current;

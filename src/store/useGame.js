@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { ITEM_BY_ID } from '../data/items';
 import { OPTION_SLOTS, COLOR_SLOTS } from '../data/character';
 import { PLANET_DECO } from '../theme/tokens';
+import { priceOf } from './classSettings';
 import { loadProfile, newProfile, saveProfile, onRemoteProfile, onSynced } from './profileStore';
 
 export const todayKey = (d = new Date()) =>
@@ -162,8 +163,8 @@ export const useGame = create((set, get) => {
       const item = ITEM_BY_ID[itemId];
       let ok = false;
       update((p) => {
-        if (!item || p.stardust < item.price) return null;
-        p.stardust -= item.price;
+        if (!item || p.stardust < priceOf(item.price)) return null;
+        p.stardust -= priceOf(item.price);
         p.inventory[itemId] = (p.inventory[itemId] ?? 0) + 1;
         ok = true;
         return p;
@@ -256,7 +257,7 @@ export const useGame = create((set, get) => {
     },
     ownsPart(slot, id) {
       const part = OPTION_SLOTS[slot]?.options.find((x) => x.id === id);
-      return !!part && (part.price === 0 || get().profile.ownedParts.includes(`${slot}:${id}`));
+      return !!part && (priceOf(part.price) === 0 || get().profile.ownedParts.includes(`${slot}:${id}`));
     },
 
     // 별 고리·위성·빛 무리: 산 것은 언제든 바꿔 달 수 있다
@@ -266,7 +267,7 @@ export const useGame = create((set, get) => {
         const part = PLANET_DECO[slot]?.find((x) => x.id === id);
         if (!part) return null;
         const key = `planet:${slot}:${id}`;
-        if (part.price > 0 && !p.ownedParts.includes(key)) {
+        if (priceOf(part.price) > 0 && !p.ownedParts.includes(key)) {
           if (p.stardust < part.price) return null;
           p.stardust -= part.price;
           p.ownedParts.push(key);
@@ -285,7 +286,7 @@ export const useGame = create((set, get) => {
         const part = OPTION_SLOTS[slot]?.options.find((x) => x.id === id);
         if (!part) return null;
         const key = `${slot}:${id}`;
-        const owned = part.price === 0 || p.ownedParts.includes(key);
+        const owned = priceOf(part.price) === 0 || p.ownedParts.includes(key);
         if (!owned) {
           if (p.stardust < part.price) return null;
           p.stardust -= part.price;

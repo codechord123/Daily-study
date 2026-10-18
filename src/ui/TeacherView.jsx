@@ -328,6 +328,12 @@ export default function TeacherView() {
           </button>
           <span className="muted">{settings.travelOpen ? '학생들이 친구 별로 여행할 수 있어요' : '여행·바로 가기가 잠겨 있어요 (수업 시간 등)'}</span>
 
+          <label htmlFor="free-decor">무료 꾸미기 (시험용)</label>
+          <button id="free-decor" className={`toggle ${settings.freeDecor ? 'on' : ''}`} onClick={() => setSettings({ freeDecor: !settings.freeDecor })} aria-pressed={settings.freeDecor}>
+            <span />
+          </button>
+          <span className="muted">{settings.freeDecor ? '꾸미기에 별가루가 들지 않아요 (실제 수업 전에 꺼 주세요)' : '소품·옷·별 장식을 별가루로 사요'}</span>
+
           <PinSetting pin={settings.teacherPin} />
         </div>
       </section>
