@@ -1,4 +1,4 @@
-// 수학 3단원 합동과 대칭 · 4단원 소수의 곱셈 — 기초·기본·심화 학습지 (원래 문제·보기 그대로, 그림이 꼭 필요한 문제는 뺌)
+// 수학 3단원 합동과 대칭 · 4단원 소수의 곱셈 — 기초·기본·심화 학습지 (원래 문제·보기·그림 그대로)
 export default [
   {
   "unit": 2,
@@ -1040,5 +1040,1021 @@ export default [
   "kind": "number",
   "prompt": "상자에 0.75kg짜리 사과 10개와 0.12kg짜리 귤 100개가 들어 있습니다. 상자에 들어 있는 과일은 모두 몇 kg인지 구해 보세요. (kg)",
   "answer": 19.5
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "왼쪽 도형과 서로 합동인 도형을 찾아 ◯표 하세요.",
+  "choices": [
+   "가운데 도형",
+   "오른쪽 도형",
+   "둘 다",
+   "없습니다"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon1/BIN0004.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "직사각형의 선을 따라 모두 잘랐을 때 잘라낸 도형 중 서로 합동인 도형을 바르게 짝지은 것은 어느 것인가요?",
+  "choices": [
+   "나와 다",
+   "가와 나",
+   "나와 라",
+   "다와 라",
+   "라와 마"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon1/BIN0005.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "두 삼각형은 서로 합동입니다.\n점 ㄱ의 대응점을 찾아 골라 보세요.",
+  "choices": [
+   "점 ㅂ",
+   "점 ㄹ",
+   "점 ㅁ",
+   "점 ㄷ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon1/BIN0006.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "두 삼각형은 서로 합동입니다.\n변 ㄴㄷ과 길이가 같은 변은 어느 것인가요?",
+  "choices": [
+   "변 ㄹㅁ",
+   "변 ㄱㄴ",
+   "변 ㄷㄱ",
+   "변 ㅁㅂ",
+   "변 ㅂㄹ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon1/BIN0006.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "두 삼각형은 서로 합동입니다.\n각 ㄴㄱㄷ의 대응각은 어느 것인가요?",
+  "choices": [
+   "각 ㅁㅂㄹ",
+   "각 ㄱㄴㄷ",
+   "각 ㄴㄷㄱ",
+   "각 ㅂㄹㅁ",
+   "각 ㅂㅁㄹ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon1/BIN0006.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "그림을 보고 물음에 답하세요.\n반으로 접었을 때 완전히 겹치는 도형을 모두 찾아 기호를 골라 보세요.",
+  "choices": [
+   "가, 마",
+   "가, 나",
+   "가",
+   "가, 다, 마",
+   "나, 라"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon1/BIN0007.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "그림을 보고 물음에 답하세요.\n선대칭도형은 모두 몇 개인가요?",
+  "choices": [
+   "2개",
+   "1개",
+   "3개",
+   "4개",
+   "5개"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon1/BIN0007.png"
+  },
+  {
+  "unit": 2,
+  "kind": "ox",
+  "prompt": "선대칭도형을 모두 고르세요.\n① 이 도형은 선대칭도형입니다.",
+  "answer": true,
+  "image": "ws/math3-gibon1/BIN0008.png"
+  },
+  {
+  "unit": 2,
+  "kind": "ox",
+  "prompt": "선대칭도형을 모두 고르세요.\n② 이 도형은 선대칭도형입니다.",
+  "answer": false,
+  "image": "ws/math3-gibon1/BIN0009.png"
+  },
+  {
+  "unit": 2,
+  "kind": "ox",
+  "prompt": "선대칭도형을 모두 고르세요.\n③ 이 도형은 선대칭도형입니다.",
+  "answer": false,
+  "image": "ws/math3-gibon1/BIN000A.png"
+  },
+  {
+  "unit": 2,
+  "kind": "ox",
+  "prompt": "선대칭도형을 모두 고르세요.\n④ 이 도형은 선대칭도형입니다.",
+  "answer": true,
+  "image": "ws/math3-gibon1/BIN000B.png"
+  },
+  {
+  "unit": 2,
+  "kind": "ox",
+  "prompt": "선대칭도형을 모두 고르세요.\n⑤ 이 도형은 선대칭도형입니다.",
+  "answer": false,
+  "image": "ws/math3-gibon1/BIN000C.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 ㅅㅇ을 대칭축으로 하는 선대칭도형입니다.\n변 ㄱㄴ의 길이는 몇 cm인지 써 보세요. (cm)",
+  "answer": 8,
+  "image": "ws/math3-gibon1/BIN000D.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 ㅅㅇ을 대칭축으로 하는 선대칭도형입니다.\n변 ㄷㄹ의 길이는 변 ㄱㄴ의 길이보다 몇 cm 더 긴가요? (cm)",
+  "answer": 5,
+  "image": "ws/math3-gibon1/BIN000D.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 ㅅㅇ을 대칭축으로 하는 선대칭도형입니다.\n각 ㅁㄹㄷ의 크기는 몇 도인지 구해 보세요. (°)",
+  "answer": 85,
+  "image": "ws/math3-gibon1/BIN000D.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 ㄱㄴ을 대칭축으로 하는 선대칭도형입니다. □ 안에 알맞은 수를 써넣으세요.\n위쪽 변의 길이 □cm",
+  "answer": 9,
+  "image": "ws/math3-gibon1/BIN000E.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 ㄱㄴ을 대칭축으로 하는 선대칭도형입니다. □ 안에 알맞은 수를 써넣으세요.\n아래쪽 각의 크기 □°",
+  "answer": 50,
+  "image": "ws/math3-gibon1/BIN000E.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다.\n□ 안에 알맞은 기호를 써넣으세요.\n점 ㄱ의 대응점은 점 □입니다.",
+  "choices": [
+   "ㄹ",
+   "ㅁ",
+   "ㅂ",
+   "ㄷ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon1/BIN0001.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다.\n□ 안에 알맞은 기호를 써넣으세요.\n점 ㄷ의 대응점은 점 □입니다.",
+  "choices": [
+   "ㅂ",
+   "ㄹ",
+   "ㅁ",
+   "ㄴ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon1/BIN0001.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다.\n대응변끼리 바르게 짝지은 것은 어느 것인가요?",
+  "choices": [
+   "변 ㄴㄷ과 변 ㅁㅂ",
+   "변 ㄱㄴ과 변 ㄷㄹ",
+   "변 ㄷㄹ과 변 ㄴㄷ",
+   "변 ㅁㅂ과 변 ㄷㄹ",
+   "변 ㅂㄱ과 변 ㄷㄴ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon1/BIN0001.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다.\n□ 안에 알맞은 기호를 써넣으세요.\n각 ㄱㄴㄷ의 대응각은 각 □입니다.",
+  "choices": [
+   "각 ㄹㅁㅂ",
+   "각 ㅁㅂㄱ",
+   "각 ㄷㄹㅁ",
+   "각 ㅂㄱㄴ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon1/BIN0001.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다.\n□ 안에 알맞은 기호를 써넣으세요.\n각 ㄷㄹㅁ의 대응각은 각 □입니다.",
+  "choices": [
+   "각 ㅂㄱㄴ",
+   "각 ㄱㄴㄷ",
+   "각 ㅁㅂㄱ",
+   "각 ㄹㅁㅂ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon1/BIN0001.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "점 ㅈ을 대칭의 중심으로 하는 점대칭도형입니다.\n각 ㄹㅁㅂ의 크기는 몇 도인가요?",
+  "choices": [
+   "70°",
+   "80°",
+   "90°",
+   "100°",
+   "110°"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon1/BIN000F.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "점 ㅈ을 대칭의 중심으로 하는 점대칭도형입니다.\n옳게 설명한 것을 모두 고르세요.",
+  "choices": [
+   "②, ③",
+   "①, ②",
+   "②, ③, ⑤",
+   "③, ④",
+   "①, ④, ⑤"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon1/BIN000F.png",
+  "passage": "① 점 ㄱ의 대응점은 점 ㅂ입니다.\n② 변 ㄴㄷ의 길이는 8cm입니다.\n③ 각 ㄱㄴㄷ의 크기는 100°입니다.\n④ 변 ㅅㅇ의 대응변은 변 ㅁㄹ입니다.\n⑤ 변 ㄱㄴ의 대응변은 변 ㅂㅅ입니다."
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다. □ 안에 알맞은 수를 써넣으세요.\n위쪽 □cm",
+  "answer": 9,
+  "image": "ws/math3-gibon1/BIN0010.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다. □ 안에 알맞은 수를 써넣으세요.\n아래쪽 □cm",
+  "answer": 8,
+  "image": "ws/math3-gibon1/BIN0010.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다. 점대칭도형의 둘레는 몇 cm인지 구하세요. (cm)",
+  "answer": 42,
+  "image": "ws/math3-gibon1/BIN0011.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "왼쪽 도형과 서로 합동인 도형을 찾아 ◯표 하세요.",
+  "choices": [
+   "img:ws/math3-gibon4/BIN0005.png",
+   "img:ws/math3-gibon4/BIN0004.png",
+   "img:ws/math3-gibon4/BIN0006.png",
+   "없습니다"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon4/BIN0003.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "사각형을 점선을 따라 모두 잘랐을 때, 잘라낸 도형 중 서로 합동인 도형을 모두 찾아 기호를 골라 보세요.",
+  "choices": [
+   "가와 라, 나와 다",
+   "가와 나, 다와 라",
+   "가와 다, 나와 라",
+   "가와 나, 가와 라"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon4/BIN0007.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "나머지 넷과 합동이 아닌 도형은 어느 것인가요?",
+  "choices": [
+   "img:ws/math3-gibon4/BIN0005.png",
+   "img:ws/math3-gibon4/BIN0008.png",
+   "img:ws/math3-gibon4/BIN0009.png",
+   "img:ws/math3-gibon4/BIN000A.png",
+   "img:ws/math3-gibon4/BIN000B.png"
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "두 사각형은 서로 합동입니다.\n대응점끼리 바르게 짝지은 것을 모두 고르세요.",
+  "choices": [
+   "②, ③",
+   "①, ④",
+   "②, ⑤",
+   "③, ⑤",
+   "①, ③"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon4/BIN000C.png",
+  "passage": "① 점 ㄱ과 점 ㅁ　② 점 ㄴ과 점 ㅅ\n③ 점 ㄹ과 점 ㅁ　④ 점 ㄷ과 점 ㅅ\n⑤ 점 ㅅ과 점 ㄷ"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "두 사각형은 서로 합동입니다.\n변 ㄱㄴ의 길이는 몇 cm인가요? (cm)",
+  "answer": 9,
+  "image": "ws/math3-gibon4/BIN000C.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "직선 ㅈㅊ을 대칭축으로 하는 선대칭도형입니다.\n대응점을 찾아서 □ 안에 알맞은 기호를 써넣으세요.\n점 ㄴ과 점 □",
+  "choices": [
+   "ㅇ",
+   "ㅅ",
+   "ㅂ",
+   "ㄷ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon4/BIN000D.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "직선 ㅈㅊ을 대칭축으로 하는 선대칭도형입니다.\n대응점을 찾아서 □ 안에 알맞은 기호를 써넣으세요.\n점 ㄹ과 점 □",
+  "choices": [
+   "ㅂ",
+   "ㅁ",
+   "ㅅ",
+   "ㅇ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon4/BIN000D.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "직선 ㅈㅊ을 대칭축으로 하는 선대칭도형입니다.\n변 ㄴㄷ의 대응변은 어느 것인가요?",
+  "choices": [
+   "변 ㅇㅅ",
+   "변 ㄱㄴ",
+   "변 ㄷㄹ",
+   "변 ㄱㅇ",
+   "변 ㅅㅂ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon4/BIN000D.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "직선 ㅈㅊ을 대칭축으로 하는 선대칭도형입니다.\n□ 안에 알맞은 기호를 써넣으세요.\n각 ㄱㄴㄷ의 대응각은 각 □입니다.",
+  "choices": [
+   "각 ㄱㅇㅅ",
+   "각 ㅅㅂㅁ",
+   "각 ㄴㄷㄹ",
+   "각 ㅇㅅㅂ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon4/BIN000D.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "직선 ㅈㅊ을 대칭축으로 하는 선대칭도형입니다.\n□ 안에 알맞은 기호를 써넣으세요.\n각 ㄷㄹㅁ의 대응각은 각 □입니다.",
+  "choices": [
+   "각 ㅅㅂㅁ",
+   "각 ㄱㅇㅅ",
+   "각 ㅇㅅㅂ",
+   "각 ㄹㅁㅂ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon4/BIN000D.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 ㅅㅇ을 대칭축으로 하는 선대칭도형입니다.\n변 ㄱㄴ의 길이는 몇 cm인지 써 보세요. (cm)",
+  "answer": 7,
+  "image": "ws/math3-gibon4/BIN000E.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "직선 ㅅㅇ을 대칭축으로 하는 선대칭도형입니다.\n변 ㅁㄹ의 길이는 몇 cm인가요?",
+  "choices": [
+   "6cm",
+   "7cm",
+   "8cm",
+   "9cm",
+   "10cm"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon4/BIN000E.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "직선 ㅅㅇ을 대칭축으로 하는 선대칭도형입니다.\n선대칭도형의 둘레는 몇 cm인가요?",
+  "choices": [
+   "36cm",
+   "12cm",
+   "18cm",
+   "24cm",
+   "28cm"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon4/BIN000E.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 ㄱㄴ을 대칭축으로 하는 선대칭도형을 완성했을 때, 선대칭도형의 둘레는 몇 cm인지 구하세요. (cm)",
+  "answer": 20,
+  "image": "ws/math3-gibon4/BIN000F.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "대칭의 중심은 어느 것인가요?",
+  "choices": [
+   "③",
+   "①",
+   "②",
+   "④",
+   "⑤"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon4/BIN0011.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다.\n변 ㄴㄷ의 길이는 몇 cm인가요? (cm)",
+  "answer": 10,
+  "image": "ws/math3-gibon4/BIN0012.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다.\n변 ㄹㅁ의 길이는 변 ㅂㄱ의 길이보다 몇 cm 더 긴가요? (cm)",
+  "answer": 3,
+  "image": "ws/math3-gibon4/BIN0012.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다. □ 안에 알맞은 수를 써넣으세요.\n아래쪽 변 □cm",
+  "answer": 11,
+  "image": "ws/math3-gibon4/BIN0013.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다. □ 안에 알맞은 수를 써넣으세요.\n왼쪽 위의 각 □°",
+  "answer": 100,
+  "image": "ws/math3-gibon4/BIN0013.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다. □ 안에 알맞은 수를 써넣으세요.\n오른쪽 위의 각 □°",
+  "answer": 80,
+  "image": "ws/math3-gibon4/BIN0013.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "서로 합동인 두 도형을 찾아 기호를 골라 보세요.",
+  "choices": [
+   "가, 라",
+   "가, 나",
+   "나, 다",
+   "다, 라"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon5/BIN0003.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "두 삼각형은 서로 합동입니다.\n변 ㄴㄷ의 길이는 몇 cm인지 구해 보세요. (cm)",
+  "answer": 4,
+  "image": "ws/math3-gibon5/BIN0004.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "두 삼각형은 서로 합동입니다.\n변 ㅁㅂ의 길이는 몇 cm인가요?",
+  "choices": [
+   "8cm",
+   "4cm",
+   "5cm",
+   "6cm",
+   "7cm"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon5/BIN0004.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "선대칭도형이 아닌 것은 어느 것인가요?",
+  "choices": [
+   "img:ws/math3-gibon5/BIN0005.png",
+   "img:ws/math3-gibon5/BIN0006.png",
+   "img:ws/math3-gibon5/BIN0007.png",
+   "img:ws/math3-gibon5/BIN0008.png",
+   "img:ws/math3-gibon5/BIN0009.png"
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "선대칭도형을 보고 물음에 답하세요.\n설명이 잘못된 것을 모두 고르세요.",
+  "choices": [
+   "①, ④",
+   "①, ②",
+   "③, ⑤",
+   "②, ④",
+   "①, ⑤"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon5/BIN0001.png",
+  "passage": "① 점 ㄱ의 대응점은 점 ㄴ입니다.\n② 변 ㄷㄹ과 변 ㅁㄹ의 길이는 같습니다.\n③ 변 ㄱㄴ과 변 ㅅㅂ의 길이는 같습니다.\n④ 각 ㄱㄴㄷ과 각 ㄴㄷㄹ의 크기는 같습니다.\n⑤ 점 ㄷ의 대응점은 점 ㅁ입니다."
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 ㄱㄴ을 대칭축으로 하는 선대칭도형입니다. 선대칭도형의 둘레는 몇 cm인지 구하세요. (cm)",
+  "answer": 32,
+  "image": "ws/math3-gibon5/BIN000A.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "점 ㅈ을 대칭의 중심으로 하는 점대칭도형입니다.\n변 ㅅㅇ의 길이는 몇 cm인가요?",
+  "choices": [
+   "8cm",
+   "9cm",
+   "16cm",
+   "17cm",
+   "18cm"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon5/BIN000C.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "점 ㅈ을 대칭의 중심으로 하는 점대칭도형입니다.\n각 ㄱㄴㄷ의 크기는 몇 도인지 구해 보세요. (°)",
+  "answer": 70,
+  "image": "ws/math3-gibon5/BIN000C.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "직사각형을 선을 따라 모두 잘랐을 때, 잘라낸 도형 중 서로 합동인 도형을 바르게 짝지은 것은 어느 것인가요?",
+  "choices": [
+   "마와 바",
+   "가와 나",
+   "다와 라",
+   "나와 라",
+   "가와 바"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon8/BIN0003.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "두 사각형은 서로 합동입니다.\n각 ㄹㄱㄴ의 크기는 몇 도인지 구해 보세요. (°)",
+  "answer": 40,
+  "image": "ws/math3-gibon8/BIN0004.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "두 사각형은 서로 합동입니다.\n각 ㄷㄹㄱ의 크기는 몇 도인가요?",
+  "choices": [
+   "100°",
+   "105°",
+   "110°",
+   "115°",
+   "120°"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon8/BIN0004.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "선대칭도형에서 대칭축의 개수가 가장 적은 것은 어느 것인가요?",
+  "choices": [
+   "img:ws/math3-gibon8/BIN0009.png",
+   "img:ws/math3-gibon8/BIN0005.png",
+   "img:ws/math3-gibon8/BIN0006.png",
+   "img:ws/math3-gibon8/BIN0007.png",
+   "img:ws/math3-gibon8/BIN0008.png"
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 ㄱㄴ을 대칭축으로 하는 선대칭도형입니다. □ 안에 알맞은 수를 써넣으세요.\n오른쪽 위의 각 □°",
+  "answer": 100,
+  "image": "ws/math3-gibon8/BIN0001.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 ㄱㄴ을 대칭축으로 하는 선대칭도형입니다. □ 안에 알맞은 수를 써넣으세요.\n아래쪽 변 □cm",
+  "answer": 10,
+  "image": "ws/math3-gibon8/BIN0001.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "점 ㅈ을 대칭의 중심으로 하는 점대칭도형입니다.\n□ 안에 알맞은 기호를 써넣으세요.\n점 ㄴ의 대응점은 점 □입니다.",
+  "choices": [
+   "ㅂ",
+   "ㅁ",
+   "ㅅ",
+   "ㅇ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon8/BIN000A.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "점 ㅈ을 대칭의 중심으로 하는 점대칭도형입니다.\n□ 안에 알맞은 기호를 써넣으세요.\n변 ㅁㅂ의 대응변은 변 □입니다.",
+  "choices": [
+   "변 ㄱㄴ",
+   "변 ㄴㄷ",
+   "변 ㅅㅇ",
+   "변 ㄹㅁ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gibon8/BIN000A.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "점 ㅈ을 대칭의 중심으로 하는 점대칭도형입니다.\n점대칭도형의 둘레는 몇 cm인지 구하세요. (cm)",
+  "answer": 60,
+  "image": "ws/math3-gibon8/BIN000A.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "두 삼각형은 서로 합동입니다.\n대응점을 찾아 쓰세요.\n점 ㄱ과 점 □, 점 ㄴ과 점 □, 점 ㄷ과 점 □",
+  "choices": [
+   "ㄹ, ㅂ, ㅁ",
+   "ㄹ, ㅁ, ㅂ",
+   "ㅁ, ㄹ, ㅂ",
+   "ㅂ, ㅁ, ㄹ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gicho1/BIN000C.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "두 삼각형은 서로 합동입니다.\n대응변을 찾아 쓰세요.\n변 ㄱㄴ과 변 □, 변 ㄴㄷ과 변 □, 변 ㄷㄱ과 변 □",
+  "choices": [
+   "ㄹㅂ, ㅂㅁ, ㅁㄹ",
+   "ㄹㅁ, ㅁㅂ, ㅂㄹ",
+   "ㅁㅂ, ㄹㅁ, ㅂㄹ",
+   "ㅂㅁ, ㄹㅂ, ㅁㄹ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gicho1/BIN000C.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "선대칭도형을 찾아 ○표 하세요.",
+  "choices": [
+   "세 번째 도형",
+   "첫 번째 도형",
+   "두 번째 도형",
+   "없습니다"
+  ],
+  "answer": 0,
+  "image": "ws/math3-gicho1/BIN000D.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 가를 대칭축으로 하는 선대칭도형입니다.\n각 ㄴㄷㄹ은 몇 도인지 쓰세요. (°)",
+  "answer": 60,
+  "image": "ws/math3-gicho1/BIN000E.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 가를 대칭축으로 하는 선대칭도형입니다.\n변 ㄴㄷ은 몇 cm인지 쓰세요. (cm)",
+  "answer": 3,
+  "image": "ws/math3-gicho1/BIN000E.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다.\n변 ㄱㅂ의 길이는 몇 cm인지 쓰세요. (cm)",
+  "answer": 6,
+  "image": "ws/math3-gicho1/BIN0011.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다.\n각 ㄱㄴㄷ은 몇 도인지 쓰세요. (°)",
+  "answer": 95,
+  "image": "ws/math3-gicho1/BIN0011.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "서로 합동인 두 도형을 고르세요.\n위의 도형과 서로 합동인 도형은 어느 것인가요?",
+  "choices": [
+   "img:ws/math3-simhwa1/BIN0005.png",
+   "img:ws/math3-simhwa1/BIN0006.png",
+   "img:ws/math3-simhwa1/BIN0007.png",
+   "img:ws/math3-simhwa1/BIN0008.png"
+  ],
+  "answer": 0,
+  "image": "ws/math3-simhwa1/BIN0005.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "지아는 여행을 가서 관광지를 돌아보고 위와 같은 도장을 찍었습니다. 지아가 찍은 도장의 모양은 어느 것인가요?",
+  "choices": [
+   "img:ws/math3-simhwa1/BIN000B.png",
+   "img:ws/math3-simhwa1/BIN000A.png",
+   "img:ws/math3-simhwa1/BIN000C.png",
+   "img:ws/math3-simhwa1/BIN000D.png",
+   "img:ws/math3-simhwa1/BIN000E.png"
+  ],
+  "answer": 0,
+  "image": "ws/math3-simhwa1/BIN0009.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "두 사각형은 서로 합동입니다. □ 안에 알맞은 수를 써넣으세요.\n왼쪽 사각형의 각 □°",
+  "answer": 75,
+  "image": "ws/math3-simhwa1/BIN000F.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "두 사각형은 서로 합동입니다. □ 안에 알맞은 수를 써넣으세요.\n왼쪽 사각형의 변 □cm",
+  "answer": 10,
+  "image": "ws/math3-simhwa1/BIN000F.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "두 사각형은 서로 합동입니다. □ 안에 알맞은 수를 써넣으세요.\n오른쪽 사각형의 변 □cm",
+  "answer": 10,
+  "image": "ws/math3-simhwa1/BIN000F.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "두 사각형은 서로 합동입니다.\n각 ㄷㄹㄱ의 크기는 몇 도인지 구해 보세요. (°)",
+  "answer": 120,
+  "image": "ws/math3-simhwa1/BIN0003.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "두 사각형은 서로 합동입니다.\n각 ㄱㄴㄷ의 크기는 몇 도인지 구해 보세요. (°)",
+  "answer": 60,
+  "image": "ws/math3-simhwa1/BIN0003.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "삼각형 ㄱㄴㄷ과 삼각형 ㄹㄴㄷ은 서로 합동입니다.\n□ 안에 알맞은 기호를 써넣으세요.\n변 ㄱㄴ의 대응변은 변 □입니다.",
+  "choices": [
+   "변 ㄹㄷ",
+   "변 ㄹㄴ",
+   "변 ㄴㄷ",
+   "변 ㄱㄷ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-simhwa1/BIN0010.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "삼각형 ㄱㄴㄷ과 삼각형 ㄹㄴㄷ은 서로 합동입니다.\n□ 안에 알맞은 기호를 써넣으세요.\n변 ㄷㄱ의 대응변은 변 □입니다.",
+  "choices": [
+   "변 ㄴㄹ",
+   "변 ㄹㄷ",
+   "변 ㄴㄷ",
+   "변 ㄱㄴ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-simhwa1/BIN0010.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "삼각형 ㄱㄴㄷ과 삼각형 ㄹㄴㄷ은 서로 합동입니다.\n각 ㄴㄷㄱ과 크기가 같은 각을 찾아 골라 보세요.",
+  "choices": [
+   "각 ㄷㄴㄹ",
+   "각 ㄴㄹㄷ",
+   "각 ㄴㄱㄷ",
+   "각 ㄱㄴㄷ"
+  ],
+  "answer": 0,
+  "image": "ws/math3-simhwa1/BIN0010.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "선대칭도형이 아닌 글자를 고르세요.",
+  "choices": [
+   "F",
+   "X",
+   "A",
+   "M",
+   "C"
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "선대칭도형 중 대칭축의 개수가 가장 많은 도형은 어느 것인가요?",
+  "choices": [
+   "img:ws/math3-simhwa1/BIN0001.png",
+   "img:ws/math3-simhwa1/BIN0017.png",
+   "img:ws/math3-simhwa1/BIN0018.png",
+   "img:ws/math3-simhwa1/BIN0019.png",
+   "img:ws/math3-simhwa1/BIN001A.png"
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 ㅅㅇ을 대칭축으로 하는 선대칭도형입니다. 선대칭도형의 둘레는 몇 cm인지 구하세요. (cm)",
+  "answer": 54,
+  "image": "ws/math3-simhwa1/BIN0002.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 ㄱㄴ을 대칭축으로 하는 선대칭도형입니다. □ 안에 알맞은 수를 써넣으세요.\n위쪽 변 □cm",
+  "answer": 12,
+  "image": "ws/math3-simhwa1/BIN001B.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "직선 ㄱㄴ을 대칭축으로 하는 선대칭도형입니다. □ 안에 알맞은 수를 써넣으세요.\n안쪽 □cm",
+  "answer": 8,
+  "image": "ws/math3-simhwa1/BIN001B.png"
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "prompt": "선대칭도형이면서 점대칭도형인 것을 고르세요.",
+  "choices": [
+   "img:ws/math3-simhwa1/BIN0020.png",
+   "img:ws/math3-simhwa1/BIN001E.png",
+   "img:ws/math3-simhwa1/BIN001F.png",
+   "img:ws/math3-simhwa1/BIN0021.png",
+   "img:ws/math3-simhwa1/BIN0022.png"
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "점 ㅇ을 대칭의 중심으로 하는 점대칭도형입니다. 점대칭도형의 둘레는 몇 cm인가요? (cm)",
+  "answer": 28,
+  "image": "ws/math3-simhwa1/BIN0024.png"
+  },
+  {
+  "unit": 2,
+  "kind": "number",
+  "prompt": "점 ㅈ을 대칭의 중심으로 하는 점대칭도형입니다. 선분 ㅅㅂ의 길이는 몇 cm인지 구하세요. (cm)",
+  "answer": 6,
+  "image": "ws/math3-simhwa1/BIN0026.png",
+  "hint": "대칭의 중심은 선분 ㄷㅅ을 똑같이 둘로 나눠요."
+  },
+  {
+  "unit": 3,
+  "kind": "number",
+  "prompt": "□ 안에 알맞은 수를 써넣으세요.",
+  "answer": 7.2,
+  "image": "ws/math4-gibon1/BIN0003.png"
+  },
+  {
+  "unit": 3,
+  "kind": "number",
+  "prompt": "빈칸에 알맞은 수를 써넣으세요.",
+  "answer": 0.63,
+  "image": "ws/math4-gibon1/BIN0005.png"
+  },
+  {
+  "unit": 3,
+  "kind": "number",
+  "prompt": "수 카드 2, 5, 7을 한 번씩만 사용하여 곱이 가장 큰 (자연수)×(소수 한 자리 수)를 만들려고 합니다. 곱이 가장 클 때의 값은 얼마인지 구하세요.\n□×□.□",
+  "answer": 36.4
+  },
+  {
+  "unit": 3,
+  "kind": "number",
+  "prompt": "평행사변형의 넓이는 몇 cm²인지 구해 보세요. (cm²)",
+  "answer": 24.86,
+  "image": "ws/math4-gibon2/BIN0007.png"
+  },
+  {
+  "unit": 3,
+  "kind": "number",
+  "prompt": "□ 안에 알맞은 수를 써넣으세요.",
+  "answer": 9.6,
+  "image": "ws/math4-gibon5/BIN0002.png"
+  },
+  {
+  "unit": 3,
+  "kind": "number",
+  "prompt": "평행사변형의 넓이는 몇 m²인지 구하세요. (m²)",
+  "answer": 3.15,
+  "image": "ws/math4-gicho1/BIN0004.png"
+  },
+  {
+  "unit": 3,
+  "kind": "number",
+  "prompt": "73×25=1825를 이용하여 계산 결과를 찾아 알맞게 이으세요.\n7.3×0.25와 이어지는 수는? (18.25, 1.825, 0.1825)",
+  "answer": 1.825,
+  "image": "ws/math4-gicho1/BIN0005.png"
+  },
+  {
+  "unit": 3,
+  "kind": "number",
+  "prompt": "73×25=1825를 이용하여 계산 결과를 찾아 알맞게 이으세요.\n0.73×0.25와 이어지는 수는? (18.25, 1.825, 0.1825)",
+  "answer": 0.1825,
+  "image": "ws/math4-gicho1/BIN0005.png"
+  },
+  {
+  "unit": 3,
+  "kind": "number",
+  "prompt": "73×25=1825를 이용하여 계산 결과를 찾아 알맞게 이으세요.\n7.3×2.5와 이어지는 수는? (18.25, 1.825, 0.1825)",
+  "answer": 18.25,
+  "image": "ws/math4-gicho1/BIN0005.png"
+  },
+  {
+  "unit": 3,
+  "kind": "number",
+  "prompt": "수 카드 1, 4, 5, 8 4장 중에서 3장을 뽑아 한 번씩만 사용하여 가장 작은 소수 두 자리 수를 만들었습니다. 만든 소수 두 자리 수와 사용하지 않은 수의 곱은 얼마인지 구하세요.",
+  "answer": 11.6
+  },
+  {
+  "unit": 3,
+  "kind": "number",
+  "prompt": "직사각형의 넓이는 몇 cm²인지 구해 보세요. (cm²)",
+  "answer": 14.5,
+  "image": "ws/math4-simhwa1/BIN0006.png"
+  },
+  {
+  "unit": 3,
+  "kind": "number",
+  "prompt": "직사각형의 넓이는 몇 cm²인지 구해 보세요. (cm²)",
+  "answer": 49.5,
+  "image": "ws/math4-simhwa3/BIN0001.png"
+  },
+  {
+  "unit": 3,
+  "kind": "number",
+  "prompt": "수 카드 1, 2, 4, 5, 7 5장을 한 번씩만 사용하여 만들 수 있는 가장 작은 소수 두 자리 수와 가장 큰 소수 한 자리 수의 곱은 얼마인지 구하세요.\n□.□□ × □.□",
+  "answer": 9.3
   }
 ];

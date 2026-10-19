@@ -1,4 +1,4 @@
-// 영어 Lesson 8~12 단원평가 1회 (원본 문제 먼저, 듣기는 대화를 글로 바꿈) + 같은 유형으로 보탠 문제
+// 영어 Lesson 8~12 단원평가 1회 (원본 문제·그림 먼저, 듣기는 대화를 글로 바꿈) + 같은 유형으로 보탠 문제
 export default [
   {
   "unit": 0,
@@ -31,14 +31,15 @@ export default [
   {
   "unit": 0,
   "kind": "choice",
-  "passage": "[그림] 음악 시간에 노래를 부르는 아이\nMy favorite subject is ____. I like to ____ songs.",
+  "image": "ws/eng-L8/BIN0006.png",
+  "passage": "My favorite subject is ____. I like to ____ songs.",
   "prompt": "그림을 보고, 빈칸에 알맞은 단어를 각각 고르세요.",
   "choices": [
    "music – sing",
    "music – play",
+   "Korean – sing",
    "art – sing",
-   "science – draw",
-   "P.E. – sing"
+   "P.E. – draw"
   ],
   "answer": 0
   },
@@ -83,6 +84,44 @@ export default [
    "I to like read books."
   ],
   "answer": 0
+  },
+  {
+  "unit": 0,
+  "kind": "choice",
+  "image": "ws/eng-L8/BIN0003.png",
+  "passage": "A: What’s your favorite subject?\nB: My favorite subject is ____.",
+  "prompt": "그림을 보고, 빈칸에 알맞은 말을 고르세요.",
+  "choices": [
+   "math",
+   "music",
+   "science",
+   "art",
+   "English"
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 0,
+  "kind": "choice",
+  "image": "ws/eng-L8/BIN0004.png",
+  "passage": "A: What’s your favorite subject?\nB: My favorite subject is ____. I like to play the piano.",
+  "prompt": "그림을 보고, 빈칸에 알맞은 말을 고르세요.",
+  "choices": [
+   "music",
+   "math",
+   "science",
+   "P.E.",
+   "Korean"
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 0,
+  "kind": "ox",
+  "image": "ws/eng-L8/BIN0005.png",
+  "passage": "A: What’s your favorite subject?\nB: My favorite subject is English. I like to read books.",
+  "prompt": "대화를 읽고, 그림과 내용이 일치하면 O표, 일치하지 않으면 X표 하세요.",
+  "answer": true
   },
   {
   "unit": 0,
@@ -309,14 +348,15 @@ export default [
   {
   "unit": 1,
   "kind": "choice",
-  "passage": "[그림] 바지 가격표: 30,000원\nA: How much are these pants?\nB: ____ thousand won.",
+  "image": "ws/eng-L9/BIN0006.png",
+  "passage": "A: How much are these pants?\nB: ____ thousand won.",
   "prompt": "그림을 보고, 대화의 빈칸에 알맞은 말을 고르세요.",
   "choices": [
-   "They’re thirty",
-   "It’s thirty",
-   "They’re thirteen",
-   "They’re three",
-   "It’s three"
+   "They’re forty",
+   "It’s forty",
+   "They’re fourteen",
+   "They’re four",
+   "It’s four"
   ],
   "answer": 0
   },
@@ -347,6 +387,44 @@ export default [
    "기자는 김밥을 샀다."
   ],
   "answer": 0
+  },
+  {
+  "unit": 1,
+  "kind": "choice",
+  "image": "ws/eng-L9/BIN0004.png",
+  "passage": "A: How much are these socks?\nB: They’re ____ won.",
+  "prompt": "그림을 보고, 대화의 빈칸에 알맞은 말을 고르세요.",
+  "choices": [
+   "seven thousand",
+   "four thousand",
+   "seventy thousand",
+   "seventeen thousand",
+   "seven hundred"
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 1,
+  "kind": "choice",
+  "image": "ws/eng-L9/BIN0003.png",
+  "passage": "A: Can I help you?\nB: Yes, please. How much are these socks?\nA: ____",
+  "prompt": "그림을 보고, 빈칸에 알맞은 말을 고르세요.",
+  "choices": [
+   "They’re four thousand won.",
+   "They’re fourteen thousand won.",
+   "They’re forty thousand won.",
+   "They’re seven thousand won.",
+   "They’re four hundred won."
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 1,
+  "kind": "ox",
+  "image": "ws/eng-L9/BIN0005.png",
+  "passage": "A: How much are these shorts?\nB: They’re twenty thousand won.",
+  "prompt": "대화를 읽고, 그림과 내용이 일치하면 O표, 일치하지 않으면 X표 하세요.",
+  "answer": true
   },
   {
   "unit": 1,
@@ -601,8 +679,9 @@ export default [
   {
   "unit": 2,
   "kind": "choice",
-  "passage": "[지도] 한 구역 곧바로 가서 오른쪽으로 돌면 왼쪽에 도서관이 있다.\nA: Excuse me. Where is the library?\nB: Go straight (one / two) block(s) and turn right. It’s on your (left / right).",
-  "prompt": "지도를 보고, 괄호 안에서 알맞은 단어를 고르세요.",
+  "image": "ws/eng-L10/BIN0001.png",
+  "passage": "A: Excuse me. Where is the library?\nB: Go straight (one / two) block(s) and turn right. It’s on your (left / right).",
+  "prompt": "다음 지도를 보고, 괄호 안에서 알맞은 단어를 고르세요. (화살표에서 출발)",
   "choices": [
    "one – left",
    "one – right",
@@ -614,14 +693,15 @@ export default [
   {
   "unit": 2,
   "kind": "choice",
-  "passage": "[지도] 두 구역 곧바로 가서 왼쪽으로 돌면 병원 옆에 은행이 있다.\nA: Excuse me. Where is the ____?\nB: Go straight two blocks and turn left. It’s next to the hospital.",
-  "prompt": "지도를 보고, 대화의 빈칸에 알맞은 단어를 고르세요.",
+  "image": "ws/eng-L10/BIN0001.png",
+  "passage": "A: Excuse me. Where is the ____?\nB: Go straight two blocks and turn left. It’s next to the hospital.",
+  "prompt": "대화를 읽고, 빈칸에 알맞은 단어를 고르세요. (지도의 화살표에서 출발)",
   "choices": [
    "bank",
    "library",
    "park",
-   "museum",
-   "school"
+   "school",
+   "restaurant"
   ],
   "answer": 0
   },
@@ -650,6 +730,50 @@ export default [
    "It’s on the library.",
    "It’s library next to.",
    "It’s next to the park."
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "image": "ws/eng-L10/BIN0002.png",
+  "passage": "A: Excuse me. Where is the school?\nB: ____",
+  "prompt": "그림을 보고, 빈칸에 가장 알맞은 것을 고르세요.",
+  "choices": [
+   "Go straight one block and turn left. It’s on your right.",
+   "Go straight one block and turn right. It’s on your left.",
+   "Go straight one block and turn left. It’s on your left.",
+   "Go straight one block and turn right. It’s on your right.",
+   "Go straight two blocks and turn right."
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "image": "ws/eng-L10/BIN0001.png",
+  "passage": "A: Excuse me. Where is the school?\nB: Go straight two blocks and turn (left / right). It’s on your (left / right).",
+  "prompt": "다음 지도를 보고, 괄호 안에서 알맞은 단어를 고르세요. (화살표에서 출발)",
+  "choices": [
+   "right – left",
+   "right – right",
+   "left – left",
+   "left – right"
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 2,
+  "kind": "choice",
+  "image": "ws/eng-L10/BIN0001.png",
+  "passage": "A: Excuse me. Where is the ____?\nB: Go straight one block and turn left. It’s on your right.",
+  "prompt": "다음 지도를 보고, 대화의 빈칸에 알맞은 단어를 고르세요. (화살표에서 출발)",
+  "choices": [
+   "restaurant",
+   "library",
+   "hospital",
+   "school",
+   "bank"
   ],
   "answer": 0
   },
@@ -850,14 +974,14 @@ export default [
   {
   "unit": 3,
   "kind": "choice",
-  "passage": "[그림] 이마가 뜨거워서 체온계를 물고 있는 아이",
+  "image": "ws/eng-L11/BIN0002.png",
   "prompt": "그림을 보고, 가장 알맞은 문장을 고르세요.",
   "choices": [
-   "I have a fever.",
+   "I have a stomachache.",
    "I have a cold.",
+   "I have a fever.",
    "Take this medicine.",
-   "I have a runny nose.",
-   "I have a stomachache."
+   "I have a runny nose."
   ],
   "answer": 0
   },
@@ -892,16 +1016,25 @@ export default [
   {
   "unit": 3,
   "kind": "choice",
-  "passage": "[그림] 머리가 아파서 머리를 잡고 있는 아이\nA: What’s wrong?\nB: I have a [stomachache].\nA: That’s too bad.",
+  "image": "ws/eng-L11/BIN0001.png",
+  "passage": "A: What’s wrong?\nB: I have a [stomachache].\nA: That’s too bad.",
   "prompt": "그림을 보고, [ ] 안의 단어를 바르게 고쳐서 쓴 문장을 고르세요.",
   "choices": [
-   "I have a headache.",
-   "I have a stomachache.",
    "I have a fever.",
+   "I have a stomachache.",
+   "I have a headache.",
    "I have a runny nose.",
-   "I have a headaches."
+   "I have a fevers."
   ],
   "answer": 0
+  },
+  {
+  "unit": 3,
+  "kind": "ox",
+  "image": "ws/eng-L11/BIN0005.png",
+  "passage": "A: What’s wrong?\nB: I have a runny nose.\nA: That’s too bad. Take this medicine.",
+  "prompt": "대화를 읽고, 그림의 내용과 일치하면 O표, 일치하지 않으면 X표 하세요.",
+  "answer": true
   },
   {
   "unit": 3,
@@ -1085,14 +1218,15 @@ export default [
   {
   "unit": 4,
   "kind": "choice",
-  "passage": "[그림] 공원에서 드론을 날리는 아이\nI want to ____.",
+  "image": "ws/eng-L12/BIN0003.png",
+  "passage": "I want to ____.",
   "prompt": "그림을 보고, 빈칸에 알맞은 말을 고르세요.",
   "choices": [
-   "fly a drone",
+   "invite my friend",
    "bake a cake",
+   "fly a drone",
    "clean my room",
-   "travel to Jeju-do",
-   "invite my friend"
+   "travel to Jeju-do"
   ],
   "answer": 0
   },
@@ -1135,6 +1269,51 @@ export default [
    "What you want to do this winter?",
    "What do you want to this winter?",
    "What do you want to do this weekend?"
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 4,
+  "kind": "choice",
+  "image": "ws/eng-L12/BIN0006.png",
+  "passage": "Boy: What do you want to do this weekend?\nGirl: ____",
+  "prompt": "그림을 보고, 빈칸에 가장 알맞은 것을 고르세요.",
+  "choices": [
+   "I want to clean my room.",
+   "I want to fly a kite.",
+   "I want to bake a cake.",
+   "I want to play badminton.",
+   "I have no idea."
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 4,
+  "kind": "choice",
+  "image": "ws/eng-L12/BIN0002.png",
+  "passage": "A: What do you want to do next year?\nGirl: ____",
+  "prompt": "그림을 보고, 여자아이가 하고 싶은 일로 알맞은 것을 고르세요.",
+  "choices": [
+   "I want to learn to play the recorder.",
+   "I want to go to the beach.",
+   "I want to bake some cookies.",
+   "I want to join a soccer club.",
+   "I want to fly a drone."
+  ],
+  "answer": 0
+  },
+  {
+  "unit": 4,
+  "kind": "choice",
+  "image": "ws/eng-L12/BIN0001.png",
+  "passage": "A: What do you want to do this summer?\nGirl: ____",
+  "prompt": "그림을 보고, 여자아이가 하고 싶은 일로 알맞은 것을 고르세요.",
+  "choices": [
+   "I want to go to the beach.",
+   "I want to learn to play the recorder.",
+   "I want to clean my room.",
+   "I want to read many books.",
+   "I want to go to a ski camp."
   ],
   "answer": 0
   },
