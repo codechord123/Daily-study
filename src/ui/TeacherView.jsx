@@ -4,6 +4,8 @@ import { ROSTER, samplePlanet } from '../data/classroom';
 import { loadProfile, saveProfile, newProfile } from '../store/profileStore';
 import { getSettings, setSettings, onSettings } from '../store/classSettings';
 import { cloudEnabled, onCloudStatus, getCloudStatus } from '../services/cloud';
+import ClassPanel from './ClassPanel';
+import { useAccount } from './CloudLogin';
 import { onPlanetChange } from '../store/profileStore';
 import { SUBJECT_META } from '../data/missions/grade5';
 import { curriculumPosition, unitTitles, buildDailyMission, UNIT_TITLES, MISSION_COUNTS } from '../engine/dailyMission';
@@ -78,6 +80,8 @@ function toCSV(rows) {
 
 export default function TeacherView() {
   const go = useGame((s) => s.go);
+  const logout = useGame((s) => s.logout);
+  const account = useAccount();
   const settings = useSettings();
   const [tick, setTick] = useState(0);
   const [csv, setCsv] = useState(null);
@@ -170,14 +174,19 @@ export default function TeacherView() {
     <div className="teacher">
       <header className="teacher-head">
         <div>
-          <p className="hud-kicker">선생님 화면 · 5학년 별빛반</p>
+          <p className="hud-kicker">선생님 화면 · {cloudEnabled ? account.className : '5학년 별빛반'}</p>
           <h1 className="title">오늘의 학급 현황</h1>
         </div>
-        <button className="btn" onClick={() => go('login')}>← 학생 화면으로</button>
+        {cloudEnabled ? (
+          <button className="btn" onClick={logout}>로그아웃</button>
+        ) : (
+          <button className="btn" onClick={() => go('login')}>← 학생 화면으로</button>
+        )}
       </header>
       {/* 아래쪽 자주 쓰는 곳으로 바로 이동 */}
       <nav className="t-jump" aria-label="바로 가기">
         {[
+          ...(cloudEnabled ? [['t-class', '🏫 우리 반']] : []),
           ['t-students', '👩‍🎓 학생별 현황'],
           ['t-units', '📚 출제 단원'],
           ['t-settings', '⚙︎ 설정'],
@@ -228,8 +237,12 @@ export default function TeacherView() {
           <h2>학생별 현황</h2>
           <div className="t-actions">
             <button className="btn btn-sm" onClick={download}>CSV 내보내기</button>
-            <button className="btn btn-sm" onClick={() => (fillDemo(), setTick((x) => x + 1))}>샘플 기록 채우기</button>
-            <button className="btn btn-sm" onClick={() => (clearDemo(), setTick((x) => x + 1))}>샘플 지우기</button>
+            {!cloudEnabled && (
+              <>
+                <button className="btn btn-sm" onClick={() => (fillDemo(), setTick((x) => x + 1))}>샘플 기록 채우기</button>
+                <button className="btn btn-sm" onClick={() => (clearDemo(), setTick((x) => x + 1))}>샘플 지우기</button>
+              </>
+            )}
           </div>
         </div>
         <div className="t-table-wrap">
@@ -327,6 +340,8 @@ export default function TeacherView() {
         </div>
       </section>
 
+      {cloudEnabled && <ClassPanel />}
+
       <section className="t-panel" id="t-settings">
         <h2>설정</h2>
         <div className="t-settings">
@@ -346,7 +361,7 @@ export default function TeacherView() {
           </button>
           <span className="muted">{settings.freeDecor ? '꾸미기에 별가루가 들지 않아요 (실제 수업 전에 꺼 주세요)' : '소품·옷·별 장식을 별가루로 사요'}</span>
 
-          <PinSetting pin={settings.teacherPin} />
+          {!cloudEnabled && <PinSetting pin={settings.teacherPin} />}
         </div>
       </section>
     </div>

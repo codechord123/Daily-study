@@ -4,6 +4,7 @@ import { OPTION_SLOTS, COLOR_SLOTS } from '../data/character';
 import { PLANET_DECO } from '../theme/tokens';
 import { priceOf } from './classSettings';
 import { loadProfile, newProfile, saveProfile, onRemoteProfile, onSynced } from './profileStore';
+import { cloudEnabled, cloudSignOut } from '../services/cloud';
 
 export const todayKey = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -40,6 +41,7 @@ export const useGame = create((set, get) => {
     mode: 'walk', // walk | decorate
 
     restoreSession() {
+      if (cloudEnabled) return; // 학급 서버 로그인은 기기에 남은 Firebase 로그인으로 이어진다 (App)
       try {
         const sid = sessionStorage.getItem(SESSION_KEY);
         if (sid) get().login(sid);
@@ -67,6 +69,7 @@ export const useGame = create((set, get) => {
         /* noop */
       }
       set({ profile: null, screen: 'login', visiting: null });
+      if (cloudEnabled) cloudSignOut();
     },
 
     go(screen) {

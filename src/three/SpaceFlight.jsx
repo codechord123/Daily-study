@@ -5,7 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import Planet, { TAP_SLOP } from './Planet';
 import Character from './Character';
-import { ROSTER, spacePosition, SPACE_BOUNDS, studentById } from '../data/classroom';
+import { ROSTER, spacePosition, SPACE_BOUNDS, studentById, onRoster } from '../data/classroom';
 import { getPlanet, onPlanetChange } from '../store/profileStore';
 import { PLANET_RADIUS, NEON } from '../theme/tokens';
 import { glow } from './materials';
@@ -24,7 +24,14 @@ const LIFT_SPEED = 4.5;
 const LAND_RANGE = R + 4; // 이 안에 들어오면 "내리기"
 const UP = new THREE.Vector3(0, 1, 0);
 
-export const PLANET_POS = Object.fromEntries(ROSTER.map((s, i) => [s.id, new THREE.Vector3(...spacePosition(i))]));
+export const PLANET_POS = {};
+// 학급 명단이 바뀌면(학급 서버 연결) 별 자리도 다시 잡는다
+const placePlanets = () => {
+  for (const k of Object.keys(PLANET_POS)) delete PLANET_POS[k];
+  ROSTER.forEach((s, i) => (PLANET_POS[s.id] = new THREE.Vector3(...spacePosition(i))));
+};
+placePlanets();
+onRoster(placePlanets);
 
 function FlightPlanet({ student, isMine, isTarget, isPicked, online, playerPos, low }) {
   const [planet, setPlanet] = useState(() => getPlanet(student.id));

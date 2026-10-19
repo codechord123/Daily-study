@@ -17,11 +17,26 @@ const NICKS = [
   '파도소리', '도토리', '물방울', '아기별', '연둣잎', '노을',
 ];
 
-export const ROSTER = NICKS.map((nick, i) => ({
-  id: `s${String(i + 1).padStart(2, '0')}`,
-  number: i + 1,
-  nickname: nick,
-}));
+// 별명 기본값 (선생님이 학급을 만들 때 번호마다 하나씩 붙고, 나중에 바꿀 수 있다)
+export const DEFAULT_NICKS = NICKS;
+export const makeRoster = (count, nicks = NICKS) =>
+  Array.from({ length: count }, (_, i) => ({
+    id: `s${String(i + 1).padStart(2, '0')}`,
+    number: i + 1,
+    nickname: nicks[i] ?? `${i + 1}번`,
+  }));
+
+// 지금 학급 명단. 학급 서버에 연결되면 그 학급 명단으로 바뀐다 (배열은 그대로 두고 내용만 바꾼다)
+export const ROSTER = makeRoster(NICKS.length);
+const rosterListeners = new Set();
+export function setRoster(list) {
+  ROSTER.splice(0, ROSTER.length, ...list);
+  rosterListeners.forEach((fn) => fn(ROSTER));
+}
+export function onRoster(fn) {
+  rosterListeners.add(fn);
+  return () => rosterListeners.delete(fn);
+}
 
 export const studentById = (id) => ROSTER.find((s) => s.id === id);
 

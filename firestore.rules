@@ -1,19 +1,58 @@
 rules_version = '2';
-// 샘플 학급 규칙: 로그인(익명 포함)한 사람만 읽고 쓴다.
-// 실제 운영 전: 학생은 자기 문서만, 교사는 반 전체를 쓰도록 좁혀야 한다 (docs/ROADMAP.md).
+// 학급 규칙
+//  - 선생님(classes/{c}.teacherUid): 자기 학급 전체를 읽고, 설정·명단·자리를 바꾼다
+//  - 학생(classes/{c}/members/{uid}): 반 친구 별을 읽고, 자기 번호의 별만 쓴다
+//  - 가입 전: 학급 코드로 학급 이름·명단과 번호 자리(가입했는지)만 볼 수 있다
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /classes/{classId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
-      match /students/{sid} {
-        allow read, write: if request.auth != null;
+    function signedIn() { return request.auth != null; }
+    function isTeacher(c) { return signedIn() && get(/databases/$(database)/documents/classes/$(c)).data.teacherUid == request.auth.uid; }
+    function isMember(c) { return signedIn() && exists(/databases/$(database)/documents/classes/$(c)/members/$(request.auth.uid)); }
+    function ownsSeat(c, sid) { return signedIn() && get(/databases/$(database)/documents/classes/$(c)/seats/$(sid)).data.uid == request.auth.uid; }
+
+    // 학급 코드 → 학급 (코드를 아는 사람만 한 건씩 읽는다. 목록 읽기는 막음)
+    match /classCodes/{code} {
+      allow get: if true;
+      allow create: if signedIn() && request.resource.data.teacherUid == request.auth.uid;
+      allow update: if signedIn() && resource.data.teacherUid == request.auth.uid && request.resource.data.teacherUid == request.auth.uid;
+    }
+
+    // 계정 → 역할·학급
+    match /users/{uid} {
+      allow read, create, update: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /classes/{c} {
+      allow read: if isTeacher(c) || isMember(c);
+      allow create: if signedIn() && request.resource.data.teacherUid == request.auth.uid;
+      allow update: if isTeacher(c) && request.resource.data.teacherUid == resource.data.teacherUid;
+
+      // 번호 자리: 비어 있을 때만 내 계정으로 잡는다. 선생님은 비울 수 있다(다시 가입 허용)
+      match /seats/{sid} {
+        allow read: if true;
+        allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.gen == 0;
+        allow update: if (signedIn() && resource.data.uid == null && request.resource.data.uid == request.auth.uid && request.resource.data.gen == resource.data.gen)
+          || (isTeacher(c) && request.resource.data.uid == null && request.resource.data.gen == resource.data.gen + 1);
       }
+
+      // 이 학급 학생 표시: 방금 잡은 번호 자리가 내 것일 때만
+      match /members/{uid} {
+        allow read: if (signedIn() && request.auth.uid == uid) || isTeacher(c);
+        allow create: if signedIn() && request.auth.uid == uid
+          && getAfter(/databases/$(database)/documents/classes/$(c)/seats/$(request.resource.data.sid)).data.uid == request.auth.uid;
+        allow delete: if isTeacher(c);
+      }
+
+      match /students/{sid} {
+        allow read: if isTeacher(c) || isMember(c);
+        allow write: if isTeacher(c) || (ownsSeat(c, sid) && request.resource.data.sid == sid);
+      }
+
       match /hearts/{sid} {
-        allow read: if request.auth != null;
+        allow read: if isTeacher(c) || isMember(c);
         // 하트는 1씩만 올릴 수 있다
-        allow create: if request.auth != null && request.resource.data.count == 1;
-        allow update: if request.auth != null && request.resource.data.count == resource.data.count + 1;
+        allow create: if isMember(c) && request.resource.data.count == 1;
+        allow update: if isMember(c) && request.resource.data.count == resource.data.count + 1;
       }
     }
   }

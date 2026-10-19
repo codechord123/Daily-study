@@ -20,6 +20,8 @@ import { useGame } from './store/useGame';
 import { useUI } from './store/useUI';
 import * as presence from './services/presence';
 import { sfx, playMusic } from './services/sound';
+import { cloudEnabled, cloudReady } from './services/cloud';
+import { useAccount } from './ui/CloudLogin';
 
 export default function App() {
   const { profile, screen, visiting, launchFrom, restoreSession, visit, missionMode } = useGame();
@@ -32,6 +34,24 @@ export default function App() {
   const [gl3d] = useState(webglAvailable);
 
   useEffect(() => restoreSession(), [restoreSession]);
+  // 학급 서버: 로그인된 계정이 정해지면 학생은 내 별로, 선생님은 선생님 화면으로
+  const account = useAccount();
+  useEffect(() => {
+    if (!cloudEnabled) return;
+    const g = useGame.getState();
+    if (account.status === 'teacher') {
+      if (g.screen !== 'teacher') g.go('teacher');
+    } else if (account.status === 'student') {
+      if (g.profile?.sid === account.sid) return;
+      let alive = true;
+      cloudReady.then(() => alive && useGame.getState().profile?.sid !== account.sid && useGame.getState().login(account.sid));
+      return () => {
+        alive = false;
+      };
+    } else if (account.status === 'signedOut' && (g.profile || g.screen !== 'login')) {
+      useGame.setState({ profile: null, screen: 'login', visiting: null });
+    }
+  }, [account.status, account.sid]);
   useEffect(() => {
     if (profile && gl3d) prewarmAtlases();
   }, [!!profile]); // eslint-disable-line react-hooks/exhaustive-deps

@@ -1,9 +1,25 @@
 {
   "rules": {
+    "teachers": {
+      "$classId": {
+        ".read": "auth != null",
+        ".write": "auth != null && !data.exists() && newData.val() === auth.uid"
+      }
+    },
+    "seats": {
+      "$classId": {
+        "$sid": {
+          ".read": "auth != null",
+          ".write": "auth != null && ((!data.exists() && newData.val() === auth.uid) || (!newData.exists() && root.child('teachers').child($classId).val() === auth.uid))"
+        }
+      }
+    },
     "presence": {
       "$classId": {
         ".read": "auth != null",
-        "$sid": { ".write": "auth != null" }
+        "$sid": {
+          ".write": "auth != null && root.child('seats').child($classId).child($sid).val() === auth.uid"
+        }
       }
     }
   }

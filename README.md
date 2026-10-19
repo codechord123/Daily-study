@@ -11,8 +11,8 @@ npm run dev      # http://localhost:5173
 npm run build    # dist/ → Vercel 등에 배포
 ```
 
-- 학생: 학급 코드 `STAR5` → 번호 선택 (처음 들어오면 4장짜리 안내가 나와요)
-- 선생님: 로그인 화면 아래 **🧑‍🏫 선생님이세요?** → 비밀번호 `0000`
+- 키 없음(샘플 학급): 학생은 학급 코드 `STAR5` → 번호 선택, 선생님은 **🧑‍🏫 선생님이세요?** → 비밀번호 `0000`
+- 키 있음(실제 학급): 선생님은 Google 로그인 → 학급 만들기 → 학급 코드, 학생은 학급 코드 → 번호 → 비밀번호(6글자 이상)로 가입
 
 ## 학생이 하는 것
 
@@ -76,7 +76,9 @@ src/
 | 학급 설정 `store/classSettings.js` | localStorage | Firestore `classes/{classId}` |
 | 하트 | localStorage | Firestore `classes/{classId}/hearts` (increment) |
 | 실시간 함께 있기 `services/presence.js` | BroadcastChannel + 데모 봇 | Realtime DB `presence/{classId}` |
+| 로그인 `ui/CloudLogin.jsx` | 샘플 학급 코드·번호 | 선생님 Google, 학생 학급 코드+번호+비밀번호 (`classCodes`, `classes/{id}/seats`) |
 
-판매 단계에서 남은 것: Google/쎈에듀 로그인과 교사 권한, 보안 규칙 좁히기, 보상 계산을 Cloud Functions로 옮기기.
+보안 규칙(`firestore.rules`, `database.rules.json`): 학생은 자기 번호 별만 쓰고, 설정·명단은 담임만 바꿔요.
+판매 단계에서 남은 것: 쎈에듀 로그인 연동(공개 API가 있을 때), 보상 계산을 Cloud Functions로 옮기기.
 
 배포 계획(웹·Android·iOS)과 아이디어 메모는 `docs/ROADMAP.md`.

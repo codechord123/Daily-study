@@ -5,6 +5,7 @@ import { loadProfile } from '../store/profileStore';
 import { getSettings } from '../store/classSettings';
 import { cloudEnabled, cloudReady } from '../services/cloud';
 import { useEffect } from 'react';
+import CloudLogin from './CloudLogin';
 
 // 받침이 있으면 '으로', 없거나 ㄹ 받침이면 '로'
 const withRo = (word) => {
@@ -14,8 +15,13 @@ const withRo = (word) => {
   return jong === 0 || jong === 8 ? '로' : '으로';
 };
 
-// 샘플 로그인: 학급 코드 → 내 번호. (나중에 Google/쎈에듀 로그인으로 교체)
+// 학급 서버가 있으면 진짜 가입·로그인, 없으면 샘플 학급으로 바로 들어간다
 export default function Login() {
+  return cloudEnabled ? <CloudLogin /> : <SampleLogin />;
+}
+
+// 샘플 로그인: 학급 코드 → 내 번호 (Firebase 키가 없을 때)
+function SampleLogin() {
   const login = useGame((s) => s.login);
   const go = useGame((s) => s.go);
   const [pin, setPin] = useState('');
