@@ -385,7 +385,11 @@ export default function MissionView() {
                 🔊 듣기
               </button>
             )}
-            {q.passage && <blockquote className="q-passage">{q.passage}</blockquote>}
+            {q.passage && (
+              <blockquote className="q-passage">
+                <RichText text={q.passage} />
+              </blockquote>
+            )}
             <h2 className={`q-prompt ${q.big ? 'is-big' : ''}`}>
               <RichText text={q.prompt} />
             </h2>
