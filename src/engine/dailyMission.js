@@ -91,12 +91,6 @@ export function englishSet(r, count, pos) {
 }
 
 // 과학 '물체의 운동': 속력 계산 생성
-function speedQuestion(r) {
-  const t = randInt(r, 2, 5);
-  const v = randInt(r, 3, 12) * 10;
-  return { subject: 'science', kind: 'number', prompt: `자동차가 ${t}시간 동안 ${v * t}km를 달렸어요. 이 자동차의 속력은 시속 몇 km일까요?`, answer: v, hint: '속력 = 이동 거리 ÷ 걸린 시간' };
-}
-
 const BANKS = { korean: KOREAN, social: SOCIAL, science: SCIENCE };
 
 // 은행 과목(국어·사회·과학) count문제, 같은 문제 겹치지 않게
@@ -113,13 +107,6 @@ function bankSet(r, subject, count, pos, reviewRate = 0.4) {
   const seen = new Set();
   for (let tries = 0; out.length < count && tries < 80; tries++) {
     const u = pickUnit(r, pos, subject, reviewRate);
-    if (subject === 'science' && u === 2 && r() < 0.4) {
-      const q = speedQuestion(r);
-      if (seen.has(q.prompt)) continue;
-      seen.add(q.prompt);
-      out.push({ ...q, unit: UNIT_TITLES.science[2] });
-      continue;
-    }
     const pool = bank.filter((q) => q.unit === u && !seen.has(q.prompt));
     if (!pool.length) continue;
     const q = pool[randInt(r, 0, pool.length - 1)];
