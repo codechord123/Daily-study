@@ -33,6 +33,7 @@ export const useUI = create((set) => ({
   select: (uid) => set({ selectedUid: uid, heldItem: null, movingUid: null }),
   startMove: (uid) => set({ movingUid: uid }),
   clearDecor: () => set({ heldItem: null, selectedUid: null, movingUid: null }),
+  drag: null, // 소품 카드를 끌어 별에 놓는 중 { itemId, from, x, y, drop }
   popUid: null, // 방금 놓은 소품 (쏙 튀어나오는 연출)
   draggingItem: false, // 고른 소품을 끌어 옮기는 중 (카메라 돌리기 멈춤)
   setDraggingItem: (v) => set({ draggingItem: v }),

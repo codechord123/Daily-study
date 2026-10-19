@@ -20,6 +20,7 @@ function OptCard({ kind, k, name, price, owned, on, onClick }) {
 }
 import { sfx } from '../services/sound';
 import { useEscape } from './useEscape';
+import { useItemDrag } from './useItemDrag';
 
 const TABS = [
   { id: 'bag', label: '가방' },
@@ -28,6 +29,28 @@ const TABS = [
   { id: 'me', label: '내 모습' },
 ];
 
+
+// 끌 수 있는 소품 카드
+function DragCard({ itemId, from, className, onClick, children }) {
+  const drag = useItemDrag(itemId, from);
+  return (
+    <button className={`item-card draggable ${className}`} onClick={onClick} {...drag}>
+      {children}
+    </button>
+  );
+}
+
+// 끄는 동안 손가락 위에 따라오는 소품 그림
+function DragGhost() {
+  const drag = useUI((s) => s.drag);
+  if (!drag) return null;
+  return (
+    <div className="drag-ghost" style={{ left: drag.x, top: drag.y }} aria-hidden>
+      <ItemThumb itemId={drag.itemId} size={72} />
+      <span>별 위에 놓아요</span>
+    </div>
+  );
+}
 
 function Bag() {
   const inventory = useGame((s) => s.profile.inventory);
@@ -38,11 +61,11 @@ function Bag() {
   return (
     <div className="item-grid">
       {entries.map(([id, n]) => (
-        <button key={id} className={`item-card ${heldItem === id ? 'is-held' : ''}`} onClick={() => hold(heldItem === id ? null : id)}>
+        <DragCard key={id} itemId={id} from="bag" className={heldItem === id ? 'is-held' : ''} onClick={() => hold(heldItem === id ? null : id)}>
           <ItemThumb itemId={id} />
           <span className="item-name">{ITEM_BY_ID[id]?.name}</span>
           <span className="item-count">×{n}</span>
-        </button>
+        </DragCard>
       ))}
     </div>
   );
@@ -66,9 +89,11 @@ function Shop({ onBought }) {
           const price = priceOf(it.price);
           const short = profile.stardust < price;
           return (
-            <button
+            <DragCard
               key={it.id}
-              className={`item-card ${short ? 'is-short' : ''}`}
+              itemId={it.id}
+              from="shop"
+              className={short ? 'is-short' : ''}
               onClick={() => {
                 if (short) return showToast(`별가루가 ${price - profile.stardust}개 더 필요해요`);
                 if (buyItem(it.id)) {
@@ -81,7 +106,7 @@ function Shop({ onBought }) {
               <ItemThumb itemId={it.id} />
               <span className="item-name">{it.name}</span>
               <span className="item-price">{price ? `✦ ${price}` : '무료'}</span>
-            </button>
+            </DragCard>
           );
         })}
       </div>
@@ -257,8 +282,8 @@ export default function DecorPanel({ onDone }) {
       ? `별의 원하는 곳을 눌러 ${ITEM_BY_ID[heldItem]?.name}을(를) 놓아요`
       : selectedUid
         ? '고른 소품을 끌어서 옮기거나, 버튼으로 돌리고 꾸며요 (키보드 R 돌리기 · C 색 · Delete 넣기)'
-        : tab === 'bag'
-          ? '소품을 고르고 별을 눌러 놓아요 · 별 위 소품을 누르면 고칠 수 있어요'
+        : tab === 'bag' || tab === 'shop'
+          ? '소품을 별로 끌어다 놓거나, 눌러서 고른 뒤 별을 눌러요 · 별 위 소품을 누르면 고칠 수 있어요'
           : null;
 
   return (
@@ -300,6 +325,7 @@ export default function DecorPanel({ onDone }) {
         </div>
       )}
 
+      <DragGhost />
       <section ref={panelRef} className={`decor panel rise ${folded ? 'is-folded' : ''}`} aria-label="별 꾸미기">
         <header className="decor-head">
           <div className="tabs" role="tablist">

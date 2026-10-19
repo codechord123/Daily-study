@@ -2,12 +2,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import Planet, { cameraLightDir } from './Planet';
-import { blobShadow } from './materials';
+import Planet, { cameraLightDir, ITEM_SCALE } from './Planet';
+import { blobShadow, glow } from './materials';
 import { DistantPlanets } from './SkyExtras';
+import { MODELS } from './items/models';
+import { ITEM_BY_ID } from '../data/items';
+import { priceOf } from '../store/classSettings';
+
 import Character from './Character';
-import { latLonToVec, vecToLatLon, lookAlongSurface, stepToward } from './sphere';
-import { PLANET_RADIUS } from '../theme/tokens';
+import { latLonToVec, vecToLatLon, lookAlongSurface, stepToward, surfaceQuaternion } from './sphere';
+import { PLANET_RADIUS, NEON } from '../theme/tokens';
 import { createRig, rigDrag, rigUpdate, rigAdopt } from './cameraRig';
 import * as presence from '../services/presence';
 import { useGame } from '../store/useGame';
@@ -270,6 +274,54 @@ function Player({ look, name, targetRef, emote, inMission, lookFocus }) {
   );
 }
 
+/* ---------- 끌어 놓기 받는 곳: 손가락 아래 별 표면에 미리 보기, 놓으면 설치 ---------- */
+function DropTarget({ onDrop }) {
+  const { camera, gl } = useThree();
+  const itemId = useUI((s) => s.drag?.itemId);
+  const ghost = useRef();
+  const hitN = useRef(null);
+  const tools = useMemo(() => ({ ray: new THREE.Raycaster(), sphere: new THREE.Sphere(new THREE.Vector3(), R), hit: new THREE.Vector3() }), []);
+  const Model = itemId ? MODELS[ITEM_BY_ID[itemId]?.model] : null;
+  useFrame(({ clock }) => {
+    const d = useUI.getState().drag;
+    const g = ghost.current;
+    if (!d) {
+      if (g) g.visible = false;
+      return;
+    }
+    // 꾸미기 창 위에서는 놓지 않는다 (별 그림 위일 때만)
+    const over = document.elementFromPoint(d.x, d.y) === gl.domElement;
+    const r = gl.domElement.getBoundingClientRect();
+    tools.ray.setFromCamera({ x: ((d.x - r.left) / r.width) * 2 - 1, y: -((d.y - r.top) / r.height) * 2 + 1 }, camera);
+    const n = over && tools.ray.ray.intersectSphere(tools.sphere, tools.hit) ? tools.hit.clone().normalize() : null;
+    hitN.current = n;
+    if (g) {
+      g.visible = !!n;
+      if (n) {
+        g.position.copy(n).multiplyScalar(R * 0.995);
+        g.quaternion.copy(surfaceQuaternion(n, 0));
+        g.scale.setScalar(1 + Math.sin(clock.elapsedTime * 8) * 0.04);
+      }
+    }
+    if (d.drop) {
+      useUI.setState({ drag: null });
+      if (n) onDrop(d, vecToLatLon(n));
+      else useUI.getState().showToast('별 위에 놓아 주세요');
+    }
+  });
+  if (!Model) return null;
+  return (
+    <group ref={ghost} visible={false}>
+      <group scale={ITEM_SCALE}>
+        <Model />
+      </group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} material={glow(NEON.cyan, 1.6)}>
+        <ringGeometry args={[0.24, 0.29, 32]} />
+      </mesh>
+    </group>
+  );
+}
+
 /* ---------- 빛: 보는 쪽 왼쪽 위에서 따뜻한 빛, 반대편 아래에서 푸른 보조광 ---------- */
 function CameraLights() {
   const key = useRef();
@@ -426,6 +478,23 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
     window.addEventListener('pointercancel', end);
   };
 
+  // 가방·상점 카드를 끌어 놓았을 때: 상점이면 사서 바로 놓는다
+  const dropItem = (d, { lat, lon }) => {
+    const g = useGame.getState();
+    if (d.from === 'shop') {
+      const price = priceOf(ITEM_BY_ID[d.itemId]?.price ?? 0);
+      if (g.profile.stardust < price) return showToast(`별가루가 ${price - g.profile.stardust}개 더 필요해요`);
+      if (!g.buyItem(d.itemId)) return;
+      sfx('buy');
+    }
+    const uid = useGame.getState().placeItem(d.itemId, lat, lon);
+    if (!uid) return;
+    useUI.setState({ popUid: uid, heldItem: null });
+    sfx('place');
+    select(uid);
+    showToast('별에 놓았어요');
+  };
+
   const onSurfaceTap = (n) => {
     if (!decorating) {
       walkTarget.current = n;
@@ -451,6 +520,7 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
   return (
     <>
       <CameraLights />
+      {decorating && <DropTarget onDrop={dropItem} />}
       <DistantPlanets ownerId={ownerId} count={useUI.getState().quality === 'low' ? 5 : 9} />
       <Planet
         tint={planet.tint}
