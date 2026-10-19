@@ -70,7 +70,7 @@ function charCell(slot, id) {
   if (slot === 'pet')
     return id === 'none' ? null : (
       <group position={[-0.3 * 2.6, -0.32, 0]} rotation={[0.25, -0.5, 0]} scale={2.6}>
-        <Pet type={id} />
+        <Pet type={id} still />
       </group>
     );
   const look = { ...DEFAULT_CHARACTER, [slot]: id };

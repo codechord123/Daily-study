@@ -329,12 +329,13 @@ const BODIES = {
 // 펫 기본 색 (펫 색을 안 바꿨을 때 어울리는 색)
 const NATURAL = { puppy: '#e9c39b', kitty: '#f0a35a', bunny: '#ffffff', hamster: '#f2c08a', fox: '#f0965a', chick: '#ffe066', sheep: '#ffffff', penguin: '#3b437e', owl: '#a77b5b', dragon: '#8fd18a', jellyfish: '#c3b2ec', spirit: '#bff6ff', drone: '#e8ecf5', turtle: '#6d9a5a', cloud: '#ffffff', whale: '#7fa9e6' };
 
-export default function Pet({ type, color, movingRef, moving, flying }) {
+// still: 썸네일처럼 멈춘 그림 — 나는 펫도 띄우지 않아야 칸 안에 들어온다
+export default function Pet({ type, color, movingRef, moving, flying, still }) {
   const g = useRef();
   const air = FLYERS.has(type) || flying;
   const tint = color && color !== '#f7efe1' ? color : NATURAL[type];
   useFrame(({ clock }) => {
-    if (!g.current) return;
+    if (!g.current || still) return;
     const t = clock.elapsedTime;
     const isMoving = movingRef ? movingRef.current : moving;
     if (air) {
