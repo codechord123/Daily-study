@@ -317,17 +317,3 @@ export const ENGLISH_EXPRESSIONS = [
   ['How about you?', '너는 어때?', 4],
 ];
 
-// [묻는 말, 알맞은 대답, 단원] — 틀린 보기는 다른 단원의 대답에서 고른다
-export const ENGLISH_DIALOGS = [
-  ['What’s your favorite subject?', 'My favorite subject is art.', 0],
-  ['What do you like to do?', 'I like to play the piano.', 0],
-  ['Can I help you?', 'Yes, please.', 1],
-  ['How much are these pants?', 'They’re thirty thousand won.', 1],
-  ['How much is this cap?', 'It’s five thousand won.', 1],
-  ['Excuse me. Where is the museum?', 'Go straight two blocks and turn left.', 2],
-  ['Where is the park?', 'It’s next to the library.', 2],
-  ['What’s wrong?', 'I have a headache.', 3],
-  ['I have a cold.', 'That’s too bad. Get some rest.', 3],
-  ['What do you want to do this winter?', 'I want to travel to Jeju-do.', 4],
-  ['What do you want to do next year?', 'I want to join a soccer club.', 4],
-];

@@ -4,7 +4,7 @@
 import { seeded, shuffle, randInt } from './rng';
 import { makeMathSet, MATH_UNITS } from './mathGen';
 import { getSettings } from '../store/classSettings';
-import { SCHEDULE, SOCIAL, SCIENCE, KOREAN, ENGLISH_WORDS, ENGLISH_EXPRESSIONS, ENGLISH_DIALOGS } from '../data/missions/grade5s2';
+import { SCHEDULE, SOCIAL, SCIENCE, KOREAN, ENGLISH_WORDS, ENGLISH_EXPRESSIONS } from '../data/missions/grade5s2';
 import { WS_SOCIAL, WS_KOREAN, WS_ENGLISH } from '../data/missions/worksheets';
 
 export const MISSION_COUNTS = { math: 6, english: 5, korean: 3, social: 3, science: 3 };
@@ -69,9 +69,10 @@ function pickUnit(r, pos, subject, reviewRate = 0.4) {
 }
 
 export function englishSet(r, count, pos) {
-  // 단어 · 대화 1 · 학습지 문제(5문제에 1개꼴) · 생활 표현 1
-  const nBank = WS_ENGLISH.length ? Math.max(1, Math.floor(count / 4)) : 0;
-  const units = Array.from({ length: count - 2 - nBank }, (_, i) => (i < 3 ? pickUnit(r, pos, 'english', 0) : pickUnit(r, pos, 'english', 0.6)));
+  // 선생님이 주신 단원평가 문제 위주 + 단어 1(5문제마다) + 생활 표현 1
+  const nWords = WS_ENGLISH.length ? Math.max(1, Math.round(count / 5)) : count - 1;
+  const nBank = count - 1 - nWords;
+  const units = Array.from({ length: nWords }, (_, i) => (i < 3 ? pickUnit(r, pos, 'english', 0) : pickUnit(r, pos, 'english', 0.6)));
   const used = new Set();
   const qs = units.map((u) => {
     const group = ENGLISH_WORDS.slice(u * WORDS_PER_UNIT, (u + 1) * WORDS_PER_UNIT).filter((w) => !used.has(w[0]));
@@ -83,17 +84,12 @@ export function englishSet(r, count, pos) {
     const choices = shuffle(r, [right, ...pool.map((w) => (toKo ? w[1] : w[0]))]);
     return { subject: 'english', unit: UNIT_TITLES.english[u], kind: 'choice', prompt: toKo ? en : ko, sub: toKo ? '이 단어의 뜻은?' : '알맞은 영어 단어는?', big: true, choices, answer: choices.indexOf(right) };
   });
-  // 대화에 알맞은 대답 고르기
-  const du = pickUnit(r, pos, 'english', 0.4);
-  const dlg = ENGLISH_DIALOGS.filter((d) => d[2] === du);
-  const [ask, reply] = dlg[randInt(r, 0, dlg.length - 1)] ?? ENGLISH_DIALOGS[0];
-  const wrong = shuffle(r, ENGLISH_DIALOGS.filter((d) => d[2] !== du)).slice(0, 3).map((d) => d[1]);
-  const dChoices = shuffle(r, [reply, ...wrong]);
-  qs.push({ subject: 'english', unit: UNIT_TITLES.english[du], kind: 'choice', prompt: ask, sub: '알맞은 대답은?', choices: dChoices, answer: dChoices.indexOf(reply) });
-  qs.push(...bankSet(r, 'english', nBank, pos, 0.4));
+  const bank = bankSet(r, 'english', nBank, pos, 0.25);
+  const ask = new Set(bank.map((q) => q.prompt));
+  qs.push(...bank);
   // 마지막 한 문제는 생활 표현 (고른 단원에서)
   const eu = pickUnit(r, pos, 'english', 0.5);
-  const exprs = ENGLISH_EXPRESSIONS.filter((e) => e[2] === eu && e[0] !== ask);
+  const exprs = ENGLISH_EXPRESSIONS.filter((e) => e[2] === eu && !ask.has(e[0]));
   const [en, ko] = (exprs.length ? exprs : ENGLISH_EXPRESSIONS)[randInt(r, 0, (exprs.length || ENGLISH_EXPRESSIONS.length) - 1)];
   const others = shuffle(r, ENGLISH_EXPRESSIONS.filter((e) => e[0] !== en)).slice(0, 3).map((e) => e[1]);
   const choices = shuffle(r, [ko, ...others]);
@@ -103,7 +99,8 @@ export function englishSet(r, count, pos) {
 
 // 과학 '물체의 운동': 속력 계산 생성
 // 단원평가 학습지에서 옮긴 문제도 같은 은행에 섞는다
-const BANKS = { korean: [...KOREAN, ...WS_KOREAN], social: [...SOCIAL, ...WS_SOCIAL], science: SCIENCE, english: WS_ENGLISH };
+const ws = (list) => list.map((q) => ({ ...q, ws: true }));
+const BANKS = { korean: [...KOREAN, ...ws(WS_KOREAN)], social: [...SOCIAL, ...ws(WS_SOCIAL)], science: SCIENCE, english: ws(WS_ENGLISH) };
 const qKey = (q) => `${q.passage ?? ''}|${q.prompt}`;
 
 // 은행 과목(국어·사회·과학) count문제, 같은 문제 겹치지 않게
@@ -120,11 +117,15 @@ function bankSet(r, subject, count, pos, reviewRate = 0.4) {
   const seen = new Set();
   for (let tries = 0; out.length < count && tries < 80; tries++) {
     const u = pickUnit(r, pos, subject, reviewRate);
-    const pool = bank.filter((q) => q.unit === u && !seen.has(qKey(q)));
+    // 학습지 문제가 있는 단원은 학습지 문제만 낸다
+    const inUnit = bank.filter((q) => q.unit === u);
+    const fromWs = inUnit.some((q) => q.ws) ? inUnit.filter((q) => q.ws) : inUnit;
+    const pool = fromWs.filter((q) => !seen.has(qKey(q)));
     if (!pool.length) continue;
     const q = pool[randInt(r, 0, pool.length - 1)];
     seen.add(qKey(q));
-    out.push({ subject, ...shuffleChoices(r, q), unit: UNIT_TITLES[subject][q.unit] });
+    const { ws: _ws, ...rest } = q;
+    out.push({ subject, ...shuffleChoices(r, rest), unit: UNIT_TITLES[subject][q.unit] });
   }
   return out;
 }
@@ -152,8 +153,8 @@ export function buildDailyMission(sid, dateKey) {
   const pos = curriculumPosition(dateKey);
   const c = MISSION_COUNTS;
   // 탐구 과목은 국어·사회·과학이 번갈아 나오게 섞는다
-  const ko = bankSet(r, 'korean', c.korean, pos);
-  const so = bankSet(r, 'social', c.social, pos);
+  const ko = bankSet(r, 'korean', c.korean, pos, 0.25);
+  const so = bankSet(r, 'social', c.social, pos, 0.25);
   const sc = bankSet(r, 'science', c.science, pos);
   const inquiry = [];
   for (let i = 0; i < Math.max(ko.length, so.length, sc.length); i++) inquiry.push(...[ko[i], so[i], sc[i]].filter(Boolean));
