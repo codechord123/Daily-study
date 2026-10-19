@@ -9,6 +9,8 @@ import { speak, canSpeak, stopSpeaking } from '../services/speech';
 
 // 영어 문제에서 읽어 줄 영어: 영어가 문제에 있으면 문제, 아니면 정답 보기
 const hasEn = (t) => /[a-z]/i.test(t ?? '');
+// 학습지 그림: 'ws/…png' 경로, 보기는 'img:ws/…png'
+const isImg = (c) => typeof c === 'string' && c.startsWith('img:');
 // 지문의 'A:' 같은 말머리와 빈칸 밑줄은 읽지 않는다
 const passageSpeech = (t) => t.replace(/^[^\n:]{1,12}:\s*/gm, '').replace(/_{2,}/g, ', ');
 /** 읽어 줄 영어: 문제가 영어면 문제, 답을 맞힌 뒤엔 정답 보기, 아니면 지문 */
@@ -296,7 +298,8 @@ export default function MissionView() {
   const correctLabel = () => {
     if (q.kind === 'number') return String(q.answer);
     if (q.kind === 'ox') return q.answer ? 'O' : 'X';
-    return q.choices[q.answer];
+    const c = q.choices[q.answer];
+    return isImg(c) ? `${q.answer + 1}번 그림` : c;
   };
 
   const choiceState = (match, picked) =>
@@ -385,6 +388,7 @@ export default function MissionView() {
                 🔊 듣기
               </button>
             )}
+            {q.image && <img className="q-image" src={q.image} alt="문제 그림" />}
             {q.passage && (
               <blockquote className="q-passage">
                 <RichText text={q.passage} />
@@ -396,7 +400,7 @@ export default function MissionView() {
             {q.hint && !feedback && <p className="q-hint">💡 {q.hint}</p>}
 
             {q.kind === 'choice' && (
-              <div className={`choices ${q.choices.length > 2 ? 'grid' : ''} ${q.choices.some((c) => c.length > 9) ? 'long' : ''}`}>
+              <div className={`choices ${q.choices.length > 2 ? 'grid' : ''} ${q.choices.some((c) => c.length > 9 && !isImg(c)) ? 'long' : ''} ${q.choices.some(isImg) ? 'has-img' : ''}`}>
                 {q.choices.map((c, i) => (
                   <button
                     key={i}
@@ -407,7 +411,7 @@ export default function MissionView() {
                   >
                     <span className="choice-key">{i + 1}</span>
                     <span className="choice-text">
-                      <RichText text={c} />
+                      {isImg(c) ? <img className="choice-img" src={c.slice(4)} alt={`${i + 1}번 그림`} /> : <RichText text={c} />}
                     </span>
                   </button>
                 ))}
