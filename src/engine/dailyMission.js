@@ -4,7 +4,7 @@
 import { seeded, shuffle, randInt } from './rng';
 import { makeMathSet, MATH_UNITS } from './mathGen';
 import { getSettings } from '../store/classSettings';
-import { SCHEDULE, SOCIAL, SCIENCE, KOREAN, ENGLISH_WORDS, ENGLISH_EXPRESSIONS } from '../data/missions/grade5s2';
+import { SCHEDULE, SOCIAL, SCIENCE, KOREAN, ENGLISH_WORDS, ENGLISH_EXPRESSIONS, ENGLISH_DIALOGS } from '../data/missions/grade5s2';
 
 export const MISSION_COUNTS = { math: 6, english: 5, korean: 3, social: 3, science: 3 };
 export const MISSION_TOTAL = Object.values(MISSION_COUNTS).reduce((a, b) => a + b, 0);
@@ -68,7 +68,7 @@ function pickUnit(r, pos, subject, reviewRate = 0.4) {
 }
 
 export function englishSet(r, count, pos) {
-  const units = Array.from({ length: count - 1 }, (_, i) => (i < 3 ? pickUnit(r, pos, 'english', 0) : pickUnit(r, pos, 'english', 0.6)));
+  const units = Array.from({ length: count - 2 }, (_, i) => (i < 3 ? pickUnit(r, pos, 'english', 0) : pickUnit(r, pos, 'english', 0.6)));
   const used = new Set();
   const qs = units.map((u) => {
     const group = ENGLISH_WORDS.slice(u * WORDS_PER_UNIT, (u + 1) * WORDS_PER_UNIT).filter((w) => !used.has(w[0]));
@@ -80,9 +80,16 @@ export function englishSet(r, count, pos) {
     const choices = shuffle(r, [right, ...pool.map((w) => (toKo ? w[1] : w[0]))]);
     return { subject: 'english', unit: UNIT_TITLES.english[u], kind: 'choice', prompt: toKo ? en : ko, sub: toKo ? '이 단어의 뜻은?' : '알맞은 영어 단어는?', big: true, choices, answer: choices.indexOf(right) };
   });
+  // 대화에 알맞은 대답 고르기
+  const du = pickUnit(r, pos, 'english', 0.4);
+  const dlg = ENGLISH_DIALOGS.filter((d) => d[2] === du);
+  const [ask, reply] = dlg[randInt(r, 0, dlg.length - 1)] ?? ENGLISH_DIALOGS[0];
+  const wrong = shuffle(r, ENGLISH_DIALOGS.filter((d) => d[2] !== du)).slice(0, 3).map((d) => d[1]);
+  const dChoices = shuffle(r, [reply, ...wrong]);
+  qs.push({ subject: 'english', unit: UNIT_TITLES.english[du], kind: 'choice', prompt: ask, sub: '알맞은 대답은?', choices: dChoices, answer: dChoices.indexOf(reply) });
   // 마지막 한 문제는 생활 표현 (고른 단원에서)
   const eu = pickUnit(r, pos, 'english', 0.5);
-  const exprs = ENGLISH_EXPRESSIONS.filter((e) => e[2] === eu);
+  const exprs = ENGLISH_EXPRESSIONS.filter((e) => e[2] === eu && e[0] !== ask);
   const [en, ko] = (exprs.length ? exprs : ENGLISH_EXPRESSIONS)[randInt(r, 0, (exprs.length || ENGLISH_EXPRESSIONS.length) - 1)];
   const others = shuffle(r, ENGLISH_EXPRESSIONS.filter((e) => e[0] !== en)).slice(0, 3).map((e) => e[1]);
   const choices = shuffle(r, [ko, ...others]);

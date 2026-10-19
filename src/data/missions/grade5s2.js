@@ -16,7 +16,7 @@ export const SCHEDULE = {
   science: { titles: ['혼합물의 분리', '날씨와 우리 생활', '열과 우리 생활', '자원과 에너지'], weeks: [4, 4, 5, 5] },
   // 국어는 교과서 01~03 단원 + (다음 단원을 받기 전까지) 예전 단원 둘을 뒤에 둔다
   korean: { titles: ['작품에 대한 의견을 나누어요', '올바른 문장으로 글을 써요', '표준어와 방언을 알아봐요', '낱말과 관용 표현', '토의·토론·발표'], weeks: [4, 4, 4, 3, 3] },
-  english: { titles: ['학교와 과목', '날씨와 계절', '건강과 음식', '길 찾기와 장소', '꿈과 우주', '생활과 행사'], weeks: [3, 3, 3, 3, 3, 3] },
+  english: { titles: ['L8 좋아하는 과목', 'L9 물건 사기', 'L10 길 찾기', 'L11 아픈 곳 말하기', 'L12 하고 싶은 일'], weeks: [4, 4, 4, 3, 3] },
 };
 
 export const SOCIAL = [
@@ -284,33 +284,50 @@ export const KOREAN = [
 ];
 
 // 영어: 5~6학년군 기본 어휘 (8개씩 한 주 묶음, 학기 진도에 따라 앞쪽부터)
+// 단원마다 8개씩, 단원 순서대로 (교과서 Lesson 8~12)
 export const ENGLISH_WORDS = [
-  ['weekend', '주말'], ['favorite', '가장 좋아하는'], ['subject', '과목'], ['science', '과학'], ['history', '역사'], ['library', '도서관'], ['museum', '박물관'], ['vacation', '방학'],
-  ['weather', '날씨'], ['cloudy', '흐린'], ['windy', '바람 부는'], ['season', '계절'], ['autumn', '가을'], ['winter', '겨울'], ['warm', '따뜻한'], ['cold', '추운'],
-  ['breakfast', '아침 식사'], ['delicious', '맛있는'], ['healthy', '건강한'], ['exercise', '운동하다'], ['dentist', '치과 의사'], ['sick', '아픈'], ['headache', '두통'], ['medicine', '약'],
-  ['travel', '여행하다'], ['island', '섬'], ['bridge', '다리'], ['village', '마을'], ['straight', '똑바로'], ['corner', '모퉁이'], ['next to', '~ 옆에'], ['between', '~ 사이에'],
-  ['future', '미래'], ['dream', '꿈'], ['scientist', '과학자'], ['pilot', '조종사'], ['astronaut', '우주 비행사'], ['planet', '행성'], ['star', '별'], ['space', '우주'],
-  ['borrow', '빌리다'], ['remember', '기억하다'], ['practice', '연습하다'], ['different', '다른'], ['same', '같은'], ['famous', '유명한'], ['festival', '축제'], ['special', '특별한'],
+  ['subject', '과목'], ['favorite', '가장 좋아하는'], ['science', '과학'], ['music', '음악'], ['art', '미술'], ['history', '역사'], ['draw', '그리다'], ['insect', '곤충'],
+  ['shoes', '신발'], ['pants', '바지'], ['cap', '(챙 있는) 모자'], ['thousand', '천(1,000)'], ['hundred', '백(100)'], ['delicious', '맛있는'], ['try', '먹어 보다, 해 보다'], ['help', '돕다'],
+  ['library', '도서관'], ['museum', '박물관'], ['hospital', '병원'], ['park', '공원'], ['straight', '똑바로'], ['block', '(도로의) 구역, 블록'], ['turn', '돌다'], ['next to', '~ 옆에'],
+  ['sick', '아픈'], ['cold', '감기'], ['fever', '열'], ['headache', '두통'], ['stomachache', '복통'], ['runny nose', '콧물'], ['medicine', '약'], ['rest', '휴식'],
+  ['weekend', '주말'], ['winter', '겨울'], ['next year', '내년'], ['join', '가입하다'], ['learn', '배우다'], ['travel', '여행하다'], ['bake', '(빵·과자를) 굽다'], ['invite', '초대하다'],
 ];
 
 // [영어, 뜻, 단원]
 export const ENGLISH_EXPRESSIONS = [
-  ['What grade are you in?', '너는 몇 학년이니?', 0],
   ['What’s your favorite subject?', '네가 가장 좋아하는 과목은 뭐니?', 0],
-  ['I like science.', '나는 과학을 좋아해.', 0],
-  ['What’s the weather like?', '날씨가 어때?', 1],
-  ['It’s windy and cold.', '바람이 불고 추워.', 1],
-  ['How was your vacation?', '방학은 어땠니?', 1],
-  ['What’s wrong?', '무슨 일 있니? (어디 아프니?)', 2],
-  ['I have a headache.', '나는 머리가 아파.', 2],
-  ['You should take some medicine.', '너는 약을 먹는 게 좋겠어.', 2],
-  ['Where is the library?', '도서관은 어디에 있니?', 3],
-  ['Go straight and turn left.', '똑바로 가서 왼쪽으로 돌아.', 3],
-  ['It’s next to the bank.', '그것은 은행 옆에 있어.', 3],
-  ['What do you want to be?', '너는 무엇이 되고 싶니?', 4],
-  ['I want to be a scientist.', '나는 과학자가 되고 싶어.', 4],
-  ['What time do you get up?', '너는 몇 시에 일어나니?', 5],
-  ['How much is it?', '그것은 얼마예요?', 5],
-  ['Can I borrow your pencil?', '연필 좀 빌려도 될까?', 5],
-  ['When is the festival?', '축제는 언제니?', 5],
+  ['My favorite subject is science.', '내가 가장 좋아하는 과목은 과학이야.', 0],
+  ['I like to draw pictures.', '나는 그림 그리는 것을 좋아해.', 0],
+  ['I like to read books.', '나는 책 읽는 것을 좋아해.', 0],
+  ['Can I help you?', '도와드릴까요?', 1],
+  ['How much are these shoes?', '이 신발은 얼마예요?', 1],
+  ['It’s four thousand won.', '그것은 4천 원이에요.', 1],
+  ['I’ll take it.', '그것으로 살게요.', 1],
+  ['Where is the library?', '도서관은 어디에 있나요?', 2],
+  ['Go straight one block and turn right.', '한 구역 곧장 가서 오른쪽으로 도세요.', 2],
+  ['It’s on your left.', '그것은 당신의 왼쪽에 있어요.', 2],
+  ['It’s next to the hospital.', '그것은 병원 옆에 있어요.', 2],
+  ['What’s wrong?', '무슨 일 있니? (어디 아프니?)', 3],
+  ['I have a fever.', '나는 열이 나.', 3],
+  ['That’s too bad.', '그것참 안됐구나.', 3],
+  ['Take this medicine and get some rest.', '이 약을 먹고 좀 쉬렴.', 3],
+  ['What do you want to do this weekend?', '너는 이번 주말에 무엇을 하고 싶니?', 4],
+  ['I want to learn the drum.', '나는 드럼을 배우고 싶어.', 4],
+  ['I have no idea.', '잘 모르겠어.', 4],
+  ['How about you?', '너는 어때?', 4],
+];
+
+// [묻는 말, 알맞은 대답, 단원] — 틀린 보기는 다른 단원의 대답에서 고른다
+export const ENGLISH_DIALOGS = [
+  ['What’s your favorite subject?', 'My favorite subject is art.', 0],
+  ['What do you like to do?', 'I like to play the piano.', 0],
+  ['Can I help you?', 'Yes, please.', 1],
+  ['How much are these pants?', 'They’re thirty thousand won.', 1],
+  ['How much is this cap?', 'It’s five thousand won.', 1],
+  ['Excuse me. Where is the museum?', 'Go straight two blocks and turn left.', 2],
+  ['Where is the park?', 'It’s next to the library.', 2],
+  ['What’s wrong?', 'I have a headache.', 3],
+  ['I have a cold.', 'That’s too bad. Get some rest.', 3],
+  ['What do you want to do this winter?', 'I want to travel to Jeju-do.', 4],
+  ['What do you want to do next year?', 'I want to join a soccer club.', 4],
 ];
