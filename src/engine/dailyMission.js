@@ -5,6 +5,7 @@ import { seeded, shuffle, randInt } from './rng';
 import { makeMathSet, MATH_UNITS } from './mathGen';
 import { getSettings } from '../store/classSettings';
 import { SCHEDULE, SOCIAL, SCIENCE, KOREAN, ENGLISH_WORDS, ENGLISH_EXPRESSIONS, ENGLISH_DIALOGS } from '../data/missions/grade5s2';
+import { WS_SOCIAL, WS_KOREAN, WS_ENGLISH } from '../data/missions/worksheets';
 
 export const MISSION_COUNTS = { math: 6, english: 5, korean: 3, social: 3, science: 3 };
 export const MISSION_TOTAL = Object.values(MISSION_COUNTS).reduce((a, b) => a + b, 0);
@@ -68,7 +69,9 @@ function pickUnit(r, pos, subject, reviewRate = 0.4) {
 }
 
 export function englishSet(r, count, pos) {
-  const units = Array.from({ length: count - 2 }, (_, i) => (i < 3 ? pickUnit(r, pos, 'english', 0) : pickUnit(r, pos, 'english', 0.6)));
+  // 단어 · 대화 1 · 학습지 문제(5문제에 1개꼴) · 생활 표현 1
+  const nBank = WS_ENGLISH.length ? Math.max(1, Math.floor(count / 4)) : 0;
+  const units = Array.from({ length: count - 2 - nBank }, (_, i) => (i < 3 ? pickUnit(r, pos, 'english', 0) : pickUnit(r, pos, 'english', 0.6)));
   const used = new Set();
   const qs = units.map((u) => {
     const group = ENGLISH_WORDS.slice(u * WORDS_PER_UNIT, (u + 1) * WORDS_PER_UNIT).filter((w) => !used.has(w[0]));
@@ -87,6 +90,7 @@ export function englishSet(r, count, pos) {
   const wrong = shuffle(r, ENGLISH_DIALOGS.filter((d) => d[2] !== du)).slice(0, 3).map((d) => d[1]);
   const dChoices = shuffle(r, [reply, ...wrong]);
   qs.push({ subject: 'english', unit: UNIT_TITLES.english[du], kind: 'choice', prompt: ask, sub: '알맞은 대답은?', choices: dChoices, answer: dChoices.indexOf(reply) });
+  qs.push(...bankSet(r, 'english', nBank, pos, 0.4));
   // 마지막 한 문제는 생활 표현 (고른 단원에서)
   const eu = pickUnit(r, pos, 'english', 0.5);
   const exprs = ENGLISH_EXPRESSIONS.filter((e) => e[2] === eu && e[0] !== ask);
@@ -98,7 +102,9 @@ export function englishSet(r, count, pos) {
 }
 
 // 과학 '물체의 운동': 속력 계산 생성
-const BANKS = { korean: KOREAN, social: SOCIAL, science: SCIENCE };
+// 단원평가 학습지에서 옮긴 문제도 같은 은행에 섞는다
+const BANKS = { korean: [...KOREAN, ...WS_KOREAN], social: [...SOCIAL, ...WS_SOCIAL], science: SCIENCE, english: WS_ENGLISH };
+const qKey = (q) => `${q.passage ?? ''}|${q.prompt}`;
 
 // 은행 과목(국어·사회·과학) count문제, 같은 문제 겹치지 않게
 /** 정답이 늘 같은 자리에 오지 않게 보기 순서를 섞는다 */
@@ -114,10 +120,10 @@ function bankSet(r, subject, count, pos, reviewRate = 0.4) {
   const seen = new Set();
   for (let tries = 0; out.length < count && tries < 80; tries++) {
     const u = pickUnit(r, pos, subject, reviewRate);
-    const pool = bank.filter((q) => q.unit === u && !seen.has(q.prompt));
+    const pool = bank.filter((q) => q.unit === u && !seen.has(qKey(q)));
     if (!pool.length) continue;
     const q = pool[randInt(r, 0, pool.length - 1)];
-    seen.add(q.prompt);
+    seen.add(qKey(q));
     out.push({ subject, ...shuffleChoices(r, q), unit: UNIT_TITLES[subject][q.unit] });
   }
   return out;

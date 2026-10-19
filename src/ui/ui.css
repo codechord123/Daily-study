@@ -296,6 +296,13 @@
   box-shadow: 0 0 18px rgba(255,190,80,.6); animation: pop 420ms var(--ease-soft) both;
 }
 .q-sub { margin: 0 0 4px; font-size: 16px; color: #6b6386; }
+.q-passage {
+  margin: 0 0 var(--s-3); padding: 10px 14px; max-height: 38vh; overflow-y: auto;
+  border-left: 4px solid var(--subject, #8b7cf6); border-radius: 10px;
+  background: color-mix(in srgb, var(--subject, #8b7cf6) 9%, #fff);
+  font-size: 17px; line-height: 1.6; white-space: pre-wrap; word-break: keep-all; color: #3b3552;
+}
+.q-passage + .q-prompt { font-size: clamp(20px, 2.8vw, 26px); }
 .q-prompt { margin: 0 0 var(--s-4); font-family: var(--font-title); font-size: clamp(24px, 3.4vw, 32px); line-height: 1.45; word-break: keep-all; }
 .q-prompt.is-big { font-size: clamp(40px, 6vw, 56px); letter-spacing: .01em; margin-bottom: var(--s-5); }
 .q-hint { margin: -8px 0 var(--s-4); font-size: 15px; color: #7a6f98; }

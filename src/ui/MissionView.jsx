@@ -8,7 +8,16 @@ import { sfx } from '../services/sound';
 import { speak, canSpeak, stopSpeaking } from '../services/speech';
 
 // 영어 문제에서 읽어 줄 영어: 영어가 문제에 있으면 문제, 아니면 정답 보기
-const englishText = (q) => (/[a-z]/i.test(q.prompt) ? q.prompt : q.choices?.[q.answer]);
+const hasEn = (t) => /[a-z]/i.test(t ?? '');
+// 지문의 'A:' 같은 말머리와 빈칸 밑줄은 읽지 않는다
+const passageSpeech = (t) => t.replace(/^[^\n:]{1,12}:\s*/gm, '').replace(/_{2,}/g, ', ');
+/** 읽어 줄 영어: 문제가 영어면 문제, 답을 맞힌 뒤엔 정답 보기, 아니면 지문 */
+const englishText = (q, after = false) => {
+  if (hasEn(q.prompt)) return q.prompt;
+  if (after && hasEn(q.choices?.[q.answer])) return q.choices[q.answer];
+  if (hasEn(q.passage)) return passageSpeech(q.passage);
+  return q.choices?.[q.answer];
+};
 
 const KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'];
 const CHEERS = ['정답이에요!', '멋져요!', '바로 그거예요!', '똑똑해요!', '반짝반짝!'];
@@ -195,7 +204,7 @@ export default function MissionView() {
       if (ok) sfx('correct', combo + 1);
       else sfx('wrong');
       setFeedback({ ok, picked: value, cheer: CHEERS[Math.floor(Math.random() * CHEERS.length)] });
-      if (q.subject === 'english') setTimeout(() => speak(englishText(q)), 500);
+      if (q.subject === 'english') setTimeout(() => speak(englishText(q, true)), 500);
       // 오답 노트: 틀리면 적고, 오답 노트에서 다시 맞히면 지운다
       if (mode === 'review') {
         if (ok) {
@@ -371,11 +380,12 @@ export default function MissionView() {
               )}
             </div>
             {q.sub && <p className="q-sub">{q.sub}</p>}
-            {q.subject === 'english' && canSpeak() && (/[a-z]/i.test(q.prompt) || feedback) && (
-              <button className="speak-btn" data-nosfx onClick={() => speak(englishText(q))} aria-label="영어 듣기">
+            {q.subject === 'english' && canSpeak() && (hasEn(q.prompt) || hasEn(q.passage) || feedback) && (
+              <button className="speak-btn" data-nosfx onClick={() => speak(englishText(q, !!feedback))} aria-label="영어 듣기">
                 🔊 듣기
               </button>
             )}
+            {q.passage && <blockquote className="q-passage">{q.passage}</blockquote>}
             <h2 className={`q-prompt ${q.big ? 'is-big' : ''}`}>
               <RichText text={q.prompt} />
             </h2>
