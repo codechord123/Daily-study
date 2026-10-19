@@ -23,7 +23,7 @@ export function Thumb({ kind = 'items', k, size = 64, fallback }) {
         height: size,
         backgroundImage: atlas ? `url(${atlas.url})` : 'none',
         backgroundSize: atlas ? `${atlas.width * s}px ${atlas.height * s}px` : undefined,
-        backgroundPosition: i !== undefined ? `-${(i % COLS) * size}px -${Math.floor(i / COLS) * size}px` : undefined,
+        backgroundPosition: i !== undefined ? `-${(i % COLS) * size}px -${Math.floor(i / COLS) * (atlas.step ?? 1) * size}px` : undefined,
       }}
     />
   );

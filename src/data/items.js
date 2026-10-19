@@ -78,6 +78,41 @@ export const ITEMS = [
   { id: 'dino', name: '아기 공룡', price: 150, category: 'animal', model: 'dino' },
   { id: 'shootingStar', name: '별똥별', price: 80, category: 'light', model: 'shootingStar', glow: true },
   { id: 'crystalCluster', name: '수정 덩굴', price: 90, category: 'light', model: 'crystalCluster', glow: true },
+  // 우리 문화 — 사회 '조선과 유교 문화'·과학 문화재와 연결
+  { id: 'cheomseongdae', name: '첨성대', price: 130, category: 'korea', model: 'cheomseongdae' },
+  { id: 'sundial', name: '앙부일구', price: 90, category: 'korea', model: 'sundial' },
+  { id: 'rainGauge', name: '측우기', price: 80, category: 'korea', model: 'rainGauge' },
+  { id: 'geobukseon', name: '거북선', price: 160, category: 'korea', model: 'geobukseon' },
+  // 공부 — 과학 단원과 연결
+  { id: 'microscope', name: '현미경', price: 80, category: 'study', model: 'microscope' },
+  { id: 'beakers', name: '비커와 시험관', price: 60, category: 'study', model: 'beakers' },
+  { id: 'weatherVane', name: '풍향계', price: 55, category: 'study', model: 'weatherVane' },
+  { id: 'chalkboard', name: '칠판', price: 45, category: 'study', model: 'chalkboard' },
+  // 생활
+  { id: 'clothesline', name: '빨랫줄', price: 35, category: 'home', model: 'clothesline' },
+  { id: 'well', name: '우물', price: 70, category: 'home', model: 'well' },
+  { id: 'picnic', name: '피크닉 돗자리', price: 40, category: 'home', model: 'picnic' },
+  // 동물
+  { id: 'penguin', name: '아기 펭귄', price: 85, category: 'animal', model: 'penguin' },
+  { id: 'turtle', name: '거북이', price: 70, category: 'animal', model: 'turtle' },
+  { id: 'owl', name: '부엉이', price: 80, category: 'animal', model: 'owl' },
+  { id: 'duck', name: '연못 오리', price: 65, category: 'animal', model: 'duck' },
+  { id: 'butterfly', name: '꽃과 나비', price: 45, category: 'animal', model: 'butterfly' },
+  // 자연
+  { id: 'bamboo', name: '대나무', price: 35, category: 'nature', model: 'bamboo' },
+  { id: 'maple', name: '단풍나무', price: 55, category: 'nature', model: 'maple' },
+  { id: 'clover', name: '네잎클로버', price: 15, category: 'nature', model: 'clover' },
+  // 빛
+  { id: 'fireflyJar', name: '반딧불 병', price: 60, category: 'light', model: 'fireflyJar', glow: true },
+  { id: 'moonLamp', name: '달 램프', price: 70, category: 'light', model: 'moonLamp', glow: true },
+  { id: 'candle', name: '촛불', price: 30, category: 'light', model: 'candle', glow: true },
+  // 놀이
+  { id: 'kite', name: '방패연', price: 45, category: 'play', model: 'kite' },
+  { id: 'trampoline', name: '트램펄린', price: 70, category: 'play', model: 'trampoline' },
+  { id: 'soccerBall', name: '축구공', price: 20, category: 'play', model: 'soccerBall' },
+  // 신기한 것
+  { id: 'crystalBall', name: '수정 구슬', price: 100, category: 'wonder', model: 'crystalBall', glow: true },
+  { id: 'robot', name: '꼬마 로봇', price: 140, category: 'wonder', model: 'robot', glow: true },
 ];
 
 export const ITEM_BY_ID = Object.fromEntries(ITEMS.map((it) => [it.id, it]));

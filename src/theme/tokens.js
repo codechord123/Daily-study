@@ -42,6 +42,10 @@ export const PLANET_TINTS = [
   { id: 'sunset', base: '#ffc27a', shade: '#c0567a' },
   { id: 'midnight', base: '#7c83d6', shade: '#2e2f6e' },
   { id: 'aurora', base: '#9ff0d8', shade: '#7a5cc8' },
+  { id: 'cocoa', base: '#e2bf98', shade: '#8a5a3c' },
+  { id: 'cherry', base: '#ffb8cc', shade: '#c0507a' },
+  { id: 'ocean', base: '#7fd0e0', shade: '#2f6e8e' },
+  { id: 'galaxy', base: '#a99af0', shade: '#2f2470' },
 ];
 
 // 별 꾸미기: 고리 · 위성 · 빛 무리
@@ -52,6 +56,8 @@ export const PLANET_DECO = {
     { id: 'ice', name: '얼음 고리', color: '#c8f6ff', price: 70 },
     { id: 'rainbow', name: '무지개 고리', color: 'rainbow', price: 120 },
     { id: 'double', name: '두 겹 고리', color: '#c3b2ec', price: 100 },
+    { id: 'pearl', name: '진주 고리', color: '#fff1e2', price: 80 },
+    { id: 'neon', name: '네온 고리', color: '#ff7ad9', price: 90 },
   ],
   moon: [
     { id: 'none', name: '없음', price: 0 },
@@ -67,6 +73,9 @@ export const PLANET_DECO = {
     { id: 'craters', name: '분화구', price: 50 },
     { id: 'swirl', name: '소용돌이', price: 60 },
     { id: 'stars', name: '반짝 별무늬', price: 80 },
+    { id: 'waves', name: '물결', price: 50 },
+    { id: 'checks', name: '체크무늬', price: 50 },
+    { id: 'continents', name: '대륙과 바다', price: 90 },
   ],
   ambient: [
     { id: 'none', name: '없음', price: 0 },
@@ -75,6 +84,8 @@ export const PLANET_DECO = {
     { id: 'petals', name: '꽃잎', color: '#ffb3d0', price: 60 },
     { id: 'bubbles', name: '비눗방울', color: '#9fe9ff', price: 60 },
     { id: 'leaves', name: '단풍잎', color: '#ff9a4a', price: 60 },
+    { id: 'rain', name: '보슬비', color: '#8ec9ff', price: 50 },
+    { id: 'stardust', name: '반짝 별가루', color: '#ffe08a', price: 80 },
   ],
   aura: [
     { id: 'cyan', name: '하늘빛', color: '#7fdcff', price: 0 },
@@ -82,6 +93,8 @@ export const PLANET_DECO = {
     { id: 'pink', name: '분홍빛', color: '#ff8fd0', price: 30 },
     { id: 'green', name: '오로라', color: '#8fffc8', price: 30 },
     { id: 'violet', name: '보랏빛', color: '#b48cff', price: 30 },
+    { id: 'sunset', name: '노을빛', color: '#ffb070', price: 30 },
+    { id: 'moon', name: '달빛', color: '#e8ecff', price: 30 },
   ],
 };
 

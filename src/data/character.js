@@ -47,14 +47,16 @@ export const OPTION_SLOTS = {
       o('sprout', '새싹', 30), o('wizard', '마법사 모자', 90), o('ribbon', '리본', 35), o('catEars', '고양이 귀', 45),
       o('flowers', '꽃 화관', 55), o('helmet', '우주 헬멧', 120), o('headband', '머리띠', 25), o('cap', '야구 모자', 40),
       o('pirate', '해적 모자', 70), o('santa', '산타 모자', 60), o('bunnyBand', '토끼 머리띠', 45), o('halo', '천사 고리', 90),
-      o('unicorn', '유니콘 뿔', 100),
+      o('unicorn', '유니콘 뿔', 100), o('gat', '선비 갓', 90), o('jokduri', '족두리', 80), o('graduation', '학사모', 70),
+      o('frog', '개구리 모자', 50), o('chef', '요리사 모자', 45),
     ],
   },
   outfit: {
     label: '옷',
     options: [
       o('coat', '어린왕자 코트'), o('overalls', '멜빵바지', 40), o('dress', '원피스', 40), o('hoodie', '후드티', 40),
-      o('hanbok', '한복', 80), o('tuxedo', '턱시도', 80), o('spacesuit', '우주복', 120),
+      o('hanbok', '한복', 80), o('tuxedo', '턱시도', 80), o('spacesuit', '우주복', 120), o('raincoat', '노란 우비', 50),
+      o('labcoat', '과학자 가운', 70),
     ],
   },
   cape: {
@@ -67,6 +69,7 @@ export const OPTION_SLOTS = {
       o('none', '없음'), o('glasses', '동그란 안경', 30), o('sunglasses', '선글라스', 40), o('heartGlasses', '하트 안경', 50),
       o('backpack', '책가방', 40), o('wand', '별 지팡이', 70), o('bouquet', '꽃다발', 50), o('balloon', '풍선', 30),
       o('angelWings', '천사 날개', 120), o('butterflyWings', '나비 날개', 110), o('fairyWings', '요정 날개', 130),
+      o('magnifier', '돋보기', 40), o('umbrella', '우산', 45), o('headphones', '헤드폰', 50), o('book', '책 한 권', 25),
     ],
   },
   pet: {
@@ -75,7 +78,7 @@ export const OPTION_SLOTS = {
       o('none', '없음'), o('puppy', '강아지', 60), o('kitty', '고양이', 60), o('bunny', '토끼', 60), o('chick', '병아리', 40),
       o('hamster', '햄스터', 50), o('sheep', '아기 양', 70), o('penguin', '펭귄', 80), o('fox', '아기 여우', 90),
       o('owl', '부엉이', 90), o('dragon', '아기 용', 150), o('jellyfish', '우주 해파리', 120), o('spirit', '별의 정령', 140),
-      o('drone', '꼬마 드론', 110),
+      o('drone', '꼬마 드론', 110), o('turtle', '아기 거북', 70), o('cloud', '뭉게구름', 90), o('whale', '아기 고래', 130),
     ],
   },
 };

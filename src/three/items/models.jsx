@@ -6,6 +6,7 @@ import { toon, glow, glass } from '../materials';
 import { PASTEL, NEON } from '../../theme/tokens';
 import { MODELS2 } from './models2';
 import { MODELS3 } from './models3';
+import { MODELS4 } from './models4';
 
 const M = (c) => toon(c);
 
@@ -363,4 +364,5 @@ export const MODELS = {
   rocket: Rocket,
   ...MODELS2,
   ...MODELS3,
+  ...MODELS4,
 };

@@ -60,7 +60,7 @@ export function blobShadow() {
   g.fillRect(0, 0, 64, 64);
   const tex = new THREE.CanvasTexture(c);
   shadowMat = new THREE.MeshBasicMaterial({
-    color: '#241a52', alphaMap: tex, transparent: true, opacity: 0.3, depthWrite: false,
+    color: '#241a52', alphaMap: tex, transparent: true, opacity: 0.22, depthWrite: false,
     polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
   });
   return shadowMat;
@@ -97,7 +97,7 @@ const NOISE = /* glsl */ `
   float fbm(vec3 p){ float a=0.5, s=0.0; for(int i=0;i<4;i++){ s+=a*noise(p); p*=2.03; a*=0.5; } return s; }
 `;
 
-export const PATTERN_ID = { none: 0, dots: 1, stripes: 2, craters: 3, swirl: 4, stars: 5 };
+export const PATTERN_ID = { none: 0, dots: 1, stripes: 2, craters: 3, swirl: 4, stars: 5, waves: 6, checks: 7, continents: 8 };
 
 export function planetMaterial(base, shade) {
   return new THREE.ShaderMaterial({
@@ -165,9 +165,20 @@ export function planetMaterial(base, shade) {
         } else if (uPattern > 3.5 && uPattern < 4.5) {   // 소용돌이
           float s = sin(lat * 9.0 + lon * 3.0 + pig * 4.0);
           col = mix(col, mix(uBase, uRim, 0.35), smoothstep(0.5, 0.9, s) * 0.5);
-        } else if (uPattern > 4.5) {                      // 반짝 별무늬
+        } else if (uPattern > 4.5 && uPattern < 5.5) {   // 반짝 별무늬
           float d = cell(dir * 9.0);
           col += uRim * smoothstep(0.12, 0.0, d) * 1.4;
+        } else if (uPattern > 5.5 && uPattern < 6.5) {   // 물결
+          float w = sin(lat * 18.0 + sin(lon * 6.0) * 1.2 + pig * 1.5);
+          col = mix(col, mix(uBase, vec3(1.0), 0.35), smoothstep(0.75, 0.95, w) * 0.6);
+        } else if (uPattern > 6.5 && uPattern < 7.5) {   // 체크무늬
+          float c = step(0.0, sin(lat * 8.0)) == step(0.0, sin(lon * 8.0)) ? 1.0 : 0.0;
+          col = mix(col, mix(uShade, uBase, 0.6), c * 0.4);
+        } else if (uPattern > 7.5) {                      // 대륙과 바다
+          float land = fbm(dir * 2.2 + 3.7) + fbm(dir * 6.0) * 0.25;
+          float sea = smoothstep(0.02, -0.03, land);
+          col = mix(col, mix(vec3(0.33, 0.55, 0.85), vec3(0.45, 0.72, 0.95), lit), sea * 0.85);
+          col = mix(col, vec3(1.0), smoothstep(0.02, 0.0, abs(land - 0.0)) * 0.25); // 바닷가
         }
 
         // 물기 어린 윤기: 빛이 반사되는 자리에 부드러운 하이라이트 (둥글게 보이게)

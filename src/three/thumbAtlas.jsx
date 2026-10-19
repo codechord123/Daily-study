@@ -13,9 +13,10 @@ export const THUMB = 112; // 칸 하나 크기(px)
 const COLS = 10;
 
 // 칸 목록 → 그림 한 장. cells: [{ key, node }]
-function render(cells) {
+// step: 줄 간격(칸). 크게 확대한 머리 썸네일은 몸이 아래 칸까지 내려오므로 한 줄씩 비워 둔다
+function render(cells, step = 1) {
   return new Promise((resolve) => {
-    const rows = Math.ceil(cells.length / COLS);
+    const rows = Math.ceil(cells.length / COLS) * step;
     const width = COLS * THUMB;
     const height = rows * THUMB;
     const canvas = document.createElement('canvas');
@@ -37,7 +38,7 @@ function render(cells) {
             <ambientLight intensity={1} color="#d9d3ff" />
             <directionalLight position={[3, 5, 4]} intensity={1.8} color="#fff1d6" />
             {cells.map((c, i) => (
-              <group key={c.key} position={[(i % COLS) - (COLS - 1) / 2, (rows - 1) / 2 - Math.floor(i / COLS), 0]}>
+              <group key={c.key} position={[(i % COLS) - (COLS - 1) / 2, (rows - 1) / 2 - Math.floor(i / COLS) * step, 0]}>
                 {c.node}
               </group>
             ))}
@@ -55,7 +56,7 @@ function render(cells) {
               /* 이미 정리됨 */
             }
           }, 0);
-          resolve({ url, width, height, index: Object.fromEntries(cells.map((c, i) => [c.key, i])) });
+          resolve({ url, width, height, step, index: Object.fromEntries(cells.map((c, i) => [c.key, i])) });
         };
         requestAnimationFrame(tick);
       });
@@ -111,7 +112,7 @@ export function getAtlas(kind = 'items') {
   } else {
     cells = Object.entries(PLANET_DECO).flatMap(([slot, list]) => list.map((o) => ({ key: `${slot}:${o.id}`, node: decoCell(slot, o.id) })));
   }
-  cache[kind] = queue = queue.then(() => render(cells));
+  cache[kind] = queue = queue.then(() => render(cells, kind === 'char' ? 2 : 1));
   return cache[kind];
 }
 

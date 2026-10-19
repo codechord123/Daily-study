@@ -5,7 +5,7 @@ import { toon, glow } from './materials';
 import { NEON } from '../theme/tokens';
 
 const INK = '#2a2346';
-const FLYERS = new Set(['owl', 'dragon', 'jellyfish', 'spirit', 'drone']);
+const FLYERS = new Set(['owl', 'dragon', 'jellyfish', 'spirit', 'drone', 'cloud', 'whale']);
 
 function EyesPair({ y, z, gap = 0.022, r = 0.008 }) {
   return [-gap, gap].map((x) => (
@@ -236,6 +236,77 @@ function Drone({ color }) {
   );
 }
 
+function TurtlePet({ color }) {
+  return (
+    <group>
+      <mesh material={toon(color)} position={[0, 0.035, 0]} scale={[1, 0.6, 1.1]}>
+        <sphereGeometry args={[0.06, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+      </mesh>
+      <mesh material={toon('#b8d98a')} position={[0, 0.035, 0.07]}>
+        <sphereGeometry args={[0.025, 10, 8]} />
+      </mesh>
+      <EyesPair y={0.045} z={0.092} gap={0.011} r={0.005} />
+      {[[-1, 1], [1, 1], [-1, -1], [1, -1]].map(([x, z], i) => (
+        <mesh key={i} material={toon('#b8d98a')} position={[x * 0.045, 0.01, z * 0.04]}>
+          <sphereGeometry args={[0.014, 6, 4]} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// 뭉게구름: 가끔 작은 빗방울이 똑 (날씨 단원)
+function CloudPet({ color }) {
+  const drop = useRef();
+  useFrame(({ clock }) => {
+    if (!drop.current) return;
+    const t = (clock.elapsedTime * 0.8) % 1;
+    drop.current.position.y = -0.04 - t * 0.14;
+    drop.current.scale.setScalar(1 - t);
+  });
+  return (
+    <group>
+      {[[0, 0, 0, 0.045], [0.04, -0.005, 0, 0.035], [-0.04, -0.008, 0, 0.033], [0.015, 0.025, 0, 0.033]].map(([x, y, z, r], i) => (
+        <mesh key={i} material={toon(color)} position={[x, y, z]}>
+          <sphereGeometry args={[r, 10, 8]} />
+        </mesh>
+      ))}
+      <EyesPair y={0.0} z={0.042} gap={0.014} r={0.005} />
+      <mesh ref={drop} material={glow('#8ec9ff', 1.2)}>
+        <sphereGeometry args={[0.008, 6, 4]} />
+      </mesh>
+    </group>
+  );
+}
+
+function Whale({ color }) {
+  const tail = useRef();
+  useFrame(({ clock }) => {
+    if (tail.current) tail.current.rotation.x = Math.sin(clock.elapsedTime * 3) * 0.4;
+  });
+  return (
+    <group>
+      <mesh material={toon(color)} scale={[0.85, 0.75, 1.3]}>
+        <sphereGeometry args={[0.055, 12, 10]} />
+      </mesh>
+      <mesh material={toon('#f7efe1')} position={[0, -0.02, 0.01]} scale={[0.7, 0.4, 1.1]}>
+        <sphereGeometry args={[0.05, 10, 8]} />
+      </mesh>
+      <EyesPair y={0.01} z={0.06} gap={0.03} r={0.006} />
+      <group ref={tail} position={[0, 0.01, -0.07]}>
+        {[-1, 1].map((s) => (
+          <mesh key={s} material={toon(color)} position={[s * 0.02, 0, -0.01]} rotation={[0, s * 0.6, 0]} scale={[1, 0.25, 0.6]}>
+            <sphereGeometry args={[0.025, 8, 6]} />
+          </mesh>
+        ))}
+      </group>
+      <mesh material={glow('#bff6ff', 1.3)} position={[0, 0.06, 0.02]}>
+        <sphereGeometry args={[0.008, 6, 4]} />
+      </mesh>
+    </group>
+  );
+}
+
 const BODIES = {
   puppy: (c) => <Critter color={c} ear="floppy" tail="puff" snout />,
   kitty: (c) => <Critter color={c} ear="pointy" tail="bushy" cheek />,
@@ -250,10 +321,13 @@ const BODIES = {
   jellyfish: (c) => <Jellyfish color={c} />,
   spirit: (c) => <Spirit color={c} />,
   drone: (c) => <Drone color={c} />,
+  turtle: (c) => <TurtlePet color={c} />,
+  cloud: (c) => <CloudPet color={c} />,
+  whale: (c) => <Whale color={c} />,
 };
 
 // 펫 기본 색 (펫 색을 안 바꿨을 때 어울리는 색)
-const NATURAL = { puppy: '#e9c39b', kitty: '#f0a35a', bunny: '#ffffff', hamster: '#f2c08a', fox: '#f0965a', chick: '#ffe066', sheep: '#ffffff', penguin: '#3b437e', owl: '#a77b5b', dragon: '#8fd18a', jellyfish: '#c3b2ec', spirit: '#bff6ff', drone: '#e8ecf5' };
+const NATURAL = { puppy: '#e9c39b', kitty: '#f0a35a', bunny: '#ffffff', hamster: '#f2c08a', fox: '#f0965a', chick: '#ffe066', sheep: '#ffffff', penguin: '#3b437e', owl: '#a77b5b', dragon: '#8fd18a', jellyfish: '#c3b2ec', spirit: '#bff6ff', drone: '#e8ecf5', turtle: '#6d9a5a', cloud: '#ffffff', whale: '#7fa9e6' };
 
 export default function Pet({ type, color, movingRef, moving, flying }) {
   const g = useRef();

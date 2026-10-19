@@ -11,6 +11,8 @@ import Pet from './Pet';
 const EMOTE_MS = 2600;
 const INK = '#2a2346';
 
+const PASTEL_BARK = '#a77b5b';
+
 export function Hat({ type, accent }) {
   if (type === 'crown')
     return (
@@ -194,6 +196,81 @@ export function Hat({ type, accent }) {
       <mesh material={glow('#ffd1f0', 1.5)} position={[0, 0.52, 0.06]} rotation={[0.35, 0, 0]}>
         <coneGeometry args={[0.025, 0.12, 8]} />
       </mesh>
+    );
+  if (type === 'gat')
+    // 조선 선비의 갓: 넓은 챙 + 원통 모자, 턱끈
+    return (
+      <group position={[0, 0.48, 0]}>
+        <mesh material={toon('#2b2338')}>
+          <cylinderGeometry args={[0.2, 0.2, 0.006, 24]} />
+        </mesh>
+        <mesh material={toon('#2b2338')} position={[0, 0.05, 0]}>
+          <cylinderGeometry args={[0.06, 0.07, 0.1, 16]} />
+        </mesh>
+        {[-1, 1].map((s) => (
+          <mesh key={s} material={toon('#c9a3d9')} position={[s * 0.12, -0.08, 0.02]} rotation={[0, 0, s * 0.15]}>
+            <cylinderGeometry args={[0.004, 0.004, 0.16, 4]} />
+          </mesh>
+        ))}
+      </group>
+    );
+  if (type === 'jokduri')
+    return (
+      <group position={[0, 0.5, 0.01]}>
+        <mesh material={toon('#2b2338')} scale={[1, 0.7, 1]}>
+          <cylinderGeometry args={[0.05, 0.065, 0.06, 6]} />
+        </mesh>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <mesh key={i} material={glow(i % 2 ? NEON.pink : NEON.gold, 1.2)} position={[Math.cos(i * 1.256) * 0.045, 0.035, Math.sin(i * 1.256) * 0.045]}>
+            <sphereGeometry args={[0.01, 6, 4]} />
+          </mesh>
+        ))}
+      </group>
+    );
+  if (type === 'graduation')
+    return (
+      <group position={[0, 0.48, 0]}>
+        <mesh material={toon('#2b2338')}>
+          <cylinderGeometry args={[0.1, 0.11, 0.05, 14]} />
+        </mesh>
+        <mesh material={toon('#2b2338')} position={[0, 0.03, 0]} rotation={[0, Math.PI / 4, 0]}>
+          <boxGeometry args={[0.24, 0.012, 0.24]} />
+        </mesh>
+        <mesh material={glow(NEON.gold, 1.2)} position={[0.1, -0.02, 0.06]}>
+          <cylinderGeometry args={[0.004, 0.004, 0.08, 4]} />
+        </mesh>
+      </group>
+    );
+  if (type === 'frog')
+    return (
+      <group position={[0, 0.44, 0]}>
+        <mesh material={toon('#8fd18a')} scale={[1, 0.7, 1]}>
+          <sphereGeometry args={[0.13, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        </mesh>
+        {[-1, 1].map((s) => (
+          <group key={s} position={[s * 0.06, 0.08, 0.05]}>
+            <mesh material={toon('#ffffff')}>
+              <sphereGeometry args={[0.03, 10, 8]} />
+            </mesh>
+            <mesh material={toon(INK)} position={[0, 0.005, 0.024]}>
+              <sphereGeometry args={[0.013, 8, 6]} />
+            </mesh>
+          </group>
+        ))}
+      </group>
+    );
+  if (type === 'chef')
+    return (
+      <group position={[0, 0.47, 0]}>
+        <mesh material={toon('#ffffff')}>
+          <cylinderGeometry args={[0.08, 0.08, 0.07, 16]} />
+        </mesh>
+        {[[0, 0.09, 0], [0.05, 0.07, 0.02], [-0.05, 0.07, 0.01], [0, 0.07, -0.05]].map((p, i) => (
+          <mesh key={i} material={toon('#ffffff')} position={p}>
+            <sphereGeometry args={[0.055, 10, 8]} />
+          </mesh>
+        ))}
+      </group>
     );
   return null;
 }
@@ -562,6 +639,37 @@ function Outfit({ type, coat, accent, species }) {
         </mesh>
       </>
     );
+  if (type === 'raincoat')
+    // 노란 우비: 모자 달린 넉넉한 비옷 (날씨 단원)
+    return (
+      <>
+        <mesh material={toon('#ffd34d')} position={[0, 0.16, 0]}>
+          <coneGeometry args={[0.125, 0.22, 12]} />
+        </mesh>
+        <mesh material={toon('#ffd34d')} position={[0, 0.31, -0.07]} rotation={[0.5, 0, 0]} scale={[1, 0.8, 0.6]}>
+          <sphereGeometry args={[0.09, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        </mesh>
+        {[0.2, 0.15, 0.1].map((y) => (
+          <mesh key={y} material={toon('#c99a20')} position={[0, y, 0.088 - (0.2 - y) * 0.2]}>
+            <sphereGeometry args={[0.008, 6, 4]} />
+          </mesh>
+        ))}
+      </>
+    );
+  if (type === 'labcoat')
+    return (
+      <>
+        <mesh material={toon('#ffffff')} position={[0, 0.15, 0]}>
+          <cylinderGeometry args={[0.075, 0.11, 0.21, 12]} />
+        </mesh>
+        <mesh material={a} position={[0, 0.19, 0.075]}>
+          <boxGeometry args={[0.03, 0.12, 0.006]} />
+        </mesh>
+        <mesh material={toon('#7fa9e6')} position={[0.04, 0.17, 0.08]}>
+          <boxGeometry args={[0.025, 0.03, 0.006]} />
+        </mesh>
+      </>
+    );
   return (
     <mesh material={c} position={[0, 0.16, 0]}>
       <coneGeometry args={[0.11, 0.2, 10]} />
@@ -664,6 +772,55 @@ function Accessory({ type, accent, wingRef }) {
         </mesh>
         <mesh material={toon(accent)} position={[0, 0.38, 0]} scale={[1, 1.15, 1]}>
           <sphereGeometry args={[0.07, 12, 10]} />
+        </mesh>
+      </group>
+    );
+  if (type === 'magnifier')
+    return (
+      <group position={[0.12, 0.2, 0.05]} rotation={[0, 0, -0.5]}>
+        <mesh material={toon(PASTEL_BARK)} position={[0, -0.05, 0]}>
+          <cylinderGeometry args={[0.008, 0.008, 0.08, 6]} />
+        </mesh>
+        <mesh material={toon('#5f6c8a')} position={[0, 0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.035, 0.007, 6, 16]} />
+        </mesh>
+        <mesh material={glow('#cfefff', 0.9)} position={[0, 0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.032, 14]} />
+        </mesh>
+      </group>
+    );
+  if (type === 'umbrella')
+    return (
+      <group position={[0.11, 0.18, 0]}>
+        <mesh material={toon('#5f6c8a')} position={[0, 0.12, 0]}>
+          <cylinderGeometry args={[0.004, 0.004, 0.3, 4]} />
+        </mesh>
+        <mesh material={toon(accent)} position={[0, 0.28, 0]}>
+          <coneGeometry args={[0.16, 0.07, 8, 1, true]} />
+        </mesh>
+      </group>
+    );
+  if (type === 'headphones')
+    return (
+      <group position={[0, 0.36, 0]}>
+        <mesh material={toon('#3c4166')} position={[0, 0.07, 0]} rotation={[0, 0, 0]}>
+          <torusGeometry args={[0.125, 0.01, 6, 20, Math.PI]} />
+        </mesh>
+        {[-1, 1].map((s) => (
+          <mesh key={s} material={toon(accent)} position={[s * 0.125, 0.0, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.035, 0.035, 0.025, 12]} />
+          </mesh>
+        ))}
+      </group>
+    );
+  if (type === 'book')
+    return (
+      <group position={[0.1, 0.17, 0.06]} rotation={[0.2, -0.4, 0.1]}>
+        <mesh material={toon(accent)}>
+          <boxGeometry args={[0.07, 0.09, 0.02]} />
+        </mesh>
+        <mesh material={toon('#f7efe1')} position={[0.004, 0, 0]}>
+          <boxGeometry args={[0.064, 0.084, 0.022]} />
         </mesh>
       </group>
     );

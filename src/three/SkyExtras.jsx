@@ -75,10 +75,10 @@ export function ShootingStars() {
 /* ---------- 멀리 보이는 친구 별: 우주 지도에서 실제 방향대로, 작게 ---------- */
 export function DistantPlanets({ ownerId, count = 9 }) {
   const list = useMemo(() => {
-    const idx = Math.max(0, ROSTER.findIndex((s) => s.id === ownerId));
-    const me = new THREE.Vector3(...spacePosition(idx));
+    const idx = ROSTER.findIndex((s) => s.id === ownerId);
+    const me = idx >= 0 ? new THREE.Vector3(...spacePosition(idx)) : new THREE.Vector3();
     return ROSTER.map((s, i) => ({ s, i, v: new THREE.Vector3(...spacePosition(i)).sub(me) }))
-      .filter((x) => x.s.id !== ownerId)
+      .filter((x) => x.s.id !== ownerId && x.v.lengthSq() > 1) // 같은 자리(명단에 없는 별 등)는 빼기
       .sort((a, b) => a.v.length() - b.v.length())
       .slice(0, count)
       .map(({ s, v }, k) => {
