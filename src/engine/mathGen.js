@@ -130,6 +130,25 @@ const unit3 = [
     const deg = randInt(r, 4, 14) * 5;
     return { kind: 'number', prompt: `두 사각형이 서로 합동이에요. 한 사각형의 한 각이 ${deg}°일 때, 그 대응각의 크기는? (°)`, answer: deg };
   },
+  (r) => {
+    const d = randInt(r, 2, 9);
+    return { kind: 'number', prompt: `점대칭도형에서 대칭의 중심부터 한 점까지의 거리가 ${d}cm예요. 그 점과 대응점을 이은 선분의 길이는? (cm)`, answer: d * 2, hint: '대칭의 중심은 대응점을 이은 선분을 똑같이 둘로 나눠요' };
+  },
+  (r) => {
+    const a = randInt(r, 4, 12), b = randInt(r, 3, 9);
+    return { kind: 'number', prompt: `점대칭도형인 평행사변형의 두 변이 ${a}cm, ${b}cm예요. 둘레는? (cm)`, answer: 2 * (a + b), hint: '대응변의 길이가 서로 같아요' };
+  },
+  (r) => {
+    const q = pick(r, [
+      ['모양과 크기가 같아 포개었을 때 완전히 겹치는 두 도형은 서로 합동이다.', true, '맞아요, 그게 합동의 뜻이에요.'],
+      ['모양이 같으면 크기가 달라도 서로 합동이다.', false, '크기까지 같아야 합동이에요.'],
+      ['선대칭도형에서 대응각의 크기는 서로 같다.', true, '대칭축으로 접으면 겹치니까요.'],
+      ['선대칭도형의 대칭축은 언제나 1개뿐이다.', false, '정사각형은 4개, 원은 셀 수 없이 많아요.'],
+      ['점대칭도형은 대칭의 중심을 중심으로 180° 돌렸을 때 처음 도형과 완전히 겹친다.', true, '맞아요.'],
+      ['점대칭도형에서 대칭의 중심은 1개뿐이다.', true, '대칭의 중심은 항상 하나예요.'],
+    ]);
+    return { kind: 'ox', prompt: q[0], answer: q[1], explain: q[2] };
+  },
 ];
 
 /* ---------- 4. 소수의 곱셈 ---------- */
@@ -160,6 +179,29 @@ const unit4 = [
     const n = randInt(r, 12, 98);
     const k = pick(r, [10, 100, 1000]);
     return { kind: 'number', prompt: `${dec(n / 100)} × ${k} = ?`, answer: Number(dec((n / 100) * k)), hint: '10, 100, 1000을 곱하면 소수점이 오른쪽으로 옮겨가요' };
+  },
+  (r) => {
+    const km = randInt(r, 105, 245), weeks = randInt(r, 1, 3);
+    return { kind: 'number', prompt: `매일 ${dec(km / 100)}km씩 달리기를 해요. ${weeks}주 동안 달린 거리는? (km)`, answer: Number(dec((km * 7 * weeks) / 100)), hint: `${weeks}주는 ${7 * weeks}일이에요` };
+  },
+  (r) => {
+    const bag = randInt(r, 3, 9), book = randInt(r, 11, 25), n = randInt(r, 2, 4);
+    return { kind: 'number', prompt: `${dec(bag / 10)}kg인 가방에 ${dec(book / 10)}kg짜리 책 ${n}권을 넣었어요. 책을 넣은 가방의 무게는? (kg)`, answer: Number(dec((bag + book * n) / 10)) };
+  },
+  (r) => {
+    const k = randInt(r, 3, 9), t = randInt(r, 2, 9);
+    const big = pick(r, [true, false]);
+    const m = big ? 10 + t : t;
+    return { kind: 'ox', prompt: `${k} × ${dec(m / 10)}의 곱은 ${k}보다 크다.`, answer: big, explain: big ? '1보다 큰 수를 곱하면 처음 수보다 커져요.' : '1보다 작은 수를 곱하면 처음 수보다 작아져요.' };
+  },
+  (r) => {
+    const a = randInt(r, 2, 9), k = randInt(r, 2, 9);
+    return {
+      kind: 'choice',
+      prompt: `${dec(a / 10)} × ${k}을(를) 분수의 곱셈으로 바르게 나타낸 것은?`,
+      ...choicesFrom(r, `{${a}/10} × ${k}`, [`{${a}/100} × ${k}`, `{${a}/10} × {${k}/10}`, `{${a * k}/100}`]),
+      hint: '0.1은 {1/10}이에요',
+    };
   },
 ];
 
