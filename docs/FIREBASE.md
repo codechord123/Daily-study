@@ -22,7 +22,9 @@ Firebase 콘솔에서 직접 붙여 넣어도 되고, 컴퓨터에서 한 번에
 
 (컴퓨터에서: `npx firebase-tools login` → `npx firebase-tools deploy --only firestore:rules,database --project 내프로젝트ID`)
 
-## 3. Vercel에 키 넣기
+## 3. Vercel에 키 넣기 (선택)
+우리 반 서버(`learn-cube-281e2`) 값은 이미 코드(`src/services/cloud.js`)에 들어 있어서 배포판은 따로 넣지 않아도 연결돼요. 다른 프로젝트로 바꿀 때만 아래 값을 넣으면 그것이 우선이에요.
+
 Vercel → 프로젝트 → **Settings → Environment Variables** 에 아래를 추가하고 **Redeploy**
 
 | 이름 | 값 (firebaseConfig에서) |

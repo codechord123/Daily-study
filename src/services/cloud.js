@@ -13,7 +13,18 @@ import { setRoster, makeRoster } from '../data/classroom';
 
 const env = import.meta.env;
 const EMULATOR = env.VITE_FIREBASE_EMULATOR === '1';
-export const cloudEnabled = EMULATOR || !!env.VITE_FIREBASE_PROJECT_ID;
+// 우리 학급 서버 (웹 설정값은 원래 페이지에 공개되는 값이다. 실제 보호는 보안 규칙이 맡는다)
+// 배포판에서만 쓰고, 개발 중이나 VITE_FIREBASE_OFF=1 로 만든 미리보기는 샘플 학급으로 돈다
+const DEFAULT_CONFIG = {
+  apiKey: 'AIzaSyCni7Nwmp0M5Vp6f4sZctK-1w_sH-Eo4Rw',
+  authDomain: 'learn-cube-281e2.firebaseapp.com',
+  databaseURL: 'https://learn-cube-281e2-default-rtdb.firebaseio.com',
+  projectId: 'learn-cube-281e2',
+  appId: '1:446916411202:web:65ccd65ee6bed9548f12db',
+};
+const useDefault = env.PROD && env.VITE_FIREBASE_OFF !== '1' && !EMULATOR;
+const cfg = (key, envKey) => env[envKey] || (useDefault ? DEFAULT_CONFIG[key] : undefined);
+export const cloudEnabled = EMULATOR || !!cfg('projectId', 'VITE_FIREBASE_PROJECT_ID');
 // 지금 들어와 있는 학급 (로그인하면 정해진다)
 export let CLASS_ID = env.VITE_CLASS_ID || 'star5';
 
@@ -76,13 +87,13 @@ export async function startCloud() {
       import('firebase/database'),
       import('firebase/auth'),
     ]);
-    const projectId = env.VITE_FIREBASE_PROJECT_ID || 'demo-dailystudy';
+    const projectId = cfg('projectId', 'VITE_FIREBASE_PROJECT_ID') || 'demo-dailystudy';
     const app = initializeApp({
-      apiKey: env.VITE_FIREBASE_API_KEY || 'demo-key',
-      authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`,
+      apiKey: cfg('apiKey', 'VITE_FIREBASE_API_KEY') || 'demo-key',
+      authDomain: cfg('authDomain', 'VITE_FIREBASE_AUTH_DOMAIN') || `${projectId}.firebaseapp.com`,
       projectId,
-      databaseURL: env.VITE_FIREBASE_DATABASE_URL || `http://127.0.0.1:9000?ns=${projectId}-default-rtdb`,
-      appId: env.VITE_FIREBASE_APP_ID || 'demo-app',
+      databaseURL: cfg('databaseURL', 'VITE_FIREBASE_DATABASE_URL') || `http://127.0.0.1:9000?ns=${projectId}-default-rtdb`,
+      appId: cfg('appId', 'VITE_FIREBASE_APP_ID') || 'demo-app',
     });
     const db = fs.getFirestore(app);
     const rtdb = rd.getDatabase(app);
