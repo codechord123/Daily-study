@@ -383,6 +383,15 @@ export async function allowRejoin(sid) {
   await rd.remove(rd.ref(rtdb, `seats/${CLASS_ID}/${sid}`));
 }
 
+/** 학생: 지금 비밀번호를 알면 새 비밀번호로 바꾼다 */
+export async function changePassword(current, next) {
+  const { au, auth } = need();
+  const user = auth.currentUser;
+  if (!user?.email) throw new Error('로그인한 뒤에 바꿀 수 있어요');
+  await au.reauthenticateWithCredential(user, au.EmailAuthProvider.credential(user.email, current));
+  await au.updatePassword(user, next);
+}
+
 export async function cloudSignOut() {
   if (!fb) return;
   clearTimeout(retryTimer);

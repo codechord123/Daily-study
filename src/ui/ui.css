@@ -877,3 +877,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .class-row .roster-num { flex: none; }
 .class-row.joined .roster-num { background: var(--gold); color: var(--ink-dark); }
 .class-state { font-size: 13px; color: var(--ink-muted); white-space: nowrap; }
+
+/* 비밀번호 바꾸기 */
+.pw-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(8, 6, 24, .55); backdrop-filter: blur(3px); }
+.pw-dialog { max-height: calc(100dvh - 32px); overflow-y: auto; }
