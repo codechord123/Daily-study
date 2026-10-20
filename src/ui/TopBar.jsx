@@ -6,7 +6,7 @@ import { useEscape } from './useEscape';
 import { cloudEnabled } from '../services/cloud';
 import PasswordDialog from './PasswordDialog';
 
-// 오른쪽 위: 별가루·연속 출석·설정
+// 오른쪽 위: 문제 정거장·별가루·연속 출석·설정(화질·소리·비밀번호·로그아웃)
 export default function TopBar() {
   const { profile, logout, go } = useGame();
   const { quality, setQuality, openSheet } = useUI();
@@ -22,19 +22,20 @@ export default function TopBar() {
     return () => document.removeEventListener('pointerdown', off);
   }, [open]);
   const [snd, setSnd] = useState(sound.getPrefs);
+  const notes = (profile.wrongNotes ?? []).filter((n) => !n.cleared).length;
   useEffect(() => sound.onPrefs(setSnd), []);
   return (
     <div className="topbar" ref={root}>
-      <button className="chip chip-btn" onClick={() => openSheet('records')} aria-label="나의 기록">
-        📒<span className="chip-txt"> 기록</span>
+      {/* 문제 정거장(기록·오답·다시 볼 문제)은 메뉴에 숨기지 않고 늘 위에 */}
+      <button className="chip chip-btn station-chip" onClick={() => openSheet('station')} aria-label={`문제 정거장${notes ? `, 남은 오답 ${notes}개` : ''}`}>
+        🛰<span className="chip-txt"> 정거장</span>
+        {notes > 0 && <b className="chip-badge">{notes}</b>}
       </button>
       <span className="chip chip-gold" aria-label="별가루">✦ {profile.stardust}</span>
       <span className="chip" aria-label="연속 출석">🔥 {profile.streak}일</span>
       <button className="btn btn-icon btn-ghost" onClick={() => setOpen((o) => !o)} aria-label="설정">⚙︎</button>
       {open && (
         <div className="menu panel">
-          <button className="menu-item" onClick={() => (setOpen(false), openSheet('records'))}>📒 나의 기록</button>
-          <button className="menu-item" onClick={() => (setOpen(false), openSheet('station'))}>🛰 문제 정거장</button>
           <button className="menu-item" onClick={() => setQuality(quality === 'low' ? 'high' : 'low')}>
             화질: {quality === 'low' ? '가볍게' : '선명하게'} <small>바꾸기</small>
           </button>

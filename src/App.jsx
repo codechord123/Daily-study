@@ -3,11 +3,10 @@ import Login from './ui/Login';
 import MissionView from './ui/MissionView';
 import Toast from './ui/Toast';
 import WarpOverlay from './ui/WarpOverlay';
-import RecordsSheet from './ui/RecordsSheet';
 import StationSheet from './ui/StationSheet';
 import ClassGoalSheet from './ui/ClassGoal';
 import TeacherView from './ui/TeacherView';
-import Onboarding from './ui/Onboarding';
+import Onboarding, { NEWS_VERSION } from './ui/Onboarding';
 import { webglAvailable } from './ui/SceneGuard';
 
 // 3D(three.js)와 3D를 쓰는 화면은 따로 불러온다: 로그인·미션·선생님 화면이 먼저 뜬다
@@ -114,10 +113,11 @@ export default function App() {
           {profile && screen === 'space' && <FlightHud />}
         </Suspense>
         {profile && screen === 'mission' && <MissionView key={missionMode?.at ?? 'daily'} />}
-        {profile && sheet === 'records' && screen !== 'mission' && <RecordsSheet />}
-        {profile && sheet === 'station' && screen !== 'mission' && <StationSheet />}
+        {/* 나의 기록은 문제 정거장의 '기록' 탭 */}
+        {profile && (sheet === 'station' || sheet === 'records') && screen !== 'mission' && <StationSheet key={sheet} initialTab={sheet === 'records' ? 'records' : 'subjects'} />}
         {profile && sheet === 'goal' && screen !== 'mission' && <ClassGoalSheet />}
         {profile && !profile.onboarded && screen === 'home' && <Onboarding />}
+        {profile && profile.onboarded && (profile.newsSeen ?? 0) < NEWS_VERSION && screen === 'home' && profile.sid !== 'teacher' && <Onboarding news key="news" />}
         <WarpOverlay />
         <Toast />
       </div>

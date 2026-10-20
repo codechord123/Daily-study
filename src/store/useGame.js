@@ -6,6 +6,9 @@ import { priceOf } from './classSettings';
 import { loadProfile, newProfile, saveProfile, onRemoteProfile, onSynced } from './profileStore';
 import { cloudEnabled, cloudSignOut } from '../services/cloud';
 
+// 새 기능 안내 판 (ui/Onboarding.jsx NEWS_VERSION 과 같게)
+const NEWS_VERSION = 1;
+
 export const todayKey = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -134,6 +137,14 @@ export const useGame = create((set, get) => {
     finishOnboarding() {
       update((p) => {
         p.onboarded = true;
+        p.newsSeen = NEWS_VERSION; // 처음 안내에 새 기능도 들어 있다
+        return p;
+      });
+    },
+    seeNews(v) {
+      update((p) => {
+        if ((p.newsSeen ?? 0) >= v) return null;
+        p.newsSeen = v;
         return p;
       });
     },

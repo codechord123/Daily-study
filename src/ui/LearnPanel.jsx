@@ -184,7 +184,7 @@ export default function LearnPanel() {
         <span className="muted">틀린 문제·헷갈린 문제는 1·3·7일 뒤 아침 미션에 다시 나와요 (지금 반 전체 {data.review}문제 대기)</span>
       </div>
 
-      <h3 className="t-sub">🚩 학생들이 알려 준 문제 {newReports.length > 0 && <span className="t-badge">{newReports.length}</span>}</h3>
+      <h3 className="t-sub" id="t-reports">🚩 학생들이 알려 준 문제 {newReports.length > 0 && <span className="t-badge">{newReports.length}</span>}</h3>
       {data.reportRows.length ? (
         <ul className="t-list">
           {[...newReports, ...oldReports].map((r) => (
@@ -213,7 +213,7 @@ export default function LearnPanel() {
         <p className="muted">아직 없어요. 학생이 문제를 푼 뒤 '🚩 문제가 이상해요'를 누르면 여기에 모여요.</p>
       )}
 
-      <h3 className="t-sub">📌 성취기준별 정답률</h3>
+      <h3 className="t-sub" id="t-std">📌 성취기준별 정답률</h3>
       {data.stdRows.length ? (
         <div className="t-std">
           {data.stdRows.map((r) => (
@@ -230,7 +230,7 @@ export default function LearnPanel() {
         <p className="muted">학생들이 문제를 풀면 성취기준마다 정답률이 모여요.</p>
       )}
 
-      <div className="t-sub-row">
+      <div className="t-sub-row" id="t-missed">
         <h3 className="t-sub">❗ 많이 틀린 문제 (3번 넘게 나온 문제 중)</h3>
         {slides.length > 0 && (
           <button className="btn btn-sm btn-primary" onClick={() => setPresent(0)}>📺 수업 화면에 띄우기</button>

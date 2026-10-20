@@ -9,7 +9,7 @@ import LearnPanel, { questionOf } from './LearnPanel';
 import StudentDetail from './StudentDetail';
 import { useClassWeek, PraiseBoard, goalTarget } from './ClassGoal';
 import YearEnd from './YearEnd';
-import { recordMany, clearLearn, dayNum, REPORT_REASONS, qId as qIdOf } from '../store/learnStore';
+import { recordMany, clearLearn, dayNum, REPORT_REASONS, qId as qIdOf, getLearn } from '../store/learnStore';
 import { BANK_SOCIAL, BANK_KOREAN, BANK_SCIENCE, BANK_ENGLISH, BANK_MATH } from '../data/missions/bank';
 
 // 단원마다 문항이 몇 개 있는지 (수학은 계산 문제를 자동으로 더 만든다)
@@ -25,6 +25,14 @@ import { SUBJECT_META } from '../data/missions/grade5';
 import { curriculumPosition, unitTitles, buildDailyMission, UNIT_TITLES, MISSION_COUNTS } from '../engine/dailyMission';
 
 const SUBJECTS = ['math', 'english', 'korean', 'social', 'science'];
+const TAB_KEY = 'ds:teacher-tab';
+const T_TABS = [
+  ['today', '📋 오늘'],
+  ['week', '🌌 이번 주'],
+  ['learn', '📈 학습 분석'],
+  ['units', '📚 출제 단원'],
+  ['class', '⚙︎ 우리 반·설정'],
+];
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : null);
 
 function useSettings() {
@@ -112,6 +120,23 @@ export default function TeacherView() {
   const [tick, setTick] = useState(0);
   const [csv, setCsv] = useState(null);
   const [detail, setDetail] = useState(null); // 자세히 볼 학생 sid
+  const [tab, setTab] = useState(() => {
+    try {
+      return localStorage.getItem(TAB_KEY) || 'today';
+    } catch {
+      return 'today';
+    }
+  });
+  // 탭을 바꾸고, 그 탭 안의 칸(anchor)이 있으면 그리로 내려간다
+  const pickTab = (id, anchor) => {
+    setTab(id);
+    try {
+      localStorage.setItem(TAB_KEY, id);
+    } catch {
+      /* noop */
+    }
+    setTimeout(() => (anchor ? document.getElementById(anchor) : document.querySelector('.t-tabs'))?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  };
   const [cloud, setCloud] = useState(getCloudStatus);
   useEffect(() => onCloudStatus(setCloud), []);
   // 다른 기기에서 기록이 들어오면 표를 다시 계산
@@ -215,22 +240,18 @@ export default function TeacherView() {
           )}
         </div>
       </header>
-      {/* 아래쪽 자주 쓰는 곳으로 바로 이동 */}
-      <nav className="t-jump" aria-label="바로 가기">
-        {[
-          ...(cloudEnabled ? [['t-class', '🏫 우리 반']] : []),
-          ['t-students', '👩‍🎓 학생별 현황'],
-          ['t-goal', '🌌 이번 주'],
-          ['t-learn', '📈 학습 분석'],
-          ['t-units', '📚 출제 단원'],
-          ['t-settings', '⚙︎ 설정'],
-          ['t-year', '🗂 학년 정리'],
-        ].map(([id, label]) => (
-          <button key={id} className="chip chip-btn" onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+      {/* 한 번에 한 화면만: 위쪽 탭으로 바꾼다 */}
+      <nav className="t-tabs" role="tablist" aria-label="선생님 화면">
+        {T_TABS.map(([id, label]) => (
+          <button key={id} role="tab" aria-selected={tab === id} className={`t-tab ${tab === id ? 'on' : ''}`} onClick={() => pickTab(id)}>
             {label}
           </button>
         ))}
       </nav>
+
+      {tab === 'today' && (
+        <>
+          <TodoPanel rows={rows} settings={settings} go={pickTab} />
 
       <section className="t-cards">
         <div className="t-card"><b>{summary.done}<small>/{ROSTER.length}</small></b><span>오늘 미션 완료</span></div>
@@ -323,10 +344,12 @@ export default function TeacherView() {
             : '지금은 이 기기에 저장된 기록만 보여요. Firebase를 연결하면 반 전체 기기의 기록이 모여요.'}
         </p>
       </section>
+        </>
+      )}
 
-      <ClassWeekPanel settings={settings} />
+      {tab === 'week' && <ClassWeekPanel settings={settings} />}
 
-      <LearnPanel />
+      {tab === 'learn' && <LearnPanel />}
       {detail && <StudentDetail sid={detail} questionOf={questionOf} onClose={() => setDetail(null)} />}
 
       {csv && (
@@ -354,6 +377,7 @@ export default function TeacherView() {
         </div>
       )}
 
+      {tab === 'units' && (
       <section className="t-panel" id="t-units">
         <div className="t-panel-head">
           <h2>출제 단원</h2>
@@ -377,10 +401,11 @@ export default function TeacherView() {
           ))}
         </div>
       </section>
+      )}
 
+      {tab === 'class' && (
+        <>
       {cloudEnabled && <ClassPanel />}
-
-      <YearEnd />
 
       <section className="t-panel" id="t-settings">
         <h2>설정</h2>
@@ -400,7 +425,73 @@ export default function TeacherView() {
           {!cloudEnabled && <PinSetting pin={settings.teacherPin} />}
         </div>
       </section>
+
+      <YearEnd />
+        </>
+      )}
     </div>
+  );
+}
+
+/* '오늘' 첫 화면: 선생님이 바로 확인할 일 (누르면 그 화면으로) */
+function TodoPanel({ rows, settings, go }) {
+  const todo = useMemo(() => {
+    let seen = new Set();
+    try {
+      seen = new Set(JSON.parse(localStorage.getItem('ds:reports-seen') ?? '[]'));
+    } catch {
+      /* noop */
+    }
+    const reports = new Set();
+    const std = {};
+    const items = {};
+    for (const st of ROSTER) {
+      const l = getLearn(st.id);
+      l.reports.forEach((r) => !seen.has(r.id) && reports.add(r.id));
+      for (const [code, [c, t]] of Object.entries(l.std)) {
+        const e = (std[code] ??= [0, 0]);
+        e[0] += c;
+        e[1] += t;
+      }
+      for (const [id, [w, t]] of Object.entries(l.items)) {
+        const e = (items[id] ??= [0, 0]);
+        e[0] += w;
+        e[1] += t;
+      }
+    }
+    const weakStd = Object.entries(std).filter(([, [c, t]]) => t >= 10 && c / t < 0.6).map(([code]) => code);
+    const hard = Object.values(items).filter(([w, t]) => t >= 3 && w / t >= 0.5).length;
+    const notYet = rows.filter((r) => r.has && !r.today);
+    const never = rows.filter((r) => !r.has);
+    return { reports: reports.size, weakStd, hard, notYet, never };
+  }, [rows]);
+  const list = [
+    settings.freeDecor && { icon: '⚠︎', text: '무료 꾸미기가 켜져 있어요. 실제 수업 전에 꺼 주세요', go: () => go('class', 't-settings'), warn: true },
+    todo.reports > 0 && { icon: '🚩', text: `학생이 알려 준 새 문제 ${todo.reports}개`, go: () => go('learn', 't-reports') },
+    todo.weakStd.length > 0 && { icon: '📌', text: `반 정답률 60% 아래 성취기준 ${todo.weakStd.length}개 (${todo.weakStd.slice(0, 3).join(' ')})`, go: () => go('learn', 't-std') },
+    todo.hard > 0 && { icon: '❗', text: `반 절반 넘게 틀린 문제 ${todo.hard}개 — 수업 화면에 띄우거나 아침 미션에 넣어 보세요`, go: () => go('learn', 't-missed') },
+    todo.notYet.length > 0 && { icon: '⏰', text: `오늘 미션 아직: ${todo.notYet.slice(0, 8).map((r) => r.nickname).join(', ')}${todo.notYet.length > 8 ? ` 외 ${todo.notYet.length - 8}명` : ''}`, go: () => document.getElementById('t-students')?.scrollIntoView({ behavior: 'smooth' }) },
+    todo.never.length > 0 && todo.never.length < ROSTER.length && { icon: '👋', text: `아직 한 번도 안 들어온 학생 ${todo.never.length}명`, go: () => (cloudEnabled ? go('class', 't-class') : document.getElementById('t-students')?.scrollIntoView({ behavior: 'smooth' })) },
+  ].filter(Boolean);
+  return (
+    <section className="t-panel t-todo">
+      <h2>오늘 확인할 일</h2>
+      {list.length ? (
+        <ul className="t-todo-list">
+          {list.map((x, i) => (
+            <li key={i}>
+              <button className={`t-todo-item ${x.warn ? 'warn' : ''}`} onClick={x.go}>
+                <span className="t-todo-icon">{x.icon}</span>
+                <span>{x.text}</span>
+                <span className="t-todo-go">›</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="muted">지금은 따로 확인할 일이 없어요 ✨</p>
+      )}
+    </section>
   );
 }
 

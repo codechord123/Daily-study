@@ -1,4 +1,4 @@
-// 🛰 문제 정거장: 과목별로 내 공부를 한곳에서 관리 (연습 · 오답 노트 · 다시 볼 문제)
+// 🛰 문제 정거장: 내 공부를 한곳에서 (기록 · 과목별 연습 · 오답 노트 · 다시 볼 문제)
 import { useEffect, useMemo, useState } from 'react';
 import { useGame, todayKey } from '../store/useGame';
 import { useUI } from '../store/useUI';
@@ -6,13 +6,15 @@ import { SUBJECT_META } from '../data/missions/grade5';
 import { curriculumPosition, unitTitles } from '../engine/dailyMission';
 import { getLearn, onLearnChange, dayNum, recentAccuracy } from '../store/learnStore';
 import RichText from './RichText';
+import { RecordsBody } from './RecordsBody';
 import { useEscape } from './useEscape';
 
 const SUBJECTS = ['math', 'english', 'korean', 'social', 'science'];
 const TABS = [
+  ['records', '📒 기록'],
   ['subjects', '📚 과목별'],
-  ['wrong', '📒 오답 노트'],
-  ['queue', '🔁 다시 볼 문제'],
+  ['wrong', '📕 오답'],
+  ['queue', '🔁 다시 보기'],
 ];
 const short = (t, n = 60) => {
   const s = String(t ?? '').replace(/\s+/g, ' ');
@@ -20,10 +22,10 @@ const short = (t, n = 60) => {
 };
 const dueLabel = (due, today) => (due <= today ? '오늘' : due === today + 1 ? '내일' : `${due - today}일 뒤`);
 
-export default function StationSheet() {
+export default function StationSheet({ initialTab = 'subjects' }) {
   const { profile, startMission } = useGame();
   const openSheet = useUI((s) => s.openSheet);
-  const [tab, setTab] = useState('subjects');
+  const [tab, setTab] = useState(initialTab);
   const [filter, setFilter] = useState(null); // 오답·다시 보기 과목 고르기
   const [learn, setLearn] = useState(() => getLearn(profile.sid));
   useEffect(() => onLearnChange((sid) => sid === profile.sid && setLearn(getLearn(profile.sid))), [profile.sid]);
@@ -76,12 +78,14 @@ export default function StationSheet() {
         <nav className="st-tabs" role="tablist">
           {TABS.map(([id, label]) => (
             <button key={id} role="tab" aria-selected={tab === id} className={`st-tab ${tab === id ? 'on' : ''}`} onClick={() => setTab(id)}>
-              {label}
+              <span className="st-tab-label">{label}</span>
               {id === 'wrong' && notes.length > 0 && <b>{notes.length}</b>}
               {id === 'queue' && learn.review.length > 0 && <b>{learn.review.length}</b>}
             </button>
           ))}
         </nav>
+
+        {tab === 'records' && <RecordsBody profile={profile} />}
 
         {tab === 'subjects' && (
           <div className="st-subjects">

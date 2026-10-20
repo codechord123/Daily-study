@@ -711,7 +711,10 @@
 .chip.locked { color: var(--ink-muted); min-height: 52px; }
 @media (max-width: 900px) { .t-cards { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 640px) {
-  .t-cards { grid-template-columns: 1fr; }
+  .t-cards { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .t-card { padding: 12px; }
+  .t-card b { font-size: 26px; }
+  .t-card.wide { grid-column: 1 / -1; }
   .t-settings { grid-template-columns: 1fr; gap: 6px; }
   .t-settings .muted { margin-bottom: var(--s-2); }
 }
@@ -1199,3 +1202,38 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .present-card .choice { position: relative; }
 .present-card .pick-bar { position: absolute; right: 14px; bottom: 6px; margin: 0; font-size: 14px; }
 .present-card .pick-bar i { width: calc(var(--w) * .6); height: 8px; }
+/* 정거장 칩 (위쪽) */
+.station-chip { position: relative; }
+.chip-badge { min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 999px; background: var(--bad); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+/* 기록 탭: 작은 통계 4칸 */
+.stat-row.compact { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.stat-row.compact .stat { padding: 8px 4px; }
+.stat-row.compact .stat b { font-size: 20px; }
+.stat-row.compact .stat span { font-size: 11px; }
+.rec-card h3 .cal-more { float: right; min-height: 28px; font-size: 12px; padding: 0 10px; }
+.onboard-kicker { margin: 0; color: var(--gold); font-weight: 700; font-size: 14px; letter-spacing: .04em; }
+/* 선생님 화면 탭 */
+.t-tabs { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; padding-bottom: 2px; min-height: 46px; align-items: center; }
+.t-tabs::-webkit-scrollbar { display: none; }
+.t-tab { flex: none; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--panel-line); background: rgba(255,255,255,.04); color: var(--ink-muted); font: inherit; font-size: 15px; cursor: pointer; white-space: nowrap; }
+.t-tab.on { background: rgba(255,215,106,.16); border-color: rgba(255,215,106,.6); color: var(--ink); font-weight: 700; }
+/* 오늘 확인할 일 */
+.t-todo-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.t-todo-item { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,.05); border: 1px solid var(--panel-line); font-size: 15px; }
+.t-todo-item:hover { background: rgba(255,255,255,.09); }
+.t-todo-item:focus-visible { outline: 2px solid var(--gold); }
+.t-todo-item.warn { border-color: rgba(255,207,122,.6); background: rgba(255,207,122,.08); }
+.t-todo-icon { flex: none; width: 24px; text-align: center; }
+.t-todo-item > span:nth-child(2) { flex: 1; min-width: 0; }
+.t-todo-go { flex: none; color: var(--ink-muted); font-size: 20px; }
+/* 휴대폰: 머리 버튼 작게 한 줄 */
+@media (max-width: 640px) {
+  .teacher-head { align-items: start; }
+  .t-head-actions { width: 100%; justify-content: flex-start; flex-wrap: nowrap; }
+  .t-head-actions .btn { min-height: 40px; padding: 0 12px; font-size: 14px; }
+  .t-tab { min-height: 40px; padding: 0 12px; font-size: 14px; }
+}
+@media (max-width: 480px) {
+  .st-tabs { display: grid; grid-template-columns: 1fr 1fr; overflow: visible; }
+  .st-tab { font-size: 14px; }
+}

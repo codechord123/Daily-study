@@ -426,7 +426,7 @@ export default function MissionView() {
             onReview={() => startMission({ type: 'review', at: Date.now() })}
             onPractice={() => {
               go('home');
-              openSheet('records');
+              openSheet('station');
             }}
           />
         ) : (
