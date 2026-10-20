@@ -32,8 +32,8 @@ if (typeof window !== 'undefined' && window.speechSynthesis) {
 // 장난·효과음 목소리 (iOS·macOS)
 const NOVELTY = /albert|bad news|bahh|bells|boing|bubbles|cellos|deranged|good news|hysterical|jester|organ|pipe organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|ralph|kathy|princess|grandma|grandpa|rocko|shelley|eddy|flo|reed|sandy/i;
 // 자연스러운 목소리 우선순위 (앞일수록 먼저)
-const PREFERRED_KO = [/natural/i, /premium|enhanced/i, /yuna|유나/i, /google 한국/i, /sunhi|injoon|heami/i];
-const PREFERRED = [/natural/i, /premium|enhanced/i, /samantha/i, /google us english/i, /\bava\b/i, /allison|susan|nicky/i, /aria|jenny|guy|zira/i, /google uk english female/i, /daniel|karen|moira|serena/i];
+const PREFERRED_KO = [/natural/i, /yuna|유나/i, /google 한국/i, /sunhi|injoon|heami/i];
+const PREFERRED = [/samantha/i, /natural/i, /google us english/i, /\bava\b/i, /allison|susan|nicky/i, /aria|jenny|guy|zira/i, /google uk english female/i, /daniel|karen|moira|serena/i];
 
 function pickVoice(lang) {
   if (chosen[lang] !== undefined) return chosen[lang];
@@ -119,24 +119,33 @@ export function speak(text, lang = 'en-US', rate = 0.9) {
   holdMusic(); // 음악과 겹치면 아이폰에서 음성이 끊긴다
   // 문장마다 하나씩, 앞 문장이 끝나면 다음 문장 (아이폰은 한꺼번에 줄 세우면 일부를 건너뛴다)
   const parts = say.match(/[^.?!]+[.?!]*/g)?.map((x) => x.trim()).filter(Boolean) ?? [say];
-  const v = pickVoice(lang);
-  const next = (i) => {
+  const next = (i, plain = false) => {
     if (id !== speakId) return;
     if (i >= parts.length) return finish(id);
     const u = new SpeechSynthesisUtterance(parts[i]);
     u.lang = lang;
     u.rate = ko ? Math.max(rate, 1) : rate; // 영어는 아이들이 듣기 좋게 조금 천천히
     u.pitch = 1;
+    const v = plain ? null : pickVoice(lang);
     if (v) u.voice = v;
     let done = false;
     const go = () => {
       if (done) return;
       done = true;
       clearTimeout(guard);
-      next(i + 1);
+      next(i + 1, plain);
     };
     u.onend = go;
-    u.onerror = go;
+    // 고른 목소리가 이 기기에서 안 나오면(받지 않은 고급 음성, 학교 망이 막은 온라인 음성 등) 기본 목소리로 다시
+    u.onerror = (e) => {
+      if (v && !done && !/interrupted|canceled/.test(e?.error ?? '')) {
+        done = true;
+        clearTimeout(guard);
+        chosen[lang] = null;
+        return next(i, true);
+      }
+      go();
+    };
     // 끝 알림이 오지 않는 기기를 위한 안전장치 (문장 길이만큼 기다린 뒤 다음으로)
     const guard = setTimeout(go, 1500 + parts[i].length * 120);
     synth.speak(u);
