@@ -19,7 +19,7 @@ import { prewarmAtlases } from './three/thumbAtlas';
 import { useGame } from './store/useGame';
 import { useUI } from './store/useUI';
 import * as presence from './services/presence';
-import { sfx, playMusic } from './services/sound';
+import { sfx, playMusic, stopMusic } from './services/sound';
 import { cloudEnabled, cloudReady } from './services/cloud';
 import { useAccount } from './ui/CloudLogin';
 
@@ -58,7 +58,9 @@ export default function App() {
 
   useEffect(() => {
     if (screen === 'login') presence.leave();
-    playMusic(screen === 'visit' ? 'home' : screen);
+    // 문제를 풀 때는 배경음악 없이 (영어 듣기와 겹쳐 아이폰에서 음성이 끊긴다)
+    if (screen === 'mission') stopMusic();
+    else playMusic(screen === 'visit' ? 'home' : screen);
   }, [screen]);
 
   // 버튼을 누르면 작은 탭 소리 (자기 소리가 있는 버튼은 data-nosfx)

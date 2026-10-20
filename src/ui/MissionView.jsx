@@ -18,10 +18,12 @@ const svgUrl = (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(s
 const passageSpeech = (t) => t.replace(/^[^\n:]{1,12}:\s*/gm, '').replace(/_{2,}/g, ', ');
 /** 읽어 줄 영어: 문제가 영어면 문제, 답을 맞힌 뒤엔 정답 보기, 아니면 지문 */
 const englishText = (q, after = false) => {
+  // 답을 낸 뒤에는 영어로 된 정답 보기를 읽어 준다
+  if (after && hasEn(q.choices?.[q.answer])) return q.choices[q.answer];
+  // 대화 지문은 처음부터 끝까지 (빈칸은 잠깐 쉼)
+  if (hasEn(q.passage)) return passageSpeech(q.passage);
   if (q.say) return q.say; // 문제마다 정해 둔 '읽어 줄 문장'
   if (hasEn(q.prompt)) return q.prompt;
-  if (after && hasEn(q.choices?.[q.answer])) return q.choices[q.answer];
-  if (hasEn(q.passage)) return passageSpeech(q.passage);
   return q.choices?.[q.answer];
 };
 
@@ -185,8 +187,8 @@ export default function MissionView() {
   }, [results]);
 
   useEffect(() => {
-    if (q?.subject === 'english' && (q.say || /[a-z]/i.test(q.prompt))) {
-      const t = setTimeout(() => speak(q.say || q.prompt), 450);
+    if (q?.subject === 'english' && (q.say || hasEn(q.prompt) || hasEn(q.passage))) {
+      const t = setTimeout(() => speak(englishText(q)), 450);
       return () => clearTimeout(t);
     }
   }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps

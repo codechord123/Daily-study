@@ -70,21 +70,32 @@ export function speak(text, lang = 'en-US', rate = 0.9) {
   const id = ++speakId;
   clearTimeout(releaseTimer);
   holdMusic(); // 음악과 겹치면 아이폰에서 음성이 끊긴다
-  // 긴 대화는 문장마다 나눠 읽는다 (아이폰은 긴 글을 중간에 끊는 일이 있다)
+  // 문장마다 하나씩, 앞 문장이 끝나면 다음 문장 (아이폰은 한꺼번에 줄 세우면 일부를 건너뛴다)
   const parts = say.match(/[^.?!]+[.?!]*/g)?.map((x) => x.trim()).filter(Boolean) ?? [say];
   const v = pickVoice(lang);
-  parts.forEach((part, i) => {
-    const u = new SpeechSynthesisUtterance(part);
+  const next = (i) => {
+    if (id !== speakId) return;
+    if (i >= parts.length) return finish(id);
+    const u = new SpeechSynthesisUtterance(parts[i]);
     u.lang = lang;
     u.rate = rate; // 아이들이 듣기 좋게 조금 천천히
     u.pitch = 1;
     if (v) u.voice = v;
-    if (i === parts.length - 1) u.onend = () => finish(id);
-    u.onerror = () => finish(id);
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(guard);
+      next(i + 1);
+    };
+    u.onend = go;
+    u.onerror = go;
+    // 끝 알림이 오지 않는 기기를 위한 안전장치 (문장 길이만큼 기다린 뒤 다음으로)
+    const guard = setTimeout(go, 1500 + parts[i].length * 120);
     synth.speak(u);
-  });
-  // 끝 알림이 오지 않는 기기를 위한 안전장치
-  setTimeout(() => finish(id), 2500 + say.length * 110);
+  };
+  // 멈춘 직후 바로 읽으라고 하면 아이폰이 첫 문장을 버리는 일이 있어 잠깐 쉬었다가
+  setTimeout(() => next(0), 120);
   return true;
 }
 
