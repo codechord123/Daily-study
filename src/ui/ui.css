@@ -1007,3 +1007,5 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
   .mission-stage > * { margin-top: auto; margin-bottom: 0; }
   .q-card.is-wide .q-figure img { max-height: 26vh; }
 }
+/* 직접 그린 그림(svg)은 칸 너비에 맞춰 크게 */
+.q-figure img[src^="data:image/svg"] { width: 100%; height: auto; }

@@ -1,7 +1,7 @@
 // 5학년 2학기 수학 문제 생성기 (2022 개정, 단원별)
 // 1 수의 범위와 어림하기 · 2 분수의 곱셈 · 3 합동과 대칭 · 4 소수의 곱셈 · 5 직육면체 · 6 평균과 가능성
 import { randInt, shuffle } from './rng';
-import { WS_MATH } from '../data/missions/worksheets';
+import { BANK_MATH } from '../data/missions/bank';
 
 const gcd = (a, b) => (b ? gcd(b, a % b) : a);
 const frac = (n, d) => {
@@ -291,8 +291,8 @@ export function makeMathSet(r, count, current) {
   const out = [];
   const used = new Set();
   const draw = (u) => {
-    // 단원평가 학습지에서 옮긴 문제가 있으면 대부분 거기서 낸다
-    const bank = WS_MATH.filter((q) => q.unit === u && !used.has(q.prompt));
+    // 새로 만든 생각하는 문제가 있는 단원은 대부분 거기서 낸다 (나머지는 계산 연습 생성)
+    const bank = BANK_MATH.filter((q) => q.unit === u && !used.has(q.prompt));
     if (bank.length && r() < 0.85) {
       const q = bank[Math.floor(r() * bank.length)];
       used.add(q.prompt);
