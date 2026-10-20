@@ -97,7 +97,8 @@ export async function startCloud() {
       databaseURL: cfg('databaseURL', 'VITE_FIREBASE_DATABASE_URL') || `http://127.0.0.1:9000?ns=${projectId}-default-rtdb`,
       appId: cfg('appId', 'VITE_FIREBASE_APP_ID') || 'demo-app',
     });
-    const db = fs.getFirestore(app);
+    // 학교·휴대폰 통신사 망은 실시간 연결(스트리밍)을 끊어 버리는 경우가 있어 '긴 요청' 방식으로 붙는다
+    const db = fs.initializeFirestore(app, { experimentalForceLongPolling: true });
     const rtdb = rd.getDatabase(app);
     const auth = au.getAuth(app);
     if (EMULATOR) {
@@ -250,17 +251,53 @@ const need = () => {
   return fb;
 };
 
+// 가입 전 학급 찾기는 Firestore 주소에 바로 묻는다 (라이브러리 연결이 늦거나 막혀도 바로 답이 온다)
+const REST = {
+  base: EMULATOR ? 'http://127.0.0.1:8080/v1' : 'https://firestore.googleapis.com/v1',
+  project: cfg('projectId', 'VITE_FIREBASE_PROJECT_ID') || 'demo-dailystudy',
+  key: cfg('apiKey', 'VITE_FIREBASE_API_KEY') || 'demo-key',
+};
+const decode = (v) => {
+  if (!v) return null;
+  if ('stringValue' in v) return v.stringValue;
+  if ('integerValue' in v) return Number(v.integerValue);
+  if ('doubleValue' in v) return v.doubleValue;
+  if ('booleanValue' in v) return v.booleanValue;
+  if ('nullValue' in v) return null;
+  if ('mapValue' in v) return Object.fromEntries(Object.entries(v.mapValue.fields ?? {}).map(([k, x]) => [k, decode(x)]));
+  if ('arrayValue' in v) return (v.arrayValue.values ?? []).map(decode);
+  return null;
+};
+async function restGet(path) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 15000);
+  try {
+    const res = await fetch(`${REST.base}/projects/${REST.project}/databases/(default)/documents/${path}${path.includes('?') ? '&' : '?'}key=${REST.key}`, { signal: ctl.signal });
+    if (res.status === 404) return null;
+    if (!res.ok) throw Object.assign(new Error(`학급 서버 응답 ${res.status}`), { code: res.status === 403 ? 'permission-denied' : 'unavailable' });
+    return await res.json();
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('학급 서버가 답하지 않아요. 와이파이·데이터 연결을 확인하고 다시 눌러 주세요');
+    if (e instanceof TypeError) throw new Error('인터넷에 연결되어 있지 않아요');
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** 학급 코드 → { classId, name, roster, seats: { sid: { taken, gen } } } (없으면 null) */
 export async function lookupClass(code) {
-  const { fs, db } = need();
-  const c = await fs.getDoc(fs.doc(db, 'classCodes', code.trim().toUpperCase()));
-  if (!c.exists()) return null;
-  const info = c.data();
+  const c = code.trim().toUpperCase();
+  const doc = await restGet(`classCodes/${c}`);
+  if (!doc) return null;
+  const info = decode({ mapValue: { fields: doc.fields } });
+  const list = await restGet(`classes/${info.classId}/seats?pageSize=300`);
   const seats = {};
-  (await fs.getDocs(fs.collection(db, 'classes', info.classId, 'seats'))).forEach((d) => {
-    seats[d.id] = { taken: !!d.data().uid, gen: d.data().gen ?? 0 };
-  });
-  return { ...info, code: code.trim().toUpperCase(), seats };
+  for (const d of list?.documents ?? []) {
+    const f = decode({ mapValue: { fields: d.fields } });
+    seats[d.name.split('/').pop()] = { taken: !!f.uid, gen: f.gen ?? 0 };
+  }
+  return { classId: info.classId, name: info.name, roster: info.roster ?? [], code: c, seats };
 }
 
 /** 학생 가입: 번호 자리를 내 계정으로 잡는다 */
@@ -398,7 +435,8 @@ export async function cloudSignOut() {
   unsubs.forEach((u) => u());
   unsubs = [];
   // 내 위치 지우기는 기다리지 않는다 (로그아웃이 먼저 끝나야 새로고침해도 로그인 화면)
-  if (account.sid) fb.rd.remove(fb.rd.ref(fb.rtdb, `presence/${CLASS_ID}/${account.sid}`)).catch(() => {});
+  const mySid = account.status === 'teacher' ? 'teacher' : account.sid;
+  if (mySid) fb.rd.remove(fb.rd.ref(fb.rtdb, `presence/${CLASS_ID}/${mySid}`)).catch(() => {});
   setAccount({ status: 'signedOut' });
   await fb.au.signOut(fb.auth);
 }
@@ -407,7 +445,9 @@ export async function cloudSignOut() {
 const pending = new Map();
 export function uploadProfile(profile) {
   if (!fb || profile.provisional) return; // 서버 확인 전 새 기기에서 만든 임시 별은 올리지 않는다
-  if (account.status !== 'student' || account.sid !== profile.sid) return; // 내 별만 올린다
+  // 내 별만 올린다 (선생님은 '선생님 별')
+  const mine = (account.status === 'student' && account.sid === profile.sid) || (account.status === 'teacher' && profile.sid === 'teacher');
+  if (!mine) return;
   // 빠르게 여러 번 바뀌면 마지막 것만 0.6초 뒤에 올린다
   clearTimeout(pending.get(profile.sid));
   pending.set(
@@ -433,7 +473,7 @@ export function uploadSettings(settings) {
 
 let presenceRef = null;
 export function presenceSet(state) {
-  if (!fb || account.status !== 'student') return !!fb;
+  if (!fb || (account.status !== 'student' && account.status !== 'teacher')) return !!fb;
   const ref = fb.rd.ref(fb.rtdb, `presence/${CLASS_ID}/${state.sid}`);
   if (!presenceRef || presenceRef.toString() !== ref.toString()) {
     presenceRef = ref;
@@ -444,6 +484,6 @@ export function presenceSet(state) {
 }
 export function presenceLeave(sid) {
   if (!fb) return false;
-  if (account.status === 'student') fb.rd.remove(fb.rd.ref(fb.rtdb, `presence/${CLASS_ID}/${sid}`)).catch(() => {});
+  if (account.status === 'student' || account.status === 'teacher') fb.rd.remove(fb.rd.ref(fb.rtdb, `presence/${CLASS_ID}/${sid}`)).catch(() => {});
   return true;
 }

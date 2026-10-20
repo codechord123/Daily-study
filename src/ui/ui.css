@@ -999,3 +999,5 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
   .mission-stage { align-items: flex-start; }
   .mission-stage > * { margin-top: auto; margin-bottom: auto; }
 }
+
+.t-head-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }

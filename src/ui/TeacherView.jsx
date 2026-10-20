@@ -81,6 +81,7 @@ function toCSV(rows) {
 export default function TeacherView() {
   const go = useGame((s) => s.go);
   const logout = useGame((s) => s.logout);
+  const login = useGame((s) => s.login);
   const account = useAccount();
   const settings = useSettings();
   const [tick, setTick] = useState(0);
@@ -177,11 +178,15 @@ export default function TeacherView() {
           <p className="hud-kicker">선생님 화면 · {cloudEnabled ? account.className : '5학년 별빛반'}</p>
           <h1 className="title">오늘의 학급 현황</h1>
         </div>
-        {cloudEnabled ? (
-          <button className="btn" onClick={logout}>로그아웃</button>
-        ) : (
-          <button className="btn" onClick={() => go('login')}>← 학생 화면으로</button>
-        )}
+        <div className="t-head-actions">
+          {/* 선생님도 반 별들 한가운데에 자기 별이 있다 */}
+          <button className="btn btn-primary" onClick={() => login('teacher')}>🌟 선생님 별로 가기</button>
+          {cloudEnabled ? (
+            <button className="btn" onClick={logout}>로그아웃</button>
+          ) : (
+            <button className="btn" onClick={() => go('login')}>← 학생 화면으로</button>
+          )}
+        </div>
       </header>
       {/* 아래쪽 자주 쓰는 곳으로 바로 이동 */}
       <nav className="t-jump" aria-label="바로 가기">

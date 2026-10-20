@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { lookupClass, studentSignUp, studentSignIn, teacherSignIn, createClass, authMessage, getAccount, onAccount } from '../services/cloud';
 
+// 학급 서버가 답이 없으면 버튼이 계속 '잠시만요'에 머물지 않게
+const withTimeout = (promise, ms = 25000) =>
+  Promise.race([promise, new Promise((_, no) => setTimeout(() => no(new Error('학급 서버가 답하지 않아요. 와이파이·데이터 연결을 확인하고 다시 눌러 주세요')), ms))]);
+
 const LAST_KEY = 'ds:last-login'; // { code, sid } 다음 아침에 번호를 다시 찾지 않게
 const readLast = () => {
   try {
@@ -65,8 +69,8 @@ export default function CloudLogin() {
     e.preventDefault();
     if (!joined && pw !== pw2) return setErr('두 비밀번호가 달라요');
     run(async () => {
-      if (joined) await studentSignIn(cls, sid, pw);
-      else await studentSignUp(cls, sid, pw);
+      if (joined) await withTimeout(studentSignIn(cls, sid, pw));
+      else await withTimeout(studentSignUp(cls, sid, pw));
       try {
         localStorage.setItem(LAST_KEY, JSON.stringify({ code: cls.code, sid }));
       } catch {

@@ -28,9 +28,14 @@ export const makeRoster = (count, nicks = NICKS) =>
 
 // 지금 학급 명단. 학급 서버에 연결되면 그 학급 명단으로 바뀐다 (배열은 그대로 두고 내용만 바꾼다)
 export const ROSTER = makeRoster(NICKS.length);
+// 선생님 별: 반 별들 한가운데. 학생들도 놀러 올 수 있다 (명단·기록표에는 들어가지 않는다)
+export const TEACHER = { id: 'teacher', number: 0, nickname: '선생님' };
+// 우주에 떠 있는 모든 별 (선생님 + 학생)
+export const STARS = [TEACHER, ...ROSTER];
 const rosterListeners = new Set();
 export function setRoster(list) {
   ROSTER.splice(0, ROSTER.length, ...list);
+  STARS.splice(0, STARS.length, TEACHER, ...ROSTER);
   rosterListeners.forEach((fn) => fn(ROSTER));
 }
 export function onRoster(fn) {
@@ -38,7 +43,7 @@ export function onRoster(fn) {
   return () => rosterListeners.delete(fn);
 }
 
-export const studentById = (id) => ROSTER.find((s) => s.id === id);
+export const studentById = (id) => (id === TEACHER.id ? TEACHER : ROSTER.find((s) => s.id === id));
 
 // 결정적 난수: 같은 학생은 항상 같은 샘플 별을 갖는다
 function rng(seed) {
@@ -53,7 +58,7 @@ const pick = (r, arr) => arr[Math.floor(r() * arr.length)];
 
 // 친구가 아직 저장한 별이 없을 때 보여줄 샘플 별
 export function samplePlanet(studentId) {
-  const r = rng(parseInt(studentId.slice(1), 10) * 9973);
+  const r = rng((studentId === 'teacher' ? 77 : parseInt(studentId.slice(1), 10) || 1) * 9973);
   const count = 3 + Math.floor(r() * 6);
   const items = [];
   for (let i = 0; i < count; i++) {
@@ -88,6 +93,13 @@ export function spacePosition(index) {
   const a = index * 2.399963;
   const rad = 16 + Math.sqrt(index) * 15;
   return [Math.cos(a) * rad, Math.sin(index * 1.7) * 8, Math.sin(a) * rad];
+}
+
+/** 별 자리: 선생님은 가운데, 학생은 번호 순서대로 나선 */
+export function starPosition(id) {
+  if (id === TEACHER.id) return [0, 0, 0];
+  const i = ROSTER.findIndex((s) => s.id === id);
+  return spacePosition(Math.max(0, i));
 }
 
 export const SPACE_BOUNDS = 110; // 이 반경 밖으로는 못 나가게

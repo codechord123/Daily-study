@@ -1,4 +1,4 @@
-import { ROSTER } from '../data/classroom';
+import { STARS } from '../data/classroom';
 import { useUI } from '../store/useUI';
 import { useGame } from '../store/useGame';
 import { getPlanet } from '../store/profileStore';
@@ -18,7 +18,8 @@ export default function TravelSheet({ flying, here, onClose }) {
   const online = presence.onlineMap();
   const list = [
     { id: profile.sid, nickname: '내 별' },
-    ...ROSTER.filter((s) => s.id !== profile.sid).sort((a, b) => (online[b.id] ?? 0) - (online[a.id] ?? 0)),
+    // 선생님 별은 늘 맨 위, 친구들은 사람이 많은 별부터
+    ...STARS.filter((s) => s.id !== profile.sid).sort((a, b) => (a.id === 'teacher' ? -1 : b.id === 'teacher' ? 1 : (online[b.id] ?? 0) - (online[a.id] ?? 0))),
   ].filter((s) => s.id !== here);
 
   useEscape(onClose);

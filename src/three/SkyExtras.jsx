@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { ROSTER, spacePosition } from '../data/classroom';
+import { STARS, starPosition } from '../data/classroom';
 import { getPlanet } from '../store/profileStore';
 import { PLANET_TINTS } from '../theme/tokens';
 import { planetMaterial, haloMaterial } from './materials';
@@ -75,9 +75,9 @@ export function ShootingStars() {
 /* ---------- 멀리 보이는 친구 별: 우주 지도에서 실제 방향대로, 작게 ---------- */
 export function DistantPlanets({ ownerId, count = 9 }) {
   const list = useMemo(() => {
-    const idx = ROSTER.findIndex((s) => s.id === ownerId);
-    const me = idx >= 0 ? new THREE.Vector3(...spacePosition(idx)) : new THREE.Vector3();
-    return ROSTER.map((s, i) => ({ s, i, v: new THREE.Vector3(...spacePosition(i)).sub(me) }))
+    const known = STARS.some((s) => s.id === ownerId);
+    const me = known ? new THREE.Vector3(...starPosition(ownerId)) : new THREE.Vector3();
+    return STARS.map((s, i) => ({ s, i, v: new THREE.Vector3(...starPosition(s.id)).sub(me) }))
       .filter((x) => x.s.id !== ownerId && x.v.lengthSq() > 1) // 같은 자리(명단에 없는 별 등)는 빼기
       .sort((a, b) => a.v.length() - b.v.length())
       .slice(0, count)

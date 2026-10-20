@@ -5,7 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import Planet, { TAP_SLOP } from './Planet';
 import Character from './Character';
-import { ROSTER, spacePosition, SPACE_BOUNDS, studentById, onRoster } from '../data/classroom';
+import { STARS, starPosition, SPACE_BOUNDS, studentById, onRoster } from '../data/classroom';
 import { getPlanet, onPlanetChange } from '../store/profileStore';
 import { PLANET_RADIUS, NEON } from '../theme/tokens';
 import { glow } from './materials';
@@ -28,7 +28,7 @@ export const PLANET_POS = {};
 // 학급 명단이 바뀌면(학급 서버 연결) 별 자리도 다시 잡는다
 const placePlanets = () => {
   for (const k of Object.keys(PLANET_POS)) delete PLANET_POS[k];
-  ROSTER.forEach((s, i) => (PLANET_POS[s.id] = new THREE.Vector3(...spacePosition(i))));
+  STARS.forEach((s) => (PLANET_POS[s.id] = new THREE.Vector3(...starPosition(s.id))));
 };
 placePlanets();
 onRoster(placePlanets);
@@ -368,7 +368,7 @@ export default function SpaceFlight({ me, launchFrom, onLand, low }) {
     <>
       <ambientLight intensity={0.9} color="#c9c3ff" />
       <directionalLight position={[30, 40, 20]} intensity={1.5} color="#fff1d6" />
-      {ROSTER.map((st) => (
+      {STARS.map((st) => (
         <FlightPlanet
           key={st.id}
           student={st}
