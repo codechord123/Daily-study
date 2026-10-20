@@ -5,7 +5,10 @@ import { loadProfile, saveProfile, newProfile } from '../store/profileStore';
 import { getSettings, setSettings, onSettings } from '../store/classSettings';
 import { cloudEnabled, onCloudStatus, getCloudStatus } from '../services/cloud';
 import ClassPanel from './ClassPanel';
-import LearnPanel from './LearnPanel';
+import LearnPanel, { questionOf } from './LearnPanel';
+import StudentDetail from './StudentDetail';
+import { useClassWeek, PraiseBoard, goalTarget } from './ClassGoal';
+import YearEnd from './YearEnd';
 import { recordMany, clearLearn, dayNum, REPORT_REASONS, qId as qIdOf } from '../store/learnStore';
 import { BANK_SOCIAL, BANK_KOREAN, BANK_SCIENCE, BANK_ENGLISH, BANK_MATH } from '../data/missions/bank';
 
@@ -58,7 +61,9 @@ function fillDemo() {
       let correct = 0;
       qs.forEach((q) => {
         const ok = Math.random() < skill + (q.subject === 'english' ? 0.1 : 0) - (q.level ?? 1) * 0.08;
-        answers.push([q, ok, dayNum(d.getTime())]);
+        // 틀린 학생은 그럴듯한 오답(대개 둘째 보기)을 더 자주 고른 것처럼
+        const wrongPick = q.kind === 'choice' ? (q.answer + (Math.random() < 0.6 ? 1 : 2)) % q.choices.length : q.kind === 'ox' ? !q.answer : Number(q.answer) + 1;
+        answers.push([q, ok, dayNum(d.getTime()), ok ? undefined : wrongPick]);
         const t = (subjects[q.subject] ??= [0, 0]);
         t[1] += 1;
         if (ok) {
@@ -66,7 +71,8 @@ function fillDemo() {
           correct += 1;
         } else if (back < 6) {
           const { id, ...rest } = q; // eslint-disable-line no-unused-vars
-          p.wrongNotes.push({ q: rest, date: key, source: 'daily', cleared: Math.random() < 0.4 });
+          const cleared = Math.random() < 0.4;
+          p.wrongNotes.push({ q: rest, date: key, source: 'daily', cleared, ...(cleared && { clearedAt: todayKey() }) });
         }
       });
       p.history[key] = { correct, total: qs.length, subjects };
@@ -105,6 +111,7 @@ export default function TeacherView() {
   const settings = useSettings();
   const [tick, setTick] = useState(0);
   const [csv, setCsv] = useState(null);
+  const [detail, setDetail] = useState(null); // 자세히 볼 학생 sid
   const [cloud, setCloud] = useState(getCloudStatus);
   useEffect(() => onCloudStatus(setCloud), []);
   // 다른 기기에서 기록이 들어오면 표를 다시 계산
@@ -213,9 +220,11 @@ export default function TeacherView() {
         {[
           ...(cloudEnabled ? [['t-class', '🏫 우리 반']] : []),
           ['t-students', '👩‍🎓 학생별 현황'],
+          ['t-goal', '🌌 이번 주'],
           ['t-learn', '📈 학습 분석'],
           ['t-units', '📚 출제 단원'],
           ['t-settings', '⚙︎ 설정'],
+          ['t-year', '🗂 학년 정리'],
         ].map(([id, label]) => (
           <button key={id} className="chip chip-btn" onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
             {label}
@@ -288,7 +297,7 @@ export default function TeacherView() {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className={r.has ? '' : 'none'}>
+                <tr key={r.id} className={r.has ? 'clickable' : 'none'} onClick={() => r.has && setDetail(r.id)} title={r.has ? '눌러서 자세히 보기' : ''}>
                   <td>{r.number}</td>
                   <td>
                     {r.nickname}
@@ -315,7 +324,10 @@ export default function TeacherView() {
         </p>
       </section>
 
+      <ClassWeekPanel settings={settings} />
+
       <LearnPanel />
+      {detail && <StudentDetail sid={detail} questionOf={questionOf} onClose={() => setDetail(null)} />}
 
       {csv && (
         <div className="sheet-backdrop" style={{ position: 'fixed' }} onClick={() => setCsv(null)}>
@@ -368,6 +380,8 @@ export default function TeacherView() {
 
       {cloudEnabled && <ClassPanel />}
 
+      <YearEnd />
+
       <section className="t-panel" id="t-settings">
         <h2>설정</h2>
         <div className="t-settings">
@@ -387,6 +401,34 @@ export default function TeacherView() {
         </div>
       </section>
     </div>
+  );
+}
+
+/* 우리 반 이번 주: 공동 목표(미션 횟수)와 반짝 친구 */
+function ClassWeekPanel({ settings }) {
+  const w = useClassWeek();
+  const [reward, setReward] = useState(settings.classGoal?.reward ?? '');
+  const pct = Math.min(100, Math.round((w.done / w.target) * 100));
+  const save = (patch) => setSettings({ classGoal: { target: goalTarget(settings), reward: settings.classGoal?.reward ?? '', ...patch } });
+  return (
+    <section className="t-panel" id="t-goal">
+      <div className="t-panel-head">
+        <h2>우리 반 이번 주</h2>
+        <span className="muted">학생 화면 위쪽 '🌌 우리 반' 막대로 보여요</span>
+      </div>
+      <div className="goal-big"><i style={{ width: `${pct}%` }} /></div>
+      <p className="muted">아침 미션 {w.done} / {w.target}번 {pct >= 100 && '— 달성! 🎉'}</p>
+      <div className="t-settings">
+        <label htmlFor="goal-n">목표 (주당 미션 수)</label>
+        <input id="goal-n" className="t-input" type="number" min={1} max={400} value={w.target} onChange={(e) => save({ target: Math.max(1, Math.min(400, Number(e.target.value) || 1)) })} />
+        <span className="muted">처음 값: 학생 수 × 4</span>
+        <label htmlFor="goal-r">달성하면</label>
+        <input id="goal-r" className="t-input" value={reward} maxLength={30} placeholder="예) 금요일 5분 자유 시간" onChange={(e) => setReward(e.target.value)} onBlur={() => save({ reward: reward.trim() })} />
+        <span className="muted">학생들에게 보여 줄 학급 보상</span>
+      </div>
+      <h3 className="t-sub">✨ 이번 주 반짝 친구 <small className="muted">점수가 아니라 꾸준함과 다시 도전한 것을 칭찬해요</small></h3>
+      <PraiseBoard w={w} />
+    </section>
   );
 }
 

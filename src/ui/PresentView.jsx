@@ -42,7 +42,12 @@ export default function PresentView({ items, start = 0, onClose }) {
 
   if (!q) return null;
   const meta = SUBJECT_META[q.subject] ?? SUBJECT_META.math;
-  const answerText = q.kind === 'ox' ? (q.answer ? 'O' : 'X') : q.kind === 'number' ? String(q.answer) : null;
+  const answerText = q.kind === 'ox' ? (q.answer ? 'O' : 'X') : q.kind === 'number' || q.kind === 'text' ? String(q.answer) : null;
+  // 우리 반 학생들이 고른 오답 (보기 글자로 모은 것)
+  const picks = it.picks ?? {};
+  const pickTotal = Object.values(picks).reduce((a, b) => a + b, 0);
+  const pickOf = (label) => picks[label] ?? 0;
+  const topWrong = Object.entries(picks).sort((a, b) => b[1] - a[1])[0];
 
   return (
     <div className="present" role="dialog" aria-label="수업 화면">
@@ -83,6 +88,11 @@ export default function PresentView({ items, start = 0, onClose }) {
                   <div key={k} className={`choice ${show ? (k === q.answer ? 'right' : 'dim') : ''}`}>
                     <span className="choice-key" aria-hidden="true">{'①②③④⑤⑥'[k]}</span>
                     <span className="choice-text">{isImg(c) ? <img className="choice-img" src={c.slice(4)} alt={`${k + 1}번 그림`} /> : <RichText text={c} />}</span>
+                    {show && k !== q.answer && pickOf(c) > 0 && (
+                      <span className="pick-bar" style={{ '--w': `${Math.round((pickOf(c) / pickTotal) * 100)}%` }}>
+                        <i /> {pickOf(c)}명
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -96,12 +106,17 @@ export default function PresentView({ items, start = 0, onClose }) {
                 ))}
               </div>
             )}
-            {q.kind === 'number' && !show && <p className="present-num">답: ( &nbsp; &nbsp; &nbsp; )</p>}
+            {(q.kind === 'number' || q.kind === 'text') && !show && <p className="present-num">답: ( &nbsp; &nbsp; &nbsp; )</p>}
             {show && (
               <div className="feedback ok" role="status">
                 <div>
                   <p className="fb-title">정답 {answerText ?? `${q.answer + 1}번`}</p>
                   {q.explain && <p className="fb-answer"><span className="explain">💡 <RichText text={q.explain} /></span></p>}
+                  {q.kind !== 'choice' && topWrong && (
+                    <p className="fb-answer">
+                      <span className="explain">가장 많이 쓴 오답: <b>{topWrong[0]}</b> ({topWrong[1]}번)</span>
+                    </p>
+                  )}
                 </div>
               </div>
             )}

@@ -5,7 +5,7 @@ import { seeded, shuffle, randInt } from './rng';
 import { makeMathSet, MATH_UNITS } from './mathGen';
 import { getSettings } from '../store/classSettings';
 import { SCHEDULE, ENGLISH_WORDS } from '../data/missions/grade5s2';
-import { BANK_SOCIAL, BANK_KOREAN, BANK_SCIENCE, BANK_ENGLISH } from '../data/missions/bank';
+import { BANK_SOCIAL, BANK_KOREAN, BANK_SCIENCE, BANK_ENGLISH, BANK_MATH } from '../data/missions/bank';
 import { qId, dueReviews, recentAccuracy } from '../store/learnStore';
 
 // 난이도 맞추기: 최근 정답률이 높으면 어려운 문제(level 3)를, 낮으면 쉬운 문제(level 1)를 더 자주
@@ -23,6 +23,18 @@ export function pickWeighted(r, pool, weights) {
   for (let i = 0; i < pool.length; i++) if ((x -= w[i]) < 0) return pool[i];
   return pool[pool.length - 1];
 }
+// 문제 이름표 → 문항 은행 문제 (선생님이 골라 넣은 문제를 찾을 때)
+let BY_ID = null;
+export function bankQuestion(id) {
+  if (!BY_ID) {
+    BY_ID = new Map();
+    const all = { korean: BANK_KOREAN, social: BANK_SOCIAL, science: BANK_SCIENCE, english: BANK_ENGLISH, math: BANK_MATH };
+    for (const [subject, bank] of Object.entries(all)) for (const q of bank) BY_ID.set(qId(q), { subject, ...q, unit: UNIT_TITLES[subject][q.unit] });
+  }
+  return BY_ID.get(id);
+}
+export const ASSIGN_MAX = 5;
+
 // 선생님이 '출제에서 빼기' 한 문제
 const blockedSet = () => new Set(getSettings().blocked ?? []);
 
@@ -181,13 +193,25 @@ export function buildDailyMission(sid, dateKey, { adaptive = false } = {}) {
   for (let i = 0; i < Math.max(ko.length, so.length, sc.length); i++) inquiry.push(...[ko[i], so[i], sc[i]].filter(Boolean));
   const qs = [...mathSet(r, c.math, pos, undefined, w('math')), ...englishSet(r, c.english, pos, w('english')), ...inquiry];
   if (adaptive) {
-    // 다시 보기: 같은 과목의 뒤쪽 문제와 바꾼다 (과목별 문제 수는 그대로)
     const blocked = blockedSet();
     const ids = new Set(qs.map(qId));
+    // 선생님이 이날 미션에 넣은 문제 (반 모두에게): 같은 과목의 뒤쪽 문제와 바꾼다
+    const asg = getSettings().assigned;
+    if (asg?.date === dateKey) {
+      for (const id of (asg.ids ?? []).slice(0, ASSIGN_MAX)) {
+        const q = bankQuestion(id);
+        if (!q || ids.has(id)) continue;
+        const at = qs.findLastIndex((x) => x.subject === q.subject && !x.assigned);
+        if (at < 0) continue;
+        qs[at] = { ...shuffleChoices(r, q), assigned: true };
+        ids.add(id);
+      }
+    }
+    // 다시 보기: 같은 과목의 뒤쪽 문제와 바꾼다 (과목별 문제 수는 그대로)
     for (const e of dueReviews(sid, REVIEW_PER_DAY * 2)) {
       if (qs.filter((q) => q.review).length >= REVIEW_PER_DAY) break;
       if (ids.has(e.id) || blocked.has(e.id) || !MISSION_COUNTS[e.q.subject]) continue;
-      const at = qs.findLastIndex((q) => q.subject === e.q.subject && !q.review);
+      const at = qs.findLastIndex((q) => q.subject === e.q.subject && !q.review && !q.assigned);
       if (at < 0) continue;
       qs[at] = { ...shuffleChoices(r, e.q), review: true };
       ids.add(e.id);
@@ -207,7 +231,10 @@ export function buildPractice(subject, seedStr, dateKey) {
   return qs.map((q, i) => ({ id: i, ...q }));
 }
 
+// 낱말 쓰기: 띄어쓰기·문장 부호는 따지지 않는다
+const norm = (s) => String(s ?? '').replace(/[\s.,!?'"~·]/g, '').toLowerCase();
 export function isCorrect(q, value) {
+  if (q.kind === 'text') return [q.answer, ...(q.accept ?? [])].some((a) => norm(a) === norm(value)) && norm(value) !== '';
   if (q.kind === 'number') {
     const v = Number(String(value).trim());
     return Number.isFinite(v) && Math.abs(v - q.answer) < 1e-9;

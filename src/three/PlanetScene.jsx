@@ -547,8 +547,8 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
         lookFocus={lookFocus}
       />
       {inMission && <MissionOrbit />}
-      {/* 내 별에서만: 궤도를 도는 문제 정거장 (오답·다시 볼 문제 수 표시) */}
-      {!inMission && !decorating && profile.sid === ownerId && (
+      {/* 모든 별의 궤도를 도는 문제 정거장: 어느 별에서 눌러도 내 공부(오답·다시 볼 문제)가 열린다 */}
+      {!inMission && !decorating && (
         <StudyStation badge={(profile.wrongNotes ?? []).filter((n) => !n.cleared).length || dueReviews(profile.sid, 99).length} />
       )}
       <MissionViewOffset active={!!inMission} look={lookFocus} decor={decorating} />

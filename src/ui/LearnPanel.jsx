@@ -5,7 +5,20 @@ import { getLearn, onLearnChange, qId } from '../store/learnStore';
 import { getSettings, setSettings, onSettings } from '../store/classSettings';
 import { SUBJECT_META } from '../data/missions/grade5';
 import { STANDARDS, stdSubject } from '../data/missions/standards';
-import { UNIT_TITLES } from '../engine/dailyMission';
+import { UNIT_TITLES, ASSIGN_MAX } from '../engine/dailyMission';
+import { todayKey } from '../store/useGame';
+
+// 선생님이 고른 문제가 들어갈 아침 미션 날짜: 오전이면 오늘, 오후면 다음 등교일
+function assignDate(now = new Date()) {
+  const d = new Date(now);
+  const weekend = (x) => x.getDay() === 0 || x.getDay() === 6;
+  if (d.getHours() >= 12 || weekend(d)) {
+    do d.setDate(d.getDate() + 1);
+    while (weekend(d));
+  }
+  return todayKey(d);
+}
+const dayLabel = (key) => (key === todayKey() ? '오늘' : `${Number(key.slice(5, 7))}월 ${Number(key.slice(8))}일`);
 import { BANK_SOCIAL, BANK_KOREAN, BANK_SCIENCE, BANK_ENGLISH, BANK_MATH } from '../data/missions/bank';
 import RichText from './RichText';
 import PresentView from './PresentView';
@@ -35,7 +48,7 @@ const readSeen = () => {
 
 // 문제 이름표 → 문항 은행 문제
 let QMAP = null;
-function questionOf(id) {
+export function questionOf(id) {
   if (!QMAP) {
     QMAP = new Map();
     for (const [subject, bank] of Object.entries({ social: BANK_SOCIAL, korean: BANK_KOREAN, science: BANK_SCIENCE, english: BANK_ENGLISH, math: BANK_MATH }))
@@ -66,6 +79,22 @@ function QuestionPeek({ q }) {
   );
 }
 
+function AssignButton({ id, assigned }) {
+  const date = assignDate();
+  const list = assigned?.date === date ? assigned.ids : [];
+  const on = list.includes(id);
+  return (
+    <button
+      className={`btn btn-sm ${on ? 'btn-primary' : ''}`}
+      disabled={!on && list.length >= ASSIGN_MAX}
+      onClick={() => setSettings({ assigned: { date, ids: on ? list.filter((x) => x !== id) : [...list, id] } })}
+      title={`${dayLabel(date)} 아침 미션에 반 모두에게 나와요 (최대 ${ASSIGN_MAX}문제)`}
+    >
+      {on ? `📌 ${dayLabel(date)} 미션에 넣음` : `📌 ${dayLabel(date)} 아침 미션에 넣기`}
+    </button>
+  );
+}
+
 function BlockButton({ id, blocked }) {
   const on = blocked.includes(id);
   return (
@@ -79,12 +108,16 @@ function BlockButton({ id, blocked }) {
   );
 }
 
+const topPick = (m) => Object.entries(m.picks ?? {}).sort((a, b) => b[1] - a[1])[0];
+
 export default function LearnPanel() {
   const [tick, setTick] = useState(0);
   const [open, setOpen] = useState(null);
   const [seen, setSeen] = useState(readSeen);
   const [blocked, setBlocked] = useState(() => getSettings().blocked ?? []);
-  const [present, setPresent] = useState(null); // 수업 화면에 띄우는 중: 시작 번호
+  const [present, setPresent] = useState(null);
+  const [assigned, setAssigned] = useState(() => getSettings().assigned ?? null);
+  useEffect(() => onSettings((s) => setAssigned(s.assigned ?? null)), []); // 수업 화면에 띄우는 중: 시작 번호
   useEffect(() => onLearnChange(() => setTick((x) => x + 1)), []);
   useEffect(() => onSettings((s) => setBlocked(s.blocked ?? [])), []);
 
@@ -106,10 +139,11 @@ export default function LearnPanel() {
         }
       }
       for (const [id, [w, t]] of Object.entries(l.items)) {
-        const e = (items[id] ??= { w: 0, t: 0, who: 0 });
+        const e = (items[id] ??= { w: 0, t: 0, who: 0, picks: {} });
         e.w += w;
         e.t += t;
         if (w) e.who += 1;
+        for (const [label, n] of Object.entries(l.picks?.[id] ?? {})) e.picks[label] = (e.picks[label] ?? 0) + n;
       }
       for (const r of l.reports) {
         const e = (reports[r.id] ??= { ...r, reasons: {}, who: [], last: 0 });
@@ -211,6 +245,7 @@ export default function LearnPanel() {
                 <span className="t-row-main">
                   <b>{m.q ? <RichText text={m.q.prompt} /> : '(찾을 수 없는 문제)'}</b>
                   <span className="muted">{SUBJECT_META[m.q?.subject]?.label} · {m.q?.unitTitle} · {m.q?.std}</span>
+                  {topPick(m) && <span className="t-pick">가장 많이 고른 오답: <b><RichText text={topPick(m)[0]} /></b> ({topPick(m)[1]}번)</span>}
                 </span>
                 <em className="t-miss">{m.rate}% 오답<small>{m.w}/{m.t}번 · {m.who}명</small></em>
               </button>
@@ -219,6 +254,7 @@ export default function LearnPanel() {
                   <QuestionPeek q={m.q} />
                   <div className="t-actions">
                     {m.q && <button className="btn btn-sm" onClick={() => setPresent(slides.findIndex((x) => x.id === m.id))}>📺 이 문제 띄우기</button>}
+                    <AssignButton id={m.id} assigned={assigned} />
                     <BlockButton id={m.id} blocked={blocked} />
                   </div>
                 </div>
@@ -228,6 +264,12 @@ export default function LearnPanel() {
         </ol>
       ) : (
         <p className="muted">아직 기록이 적어요.</p>
+      )}
+      {assigned?.date === assignDate() && assigned.ids.length > 0 && (
+        <p className="muted small-note">
+          📌 {dayLabel(assigned.date)} 아침 미션에 선생님이 고른 문제 {assigned.ids.length}개가 반 모두에게 나와요 (이미 그날 미션을 시작한 학생은 빼고){' '}
+          <button className="btn btn-sm" onClick={() => setSettings({ assigned: null })}>비우기</button>
+        </p>
       )}
       {blocked.length > 0 && (
         <p className="muted small-note">

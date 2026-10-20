@@ -24,7 +24,7 @@ export function qId(q) {
   return (h >>> 0).toString(36);
 }
 
-const empty = (sid) => ({ sid, review: [], items: {}, std: {}, recent: {}, reports: [] });
+const empty = (sid) => ({ sid, review: [], items: {}, std: {}, recent: {}, reports: [], picks: {} });
 const listeners = new Set();
 
 export function getLearn(sid) {
@@ -87,17 +87,24 @@ const toReview = (d, q, today) => {
 /**
  * 한 문제를 풀었을 때. 돌려주는 값: { graduated } (다시 보기 문제를 3번째 맞혀 졸업했는지)
  */
-export function recordAnswer(sid, q, ok) {
+/** 틀렸을 때 고른 답을 글자로 (보기 순서는 학생마다 섞이므로 보기 글자로 모은다) */
+export function pickLabel(q, value) {
+  if (q.kind === 'choice') return String(q.choices?.[value] ?? '');
+  if (q.kind === 'ox') return value ? 'O' : 'X';
+  return String(value ?? '').trim();
+}
+
+export function recordAnswer(sid, q, ok, picked) {
   let graduated = false;
   change(sid, (d) => {
-    graduated = apply(d, q, ok, dayNum());
+    graduated = apply(d, q, ok, dayNum(), picked);
   });
   return { graduated };
 }
 /** 여러 문제를 한 번에 (선생님 화면 샘플 기록) */
 export function recordMany(sid, list, reports = []) {
   change(sid, (d) => {
-    for (const [q, ok, day] of list) apply(d, q, ok, day);
+    for (const [q, ok, day, picked] of list) apply(d, q, ok, day, picked);
     d.reports.push(...reports);
     d.demo = true;
   });
@@ -111,7 +118,7 @@ export function clearLearn(sid) {
   listeners.forEach((fn) => fn(sid));
 }
 
-function apply(d, q, ok, today) {
+function apply(d, q, ok, today, picked) {
   let graduated = false;
   const id = qId(q);
   const s = q.subject;
@@ -124,8 +131,24 @@ function apply(d, q, ok, today) {
     it[1] += 1;
     if (!ok) it[0] += 1;
     it[2] = today;
+    // 어떤 오답을 골랐는지 (선생님이 '가장 많이 고른 오답'으로 오개념을 짚을 수 있게)
+    if (!ok && picked !== undefined) {
+      const label = pickLabel(q, picked).slice(0, 60);
+      if (label) {
+        d.picks ??= {};
+        const m = (d.picks[id] ??= {});
+        m[label] = (m[label] ?? 0) + 1;
+      }
+    }
     const keys = Object.keys(d.items);
-    if (keys.length > ITEMS_MAX) keys.sort((a, b) => d.items[a][2] - d.items[b][2]).slice(0, keys.length - ITEMS_MAX).forEach((k) => delete d.items[k]);
+    if (keys.length > ITEMS_MAX)
+      keys
+        .sort((a, b) => d.items[a][2] - d.items[b][2])
+        .slice(0, keys.length - ITEMS_MAX)
+        .forEach((k) => {
+          delete d.items[k];
+          delete d.picks?.[k];
+        });
   }
   const e = d.review.find((x) => x.id === id);
   if (!ok) toReview(d, q, today);

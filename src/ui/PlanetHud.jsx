@@ -10,6 +10,7 @@ import TravelSheet from './TravelSheet';
 import { loadProgress } from './MissionView';
 import ZoomButtons from './ZoomButtons';
 import { getSettings, onSettings } from '../store/classSettings';
+import { ClassGoalChip } from './ClassGoal';
 
 const EMOTES = ['👋', '❤️', '⭐', '😄', '🎉'];
 
@@ -87,6 +88,7 @@ export default function PlanetHud({ ownerId, onEmote }) {
             <span>❤️ {hearts}</span>
             {here > 0 && <span className="here-dot">지금 {here}명이 함께 있어요</span>}
           </div>
+          {isMine && <ClassGoalChip />}
         </div>
       </div>
 

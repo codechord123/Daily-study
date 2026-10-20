@@ -1,22 +1,19 @@
-import { Suspense, useEffect, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
-import SpaceBackdrop from './three/SpaceBackdrop';
-import PlanetScene from './three/PlanetScene';
-import SpaceFlight from './three/SpaceFlight';
-import LoginBackdrop from './three/LoginBackdrop';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import Login from './ui/Login';
-import PlanetHud from './ui/PlanetHud';
-import FlightHud from './ui/FlightHud';
 import MissionView from './ui/MissionView';
 import Toast from './ui/Toast';
 import WarpOverlay from './ui/WarpOverlay';
 import RecordsSheet from './ui/RecordsSheet';
 import StationSheet from './ui/StationSheet';
+import ClassGoalSheet from './ui/ClassGoal';
 import TeacherView from './ui/TeacherView';
 import Onboarding from './ui/Onboarding';
-import SceneGuard, { webglAvailable } from './ui/SceneGuard';
-import { prewarmAtlases } from './three/thumbAtlas';
+import { webglAvailable } from './ui/SceneGuard';
+
+// 3D(three.js)와 3D를 쓰는 화면은 따로 불러온다: 로그인·미션·선생님 화면이 먼저 뜬다
+const Stage3D = lazy(() => import('./Stage3D'));
+const PlanetHud = lazy(() => import('./ui/PlanetHud'));
+const FlightHud = lazy(() => import('./ui/FlightHud'));
 import { useGame } from './store/useGame';
 import { useUI } from './store/useUI';
 import * as presence from './services/presence';
@@ -54,7 +51,7 @@ export default function App() {
     }
   }, [account.status, account.sid]);
   useEffect(() => {
-    if (profile && gl3d) prewarmAtlases();
+    if (profile && gl3d) import('./three/thumbAtlas').then((m) => m.prewarmAtlases());
   }, [!!profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -87,33 +84,9 @@ export default function App() {
     <div className={`app screen-${screen}`}>
       <div className="canvas-wrap">
         {gl3d ? (
-        <SceneGuard>
-        <Canvas
-          dpr={low ? [1, 1.25] : [1, 2]}
-          camera={{ fov: 45, position: [0, 4, 7] }}
-          gl={{ antialias: !low, powerPreference: 'high-performance' }}
-          onCreated={({ gl }) => {
-            requestAnimationFrame(() => setReady(true));
-            gl.domElement.addEventListener('webglcontextlost', (e) => {
-              e.preventDefault();
-              setLost(true);
-            });
-          }}
-        >
-          <Suspense fallback={null}>
-            <SpaceBackdrop low={low} />
-            {!profile && <LoginBackdrop />}
-            {onPlanet && <PlanetScene key={ownerId} ownerId={ownerId} editable={screen === 'home'} emote={emote} inMission={screen === 'mission'} />}
-            {profile && screen === 'space' && <SpaceFlight me={profile} launchFrom={launchFrom} onLand={visit} low={low} />}
-            {!low && (
-              <EffectComposer multisampling={0}>
-                <Bloom intensity={0.9} luminanceThreshold={0.85} luminanceSmoothing={0.2} mipmapBlur />
-                <Vignette offset={0.3} darkness={0.55} />
-              </EffectComposer>
-            )}
-          </Suspense>
-        </Canvas>
-        </SceneGuard>
+        <Suspense fallback={null}>
+          <Stage3D low={low} profile={profile} onPlanet={onPlanet} ownerId={ownerId} screen={screen} emote={emote} launchFrom={launchFrom} visit={visit} setReady={setReady} setLost={setLost} />
+        </Suspense>
         ) : (
           <div className="scene-fallback">
             <p>이 기기에서는 3D 별을 보여 줄 수 없어요.<br />미션과 기록은 그대로 할 수 있어요.</p>
@@ -136,11 +109,14 @@ export default function App() {
       <div className="ui-layer">
         {!profile && screen !== 'teacher' && <Login />}
         {screen === 'teacher' && <TeacherView />}
-        {profile && (screen === 'home' || screen === 'visit') && <PlanetHud ownerId={ownerId} onEmote={sendEmote} />}
-        {profile && screen === 'space' && <FlightHud />}
+        <Suspense fallback={null}>
+          {profile && (screen === 'home' || screen === 'visit') && <PlanetHud ownerId={ownerId} onEmote={sendEmote} />}
+          {profile && screen === 'space' && <FlightHud />}
+        </Suspense>
         {profile && screen === 'mission' && <MissionView key={missionMode?.at ?? 'daily'} />}
         {profile && sheet === 'records' && screen !== 'mission' && <RecordsSheet />}
         {profile && sheet === 'station' && screen !== 'mission' && <StationSheet />}
+        {profile && sheet === 'goal' && screen !== 'mission' && <ClassGoalSheet />}
         {profile && !profile.onboarded && screen === 'home' && <Onboarding />}
         <WarpOverlay />
         <Toast />

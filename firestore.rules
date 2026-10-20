@@ -81,6 +81,7 @@ service cloud.firestore {
         // 하트는 1씩만 올릴 수 있다
         allow create: if isMember(c) && request.resource.data.count == 1;
         allow update: if isMember(c) && request.resource.data.count == resource.data.count + 1;
+        allow delete: if isTeacher(c); // 학년말 기록 지우기
       }
     }
   }

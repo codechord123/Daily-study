@@ -235,7 +235,7 @@ export default function MissionView() {
       setMission({ results: next });
       if (mode === 'daily' && !practice) saveProgress(profile.sid, next);
       // 학습 기록: 성취기준별 정답, 틀린 문제는 1·3·7일 뒤 다시
-      recordAnswer(profile.sid, q, ok);
+      recordAnswer(profile.sid, q, ok, value);
       missionFx(ok ? 'correct' : 'wrong');
       if (ok) sfx('correct', combo + 1);
       else sfx('wrong');
@@ -311,12 +311,14 @@ export default function MissionView() {
     if (finished || !q) return;
     const onKey = (e) => {
       if (e.key === 'Enter') {
+        if (e.isComposing) return; // 한글 입력 중인 글자를 확정하는 Enter
         e.preventDefault();
         if (feedback) return next();
         if (q.kind === 'number' && num) return answer(num, document.querySelector('.num-submit'));
+        if (q.kind === 'text' && num.trim()) return answer(num.trim(), document.querySelector('.num-submit'));
         return;
       }
-      if (feedback) return;
+      if (feedback || q.kind === 'text') return;
       if (q.kind === 'number') {
         if (/^[0-9.]$/.test(e.key)) pressKey(e.key);
         else if (e.key === 'Backspace') pressKey('⌫');
@@ -343,12 +345,12 @@ export default function MissionView() {
   const blankFill = !q
     ? null
     : feedback
-      ? q.kind === 'number'
+      ? q.kind === 'number' || q.kind === 'text'
         ? String(q.answer)
         : q.kind === 'choice'
           ? plainChoice(q.answer)
           : null
-      : q.kind === 'number'
+      : q.kind === 'number' || q.kind === 'text'
         ? num
         : q.kind === 'choice'
           ? plainChoice(hover)
@@ -360,7 +362,7 @@ export default function MissionView() {
   const viewQ = unitMatch ? { ...q, prompt: q.prompt.slice(0, unitMatch.index) } : q;
 
   const correctLabel = () => {
-    if (q.kind === 'number') return String(q.answer);
+    if (q.kind === 'number' || q.kind === 'text') return String(q.answer);
     if (q.kind === 'ox') return q.answer ? 'O' : 'X';
     const c = q.choices[q.answer];
     return isImg(c) ? `${q.answer + 1}번 그림` : c;
@@ -442,6 +444,7 @@ export default function MissionView() {
                 {q.unit && <small className="q-unit">{q.unit}</small>}
               </span>
               {q.review && <span className="review-tag" title="예전에 틀렸거나 헷갈린 문제예요">🔁 다시 보기</span>}
+              {q.assigned && <span className="review-tag" title="선생님이 골라 넣은 문제예요">📌 선생님 문제</span>}
               {combo >= 2 && (
                 <span className="combo" key={combo}>
                   {combo >= 3 ? '🔥' : '✦'} {combo}연속!
@@ -503,6 +506,29 @@ export default function MissionView() {
                     {v ? 'O' : 'X'}
                   </button>
                 ))}
+              </div>
+            )}
+            {q.kind === 'text' && (
+              <div className="text-answer">
+                <input
+                  className={`text-input ${feedback ? (feedback.ok ? 'ok' : 'no') : ''}`}
+                  value={num}
+                  onChange={(e) => setNum(e.target.value.slice(0, 20))}
+                  disabled={!!feedback}
+                  placeholder="낱말을 써요"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  lang="ko"
+                  enterKeyHint="done"
+                  aria-label="답 쓰기"
+                />
+                {!feedback && (
+                  <button className="btn btn-primary num-submit" disabled={!num.trim()} onClick={(e) => answer(num.trim(), e.currentTarget)}>
+                    확인
+                  </button>
+                )}
               </div>
             )}
             {q.kind === 'number' && (

@@ -484,6 +484,21 @@ export function uploadLearn(data) {
   );
 }
 
+/** 학년말: 이 학급의 별·학습 기록·하트를 모두 지운다 (계정·번호 자리·명단은 그대로) */
+export async function wipeClassRecords() {
+  if (!fb || account.status !== 'teacher') return false;
+  const { fs, db } = fb;
+  for (const col of ['students', 'learn', 'hearts']) {
+    const snap = await fs.getDocs(fs.collection(db, 'classes', CLASS_ID, col));
+    for (let i = 0; i < snap.docs.length; i += 400) {
+      const batch = fs.writeBatch(db);
+      snap.docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+  return true;
+}
+
 export function cloudAddHeart(sid) {
   if (!fb) return false;
   fb.fs.setDoc(fb.fs.doc(fb.db, 'classes', CLASS_ID, 'hearts', sid), { count: fb.fs.increment(1) }, { merge: true }).catch((e) => console.warn('하트 실패', e));

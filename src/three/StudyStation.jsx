@@ -35,7 +35,7 @@ export default function StudyStation({ badge = 0 }) {
 
   return (
     <group rotation={[0.35, 0, 0.18]}>
-      <group ref={orbit} rotation={[0, 2.2, 0]}>
+      <group ref={orbit} rotation={[0, -1.2, 0]}>
         {/* 궤도선 */}
         <mesh rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[ORBIT, 0.006, 4, 120]} />
