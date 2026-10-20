@@ -25,7 +25,6 @@ export default function App() {
   const { profile, screen, visiting, launchFrom, restoreSession, visit, missionMode } = useGame();
   const sheet = useUI((s) => s.sheet);
   const quality = useUI((s) => s.quality);
-  const low = quality === 'low';
   const [emote, setEmote] = useState(null);
   const [ready, setReady] = useState(false); // 3D 첫 화면이 그려졌는지
   const [lost, setLost] = useState(false); // 그래픽 연결이 끊김
@@ -85,7 +84,7 @@ export default function App() {
       <div className="canvas-wrap">
         {gl3d ? (
         <Suspense fallback={null}>
-          <Stage3D low={low} profile={profile} onPlanet={onPlanet} ownerId={ownerId} screen={screen} emote={emote} launchFrom={launchFrom} visit={visit} setReady={setReady} setLost={setLost} />
+          <Stage3D quality={quality} profile={profile} onPlanet={onPlanet} ownerId={ownerId} screen={screen} emote={emote} launchFrom={launchFrom} visit={visit} setReady={setReady} setLost={setLost} />
         </Suspense>
         ) : (
           <div className="scene-fallback">

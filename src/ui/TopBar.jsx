@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import * as sound from '../services/sound';
 import { useGame } from '../store/useGame';
 import { useUI } from '../store/useUI';
+
+const QUALITY_LABEL = { high: '선명하게', low: '가볍게', lite: '가장 가볍게' };
 import { useEscape } from './useEscape';
 import { cloudEnabled } from '../services/cloud';
 import PasswordDialog from './PasswordDialog';
@@ -36,8 +38,8 @@ export default function TopBar() {
       <button className="btn btn-icon btn-ghost" onClick={() => setOpen((o) => !o)} aria-label="설정">⚙︎</button>
       {open && (
         <div className="menu panel">
-          <button className="menu-item" onClick={() => setQuality(quality === 'low' ? 'high' : 'low')}>
-            화질: {quality === 'low' ? '가볍게' : '선명하게'} <small>바꾸기</small>
+          <button className="menu-item" onClick={() => setQuality(quality === 'high' ? 'low' : quality === 'low' ? 'lite' : 'high')}>
+            화질: {QUALITY_LABEL[quality] ?? '가볍게'} <small>바꾸기</small>
           </button>
           <button className="menu-item" onClick={() => sound.setPref('sfx', !snd.sfx)}>
             효과음: {snd.sfx ? '켜짐' : '꺼짐'} <small>바꾸기</small>

@@ -42,6 +42,10 @@ export default function PresentView({ items, start = 0, onClose }) {
 
   if (!q) return null;
   const meta = SUBJECT_META[q.subject] ?? SUBJECT_META.math;
+  // 수로 답하는 문제의 단위 '(cm)'는 문장에서 떼어 답 칸 옆에 (학생 화면과 같게)
+  const unitMatch = q.kind === 'number' ? String(q.prompt).match(/\s*\(([^()\d]{1,6})\)\s*$/) : null;
+  const unit = unitMatch?.[1] ?? '';
+  const viewQ = unitMatch ? { ...q, prompt: q.prompt.slice(0, unitMatch.index) } : q;
   const answerText = q.kind === 'ox' ? (q.answer ? 'O' : 'X') : q.kind === 'number' || q.kind === 'text' ? String(q.answer) : null;
   // 우리 반 학생들이 고른 오답 (보기 글자로 모은 것)
   const picks = it.picks ?? {};
@@ -81,7 +85,7 @@ export default function PresentView({ items, start = 0, onClose }) {
           )}
           <div className="q-main">
             {q.sub && <p className="q-sub">{q.sub}</p>}
-            <Prompt q={q} fill={show && q.kind === 'choice' && !isImg(q.choices[q.answer]) ? q.choices[q.answer] : show ? answerText : null} fillState={show ? 'is-right' : 'is-preview'} />
+            <Prompt q={viewQ} fill={show && q.kind === 'choice' && !isImg(q.choices[q.answer]) ? q.choices[q.answer] : show ? answerText : null} fillState={show ? 'is-right' : 'is-preview'} />
             {q.kind === 'choice' && (
               <div className={`choices ${q.choices.length > 2 ? 'grid' : ''} ${q.choices.some((c) => c.length > 9) ? 'long' : ''}`}>
                 {q.choices.map((c, k) => (
@@ -106,11 +110,11 @@ export default function PresentView({ items, start = 0, onClose }) {
                 ))}
               </div>
             )}
-            {(q.kind === 'number' || q.kind === 'text') && !show && <p className="present-num">답: ( &nbsp; &nbsp; &nbsp; )</p>}
+            {(q.kind === 'number' || q.kind === 'text') && !show && <p className="present-num">답: ( &nbsp; &nbsp; &nbsp; ) {unit}</p>}
             {show && (
               <div className="feedback ok" role="status">
                 <div>
-                  <p className="fb-title">정답 {answerText ?? `${q.answer + 1}번`}</p>
+                  <p className="fb-title">정답 {answerText ?? `${q.answer + 1}번`}{answerText && unit ? ` ${unit}` : ''}</p>
                   {q.explain && <p className="fb-answer"><span className="explain">💡 <RichText text={q.explain} /></span></p>}
                   {q.kind !== 'choice' && topWrong && (
                     <p className="fb-answer">

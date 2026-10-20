@@ -1,24 +1,29 @@
 import { create } from 'zustand';
 
-// 저사양(크롬북) 자동 감지: 코어 4개 이하 또는 메모리 4GB 이하면 가볍게
+// 화질 3단계: high(선명하게) · low(가볍게) · lite(가장 가볍게)
+// 크롬북·저사양(코어 4개 이하 또는 메모리 4GB 이하)은 가볍게로 시작하고, 그래도 느리면 저절로 한 단계 더 낮춘다
+export const QUALITIES = ['high', 'low', 'lite'];
+const isChromebook = () => typeof navigator !== 'undefined' && /\bCrOS\b/.test(navigator.userAgent);
 function detectQuality() {
   try {
     const saved = localStorage.getItem('ds:quality');
-    if (saved) return saved;
+    if (QUALITIES.includes(saved)) return saved;
   } catch {
     /* noop */
   }
   const cores = navigator.hardwareConcurrency ?? 4;
   const mem = navigator.deviceMemory ?? 4;
-  return cores <= 4 || mem <= 4 ? 'low' : 'high';
+  return isChromebook() || cores <= 4 || mem <= 4 ? 'low' : 'high';
 }
 
 // 화면 전용 임시 상태 (저장하지 않음)
 export const useUI = create((set) => ({
   quality: detectQuality(),
-  setQuality(q) {
+  // auto: 느려서 저절로 낮춘 것 (학생이 직접 고른 화질은 저절로 바꾸지 않는다)
+  setQuality(q, auto = false) {
     try {
       localStorage.setItem('ds:quality', q);
+      if (!auto) localStorage.setItem('ds:quality-picked', '1');
     } catch {
       /* noop */
     }

@@ -473,6 +473,7 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
   const walkTarget = useRef(null);
   const decorating = editable && mode === 'decorate';
   const lookFocus = useUI((s) => s.lookFocus) && decorating;
+  const quality = useUI((s) => s.quality);
 
   // 이 별에 들어왔다고 알림
   useEffect(() => {
@@ -554,14 +555,14 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
     <>
       <CameraLights />
       {decorating && <DropTarget onDrop={dropItem} />}
-      <DistantPlanets ownerId={ownerId} count={useUI.getState().quality === 'low' ? 5 : 9} />
+      {quality !== 'lite' && <DistantPlanets ownerId={ownerId} count={quality === 'low' ? 5 : 9} />}
       <Planet
         tint={planet.tint}
         ring={planet.ring}
         moon={planet.moon}
         aura={planet.aura}
         pattern={planet.pattern}
-        ambient={planet.ambient}
+        ambient={quality === 'lite' ? null : planet.ambient}
         items={planet.items}
         selectedUid={decorating ? selectedUid : null}
         onItemTap={decorating ? select : undefined}
