@@ -90,7 +90,9 @@ export async function startCloud() {
     const projectId = cfg('projectId', 'VITE_FIREBASE_PROJECT_ID') || 'demo-dailystudy';
     const app = initializeApp({
       apiKey: cfg('apiKey', 'VITE_FIREBASE_API_KEY') || 'demo-key',
-      authDomain: cfg('authDomain', 'VITE_FIREBASE_AUTH_DOMAIN') || `${projectId}.firebaseapp.com`,
+      // 배포판은 로그인 창도 앱 주소에서 연다 (vercel.json 이 /__/auth 를 Firebase로 중계).
+      // 다른 주소의 로그인 창은 요즘 브라우저가 정보를 막아 '잠시만요'에서 멈춘다
+      authDomain: useDefault && /\.vercel\.app$/.test(location.hostname) ? location.host : cfg('authDomain', 'VITE_FIREBASE_AUTH_DOMAIN') || `${projectId}.firebaseapp.com`,
       projectId,
       databaseURL: cfg('databaseURL', 'VITE_FIREBASE_DATABASE_URL') || `http://127.0.0.1:9000?ns=${projectId}-default-rtdb`,
       appId: cfg('appId', 'VITE_FIREBASE_APP_ID') || 'demo-app',
@@ -106,6 +108,8 @@ export async function startCloud() {
     fb = { db, rtdb, auth, fs, rd, au };
     if (EMULATOR) window.__fb = fb; // 시험용
     rd.onValue(rd.ref(rtdb, '.info/connected'), (s) => setStatus({ connected: !!s.val() }));
+    // 페이지를 옮겨 로그인하고 돌아온 경우 실패 이유를 보여 준다 (성공하면 아래 onAuthStateChanged 로 들어간다)
+    au.getRedirectResult(auth).catch((e) => setAccount({ ...account, error: authMessage(e) }));
     // 이 기기에 로그인이 남아 있으면 그대로 들어간다 (Firebase가 기기에 로그인을 기억함)
     au.onAuthStateChanged(auth, (user) => {
       if (!user) {
@@ -236,8 +240,11 @@ const AUTH_MSG = {
   'auth/network-request-failed': '인터넷 연결을 확인해 주세요',
   'auth/popup-closed-by-user': '로그인 창이 닫혔어요',
   'auth/popup-blocked': '팝업이 막혔어요. 주소창 옆에서 팝업을 허용해 주세요',
+  'auth/unauthorized-domain': '이 주소가 Firebase 승인된 도메인에 없어요',
+  'auth/operation-not-allowed': 'Firebase에서 이 로그인 방법이 꺼져 있어요',
+  'auth/cancelled-popup-request': '로그인 창이 이미 열려 있어요',
 };
-export const authMessage = (e) => AUTH_MSG[e?.code] ?? '잠시 뒤에 다시 해 주세요';
+export const authMessage = (e) => AUTH_MSG[e?.code] ?? `잠시 뒤에 다시 해 주세요 (${e?.code ?? '알 수 없는 오류'})`;
 const need = () => {
   if (!fb) throw Object.assign(new Error('offline'), { code: 'auth/network-request-failed' });
   return fb;
@@ -306,7 +313,13 @@ export async function teacherSignIn() {
     // 시험용: 에뮬레이터는 서명 없는 Google 토큰을 받아 준다
     return au.signInWithCredential(auth, au.GoogleAuthProvider.credential(JSON.stringify(window.__testGoogle)));
   }
-  return au.signInWithPopup(auth, provider);
+  try {
+    return await au.signInWithPopup(auth, provider);
+  } catch (e) {
+    // 팝업을 못 여는 기기(일부 태블릿·앱 화면)는 페이지를 옮겨 로그인하고 돌아온다
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-environment') return au.signInWithRedirect(auth, provider);
+    throw e;
+  }
 }
 
 /** 선생님이 학급을 만든다 → 학급 코드 */

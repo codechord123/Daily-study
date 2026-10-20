@@ -1,6 +1,6 @@
 // 학교 와이파이가 끊겨도 앱이 열리도록 한 번 받은 파일을 기기에 보관한다.
 // 화면(index.html)은 항상 새로 받아 보고, 안 되면 보관본을 쓴다. 해시가 붙은 파일은 보관본 먼저.
-const CACHE = 'little-star-v1';
+const CACHE = 'little-star-v2';
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', (e) => {
@@ -31,6 +31,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
   if (!sameOrigin && !FONT_HOSTS.includes(url.hostname)) return; // 학급 서버(Firebase)는 건드리지 않는다
+  if (url.pathname.startsWith('/__/')) return; // Google 로그인 창(Firebase 로그인 중계)도 그대로 보낸다
 
   if (req.mode === 'navigate') {
     e.respondWith(

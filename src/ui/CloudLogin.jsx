@@ -223,7 +223,16 @@ function TeacherLogin({ account, onBack }) {
   return (
     <div className="panel login-card rise">
       <p className="pick-title title">선생님 로그인</p>
-      <button className="btn btn-primary btn-block" onClick={() => run(teacherSignIn)} disabled={busy}>
+      <button
+        className="btn btn-primary btn-block"
+        onClick={() =>
+          run(() =>
+            // 로그인 창이 답을 못 돌려주면 1분 뒤 다시 누를 수 있게
+            Promise.race([teacherSignIn(), new Promise((_, no) => setTimeout(() => no(new Error('로그인 창이 응답하지 않아요. 창을 닫고 다시 눌러 주세요')), 60000))]),
+          )
+        }
+        disabled={busy}
+      >
         {busy ? '잠시만요…' : 'G  Google 계정으로 로그인'}
       </button>
       {err && <p className="field-err">{err}</p>}
