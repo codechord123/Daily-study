@@ -237,6 +237,7 @@ export default function MissionView() {
     setFeedback(null);
     setNum('');
     setHover(null);
+    document.activeElement?.blur?.(); // 앞 문제에서 누른 버튼의 포커스가 다음 문제에 남지 않게
     setBurst(null);
     if (idx + 1 < questions.length) {
       sfx('page');
@@ -435,13 +436,11 @@ export default function MissionView() {
               <div className={`choices ${q.choices.length > 2 ? 'grid' : ''} ${q.choices.some((c) => c.length > 9 && !isImg(c)) ? 'long' : ''} ${q.choices.some(isImg) ? 'has-img' : ''}`}>
                 {q.choices.map((c, i) => (
                   <button
-                    key={i}
+                    key={`${idx}-${i}`}
                     className={`choice ${choiceState(i === q.answer, i === feedback?.picked)}`}
                     onClick={(e) => answer(i, e.currentTarget)}
-                    onPointerEnter={() => setHover(i)}
+                    onPointerEnter={(e) => e.pointerType === 'mouse' && setHover(i)}
                     onPointerLeave={() => setHover((h) => (h === i ? null : h))}
-                    onFocus={() => setHover(i)}
-                    onBlur={() => setHover((h) => (h === i ? null : h))}
                     disabled={!!feedback}
                     style={{ animationDelay: `${120 + i * 60}ms` }}
                   >

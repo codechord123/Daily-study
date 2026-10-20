@@ -325,7 +325,7 @@
   animation: rise 420ms var(--ease-soft) both;
   transition: transform 160ms var(--ease-soft), background 160ms, border-color 160ms, box-shadow 160ms;
 }
-.choice:hover:not(:disabled) { transform: translateY(-2px); border-color: color-mix(in srgb, var(--subject) 80%, #2a2346); background: #fff; box-shadow: 0 6px 0 rgba(42,35,70,.08), 0 0 20px color-mix(in srgb, var(--subject) 35%, transparent); }
+@media (hover: hover) { .choice:hover:not(:disabled) { transform: translateY(-2px); border-color: color-mix(in srgb, var(--subject) 80%, #2a2346); background: #fff; box-shadow: 0 6px 0 rgba(42,35,70,.08), 0 0 20px color-mix(in srgb, var(--subject) 35%, transparent); } }
 .choice:active:not(:disabled) { transform: translateY(1px) scale(.98); box-shadow: 0 1px 0 rgba(42,35,70,.08); }
 .choice-key {
   flex: none; width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center;
@@ -1039,3 +1039,29 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .num-answer .keypad { grid-area: pad; }
 .num-answer .num-submit { grid-area: sub; width: auto; min-width: 96px; height: 100%; min-height: 50px; padding: 0 22px; }
 .unit-count { margin-left: 6px; font-size: 11px; opacity: .75; }
+
+/* '보기' 이름표가 상자 위로 걸쳐 있으니 상자 밖을 자르지 않는다 */
+.pass-bogi { overflow: visible; max-height: none; }
+/* 휴대폰 세로: 지문은 상자 안에서 스크롤하지 않고(잘린 것처럼 보임) 카드 전체가 한 번에 보이게 촘촘히 */
+@media (max-aspect-ratio: 11/10) {
+  .pass, .q-card.is-wide .pass { max-height: none; overflow: visible; }
+  .q-card.is-wide { padding: 14px 14px 16px; }
+  .q-card.is-wide .q-top { margin-bottom: 8px; }
+  .q-card.is-wide .q-subject { padding: 4px 12px 4px 4px; font-size: 14px; }
+  .q-card.is-wide .q-icon { width: 26px; height: 26px; font-size: 13px; }
+  .q-card.is-wide .pass { font-size: 15px; line-height: 1.5; margin-bottom: 10px; }
+  .q-card.is-wide .pass-prose, .q-card.is-wide .pass-source { padding: 6px 12px; }
+  .q-card.is-wide .pass-bogi { padding: 14px 12px 8px; }
+  .q-card.is-wide .pass-dialog { gap: 5px; }
+  .q-card.is-wide .bubble { padding: 6px 12px; }
+  .q-card.is-wide .bubble-who { height: 24px; min-width: 28px; font-size: 12px; }
+  .q-card.is-wide .q-ask { margin-bottom: 10px; }
+  .q-card.is-wide .q-prompt { font-size: 20px; line-height: 1.4; }
+  .q-card.is-wide .q-context { font-size: 14px; }
+  .q-card.is-wide .q-instruction { margin: 2px 0 6px; font-size: 13px; }
+  .q-card.is-wide .choices { gap: 8px; }
+  .q-card.is-wide .choice { min-height: 46px; padding: 6px 12px 6px 8px; font-size: 16px; border-radius: 14px; }
+  .q-card.is-wide .choice-key { width: 28px; height: 28px; font-size: 17px; }
+  .q-card.is-wide .ox-btn { min-height: 64px; font-size: 36px; }
+  .q-card.is-wide .q-figure { margin-bottom: 8px; }
+}
