@@ -4,7 +4,7 @@ import { OPTION_SLOTS, COLOR_SLOTS } from '../data/character';
 import { PLANET_DECO } from '../theme/tokens';
 import { priceOf } from './classSettings';
 import { loadProfile, newProfile, saveProfile, onRemoteProfile, onSynced } from './profileStore';
-import { cloudEnabled, cloudSignOut } from '../services/cloud';
+import { cloudEnabled, cloudSignOut, setUploadDelay } from '../services/cloud';
 
 // 새 기능 안내 판 (ui/Onboarding.jsx NEWS_VERSION 과 같게)
 const NEWS_VERSION = 1;
@@ -373,6 +373,12 @@ export const useGame = create((set, get) => {
       });
     },
   };
+});
+
+// 꾸미는 동안엔 저장을 모아 20초마다 한 번, 꾸미기를 마치면(다른 화면으로 가도) 바로 올린다
+// (내 별을 저장할 때마다 반 친구 모두가 읽어서 학급 서버 읽기 요금이 든다)
+useGame.subscribe((s, prev) => {
+  if (s.mode !== prev.mode) setUploadDelay(s.mode === 'decorate' ? 20000 : 600);
 });
 
 // 같은 학생이 다른 기기에서 바꾼 내용이 더 새것이면 반영

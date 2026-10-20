@@ -435,6 +435,7 @@ export async function changePassword(current, next) {
 
 export async function cloudSignOut() {
   if (!fb) return;
+  flushUploads(); // 모아 둔 별 저장을 먼저 올린다
   clearTimeout(retryTimer);
   unsubs.forEach((u) => u());
   unsubs = [];
@@ -447,26 +448,41 @@ export async function cloudSignOut() {
 
 // ---------- 쓰기 ----------
 const pending = new Map();
+const pendingRun = new Map();
+// 내 별을 저장하면 반 친구 모두가 한 번씩 받아 읽는다(읽기 요금). 꾸미는 동안에는 모아 두었다가 천천히 올린다
+let uploadDelay = 600;
+export function setUploadDelay(ms) {
+  uploadDelay = ms;
+  if (ms <= 600) flushUploads();
+}
+/** 모아 둔 저장을 지금 올린다 (꾸미기를 마칠 때, 화면을 내릴 때) */
+export function flushUploads() {
+  for (const [sid, run] of pendingRun) {
+    clearTimeout(pending.get(sid));
+    run();
+  }
+}
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => document.hidden && flushUploads());
 export function uploadProfile(profile) {
   if (!fb || profile.provisional) return; // 서버 확인 전 새 기기에서 만든 임시 별은 올리지 않는다
   // 내 별만 올린다 (선생님은 '선생님 별')
   const mine = (account.status === 'student' && account.sid === profile.sid) || (account.status === 'teacher' && profile.sid === 'teacher');
   if (!mine) return;
-  // 빠르게 여러 번 바뀌면 마지막 것만 0.6초 뒤에 올린다
+  // 빠르게 여러 번 바뀌면 마지막 것만 잠시 뒤에 올린다 (평소 0.6초, 꾸미는 중엔 더 길게)
   clearTimeout(pending.get(profile.sid));
-  pending.set(
-    profile.sid,
-    setTimeout(() => {
-      pending.delete(profile.sid);
-      const ref = fb.fs.doc(fb.db, 'classes', CLASS_ID, 'students', profile.sid);
-      fb.fs.setDoc(ref, JSON.parse(JSON.stringify(profile))).catch((e) => {
-        console.warn('저장 실패', e);
-        // 보안 규칙이 막았다(별가루를 손으로 고친 경우 등): 서버에 있는 진짜 기록으로 되돌린다
-        if (e?.code === 'permission-denied')
-          fb.fs.getDoc(ref).then((d) => d.exists() && handlers.restore?.(d.data())).catch(() => {});
-      });
-    }, 600),
-  );
+  const run = () => {
+    pending.delete(profile.sid);
+    pendingRun.delete(profile.sid);
+    const ref = fb.fs.doc(fb.db, 'classes', CLASS_ID, 'students', profile.sid);
+    fb.fs.setDoc(ref, JSON.parse(JSON.stringify(profile))).catch((e) => {
+      console.warn('저장 실패', e);
+      // 보안 규칙이 막았다(별가루를 손으로 고친 경우 등): 서버에 있는 진짜 기록으로 되돌린다
+      if (e?.code === 'permission-denied')
+        fb.fs.getDoc(ref).then((d) => d.exists() && handlers.restore?.(d.data())).catch(() => {});
+    });
+  };
+  pendingRun.set(profile.sid, run);
+  pending.set(profile.sid, setTimeout(run, uploadDelay));
 }
 
 const learnPending = new Map();
@@ -520,6 +536,13 @@ export function presenceSet(state) {
     fb.rd.onDisconnect(ref).remove();
   }
   fb.rd.set(ref, JSON.parse(JSON.stringify({ ...state, t: Date.now() }))).catch(() => {});
+  return true;
+}
+/** 바뀐 칸만 보낸다 (내려받는 쪽도 바뀐 칸만 받는다) */
+export function presencePatch(sid, patch) {
+  if (!fb || (account.status !== 'student' && account.status !== 'teacher')) return !!fb;
+  if (!presenceRef) return false;
+  fb.rd.update(fb.rd.ref(fb.rtdb, `presence/${CLASS_ID}/${sid}`), JSON.parse(JSON.stringify({ ...patch, t: Date.now() }))).catch(() => {});
   return true;
 }
 export function presenceLeave(sid) {

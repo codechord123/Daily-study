@@ -14,7 +14,7 @@ const SUBJECTS = ['math', 'english', 'korean', 'social', 'science'];
 const hull = new THREE.MeshStandardMaterial({ color: '#e9ecff', roughness: 0.35, metalness: 0.4 });
 const panel = new THREE.MeshStandardMaterial({ color: '#3b4a9a', roughness: 0.3, metalness: 0.6, emissive: '#1a2a7a', emissiveIntensity: 0.6 });
 
-export default function StudyStation({ badge = 0 }) {
+export default function StudyStation({ badge = 0, hidden = false }) {
   const orbit = useRef();
   const body = useRef();
   const [hover, setHover] = useState(false);
@@ -28,13 +28,14 @@ export default function StudyStation({ badge = 0 }) {
   });
 
   const open = (e) => {
+    if (hidden) return; // 숨겨 둔 동안엔 눌리지 않게 (보이지 않아도 3D 클릭은 닿는다)
     e.stopPropagation();
     sfx('tap');
     useUI.getState().openSheet('station');
   };
 
   return (
-    <group rotation={[0.35, 0, 0.18]}>
+    <group rotation={[0.35, 0, 0.18]} visible={!hidden}>
       <group ref={orbit} rotation={[0, -1.2, 0]}>
         {/* 궤도선 */}
         <mesh rotation={[Math.PI / 2, 0, 0]}>
@@ -79,7 +80,7 @@ export default function StudyStation({ badge = 0 }) {
             </mesh>
           </group>
           <Html center position={[0, 0.48, 0]} zIndexRange={[12, 0]}>
-            <button className="station-tag" onClick={open}>
+            <button className="station-tag" onClick={open} style={hidden ? { display: 'none' } : undefined} tabIndex={hidden ? -1 : 0}>
               🛰 문제 정거장{badge > 0 && <b>{badge}</b>}
             </button>
           </Html>

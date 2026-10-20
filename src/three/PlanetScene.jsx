@@ -261,7 +261,7 @@ function Player({ look, name, targetRef, emote, inMission, lookFocus }) {
     const now = state.clock.elapsedTime;
     if (now - lastSent.current > 0.2) {
       lastSent.current = now;
-      presence.update({ pos: p.toArray().map((v) => +v.toFixed(3)), moving: moving.current });
+      presence.update({ pos: p.toArray().map((v) => +v.toFixed(2)), moving: moving.current });
     }
   });
 
@@ -580,9 +580,8 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
       {inMission && <MissionOrbit />}
       {!inMission && !decorating && profile.sid === ownerId && princeToday(profile, todayKey()) && <PrinceVisitor />}
       {/* 모든 별의 궤도를 도는 문제 정거장: 어느 별에서 눌러도 내 공부(오답·다시 볼 문제)가 열린다 */}
-      {!inMission && !decorating && (
-        <StudyStation badge={(profile.wrongNotes ?? []).filter((n) => !n.cleared).length || dueReviews(profile.sid, 99).length} />
-      )}
+      {/* 이름표(Html)를 그리는 중에 떼어 내면 React가 경고해서, 미션·꾸미기 중엔 숨기기만 한다 */}
+      <StudyStation hidden={!!inMission || decorating} badge={(profile.wrongNotes ?? []).filter((n) => !n.cleared).length || dueReviews(profile.sid, 99).length} />
       <MissionViewOffset active={!!inMission} look={lookFocus} decor={decorating} />
       {/* 내 모습을 꾸밀 때는 친구가 앞을 가리지 않게 잠깐 숨긴다 */}
       {!lookFocus && peerIds.map((sid, i) => (
