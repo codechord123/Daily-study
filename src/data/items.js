@@ -8,6 +8,7 @@ export const ITEM_CATEGORIES = [
   { id: 'korea', label: '우리 문화' },
   { id: 'study', label: '공부' },
   { id: 'wonder', label: '신기한 것' },
+  { id: 'prince', label: '어린 왕자 선물', limited: true },
 ];
 
 export const ITEMS = [
@@ -113,6 +114,15 @@ export const ITEMS = [
   // 신기한 것
   { id: 'crystalBall', name: '수정 구슬', price: 100, category: 'wonder', model: 'crystalBall', glow: true },
   { id: 'robot', name: '꼬마 로봇', price: 140, category: 'wonder', model: 'robot', glow: true },
+  // 어린 왕자의 선물: 가게에는 없고 부탁을 들어주면 받는다 (limited)
+  { id: 'lp_rose', name: '어린 왕자의 장미', price: 0, category: 'prince', model: 'rose', limited: true },
+  { id: 'lp_baobab', name: '착한 바오밥 새싹', price: 0, category: 'prince', model: 'baobab', limited: true },
+  { id: 'lp_volcano', name: 'B612의 꼬마 화산', price: 0, category: 'prince', model: 'volcano', limited: true },
+  { id: 'lp_fox', name: '길들인 여우', price: 0, category: 'prince', model: 'fox', limited: true },
+  { id: 'lp_sheep', name: '상자 속 양 (선물)', price: 0, category: 'prince', model: 'sheepbox', limited: true },
+  { id: 'lp_lamp', name: '가로등 아저씨의 등불', price: 0, category: 'prince', model: 'lamp', glow: true, limited: true },
+  { id: 'lp_well', name: '사막의 우물', price: 0, category: 'prince', model: 'well', limited: true },
+  { id: 'lp_bench', name: '해넘이 의자', price: 0, category: 'prince', model: 'bench', limited: true },
 ];
 
 export const ITEM_BY_ID = Object.fromEntries(ITEMS.map((it) => [it.id, it]));

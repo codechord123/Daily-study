@@ -9,6 +9,7 @@ import LearnPanel, { questionOf } from './LearnPanel';
 import StudentDetail from './StudentDetail';
 import { useClassWeek, PraiseBoard, goalTarget } from './ClassGoal';
 import YearEnd from './YearEnd';
+import { PRINCE_QUESTS, QUEST_BY_ID } from '../data/prince';
 import { recordMany, clearLearn, dayNum, REPORT_REASONS, qId as qIdOf, getLearn } from '../store/learnStore';
 import { BANK_SOCIAL, BANK_KOREAN, BANK_SCIENCE, BANK_ENGLISH, BANK_MATH } from '../data/missions/bank';
 
@@ -495,6 +496,35 @@ function TodoPanel({ rows, settings, go }) {
   );
 }
 
+/* 반 모두에게 오늘 어린 왕자 보내기 (평소엔 학생마다 가끔 무작위로 찾아온다) */
+function PrinceSend({ settings }) {
+  const today = todayKey();
+  const [qid, setQid] = useState(PRINCE_QUESTS[0].id);
+  const on = settings.princeDay?.date === today ? QUEST_BY_ID[settings.princeDay.questId] : null;
+  const done = ROSTER.filter((st) => loadProfile(st.id)?.prince?.last === today).length;
+  return (
+    <div className="prince-send">
+      <h3 className="t-sub">🌹 어린 왕자 보내기</h3>
+      <p className="muted">평소에는 아침 미션을 마친 학생에게 가끔(일주일에 한두 번) 찾아와요. 오늘 반 모두에게 같은 부탁을 보낼 수도 있어요. 문제는 학생마다 자기 다시 볼 문제·약한 과목에서 나와요.</p>
+      {on ? (
+        <p>
+          오늘 <b>「{on.title}」</b> 부탁을 보냈어요 · {done}/{ROSTER.length}명이 들어줬어요{' '}
+          <button className="btn btn-sm" onClick={() => setSettings({ princeDay: null })}>보내기 취소</button>
+        </p>
+      ) : (
+        <div className="t-actions">
+          <select className="t-input" value={qid} onChange={(e) => setQid(e.target.value)} aria-label="부탁 고르기">
+            {PRINCE_QUESTS.map((q) => (
+              <option key={q.id} value={q.id}>{q.title}</option>
+            ))}
+          </select>
+          <button className="btn btn-sm btn-primary" onClick={() => setSettings({ princeDay: { date: today, questId: qid } })}>오늘 반 모두에게 보내기</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* 우리 반 이번 주: 공동 목표(미션 횟수)와 반짝 친구 */
 function ClassWeekPanel({ settings }) {
   const w = useClassWeek();
@@ -517,6 +547,7 @@ function ClassWeekPanel({ settings }) {
         <input id="goal-r" className="t-input" value={reward} maxLength={30} placeholder="예) 금요일 5분 자유 시간" onChange={(e) => setReward(e.target.value)} onBlur={() => save({ reward: reward.trim() })} />
         <span className="muted">학생들에게 보여 줄 학급 보상</span>
       </div>
+      <PrinceSend settings={settings} />
       <h3 className="t-sub">✨ 이번 주 반짝 친구 <small className="muted">점수가 아니라 꾸준함과 다시 도전한 것을 칭찬해요</small></h3>
       <PraiseBoard w={w} />
     </section>

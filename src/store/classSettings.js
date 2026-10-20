@@ -11,7 +11,8 @@ const DEFAULTS = {
   teacherPin: '0000',
   blocked: [],
   classGoal: null, // { target, reward } 우리 반 주간 목표
-  assigned: null, // { date, ids } 선생님이 그날 아침 미션에 넣은 문제 // 선생님이 '출제에서 빼기' 한 문제 (learnStore qId)
+  assigned: null,
+  princeDay: null, // { date, questId } 선생님이 반 모두에게 어린 왕자를 보낸 날 // { date, ids } 선생님이 그날 아침 미션에 넣은 문제 // 선생님이 '출제에서 빼기' 한 문제 (learnStore qId)
   freeDecor: true, // 시험 기간: 꾸미기에 별가루가 들지 않음 (선생님 화면에서 끄기)
 };
 const listeners = new Set();

@@ -5,6 +5,7 @@ import Toast from './ui/Toast';
 import WarpOverlay from './ui/WarpOverlay';
 import StationSheet from './ui/StationSheet';
 import ClassGoalSheet from './ui/ClassGoal';
+import PrinceSheet from './ui/PrinceSheet';
 import TeacherView from './ui/TeacherView';
 import Onboarding, { NEWS_VERSION } from './ui/Onboarding';
 import { webglAvailable } from './ui/SceneGuard';
@@ -116,6 +117,7 @@ export default function App() {
         {/* 나의 기록은 문제 정거장의 '기록' 탭 */}
         {profile && (sheet === 'station' || sheet === 'records') && screen !== 'mission' && <StationSheet key={sheet} initialTab={sheet === 'records' ? 'records' : 'subjects'} />}
         {profile && sheet === 'goal' && screen !== 'mission' && <ClassGoalSheet />}
+        {profile && sheet === 'prince' && screen !== 'mission' && <PrinceSheet />}
         {profile && !profile.onboarded && screen === 'home' && <Onboarding />}
         {profile && profile.onboarded && (profile.newsSeen ?? 0) < NEWS_VERSION && screen === 'home' && profile.sid !== 'teacher' && <Onboarding news key="news" />}
         <WarpOverlay />

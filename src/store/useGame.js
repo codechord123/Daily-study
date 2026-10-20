@@ -199,11 +199,29 @@ export const useGame = create((set, get) => {
       return reward;
     },
 
+    // 어린 왕자의 부탁을 들어줌: 한정 선물 + 별가루 조금 (하루 한 번)
+    completePrince(questId, giftId, stardust) {
+      let gain = 0;
+      update((p) => {
+        const today = todayKey();
+        p.prince ??= { done: [] };
+        if (p.prince.last === today) return null;
+        p.prince.last = today;
+        if (!p.prince.done.includes(questId)) p.prince.done.push(questId);
+        p.inventory[giftId] = (p.inventory[giftId] ?? 0) + 1;
+        p.gifts ??= [];
+        if (!p.gifts.includes(giftId)) p.gifts.push(giftId);
+        gain = earn(p, stardust);
+        return p;
+      });
+      return gain;
+    },
+
     buyItem(itemId) {
       const item = ITEM_BY_ID[itemId];
       let ok = false;
       update((p) => {
-        if (!item || p.stardust < priceOf(item.price)) return null;
+        if (!item || item.limited || p.stardust < priceOf(item.price)) return null;
         p.stardust -= priceOf(item.price);
         p.inventory[itemId] = (p.inventory[itemId] ?? 0) + 1;
         ok = true;

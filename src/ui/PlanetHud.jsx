@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useGame } from '../store/useGame';
+import { useGame, todayKey } from '../store/useGame';
 import { useUI } from '../store/useUI';
 import { studentById } from '../data/classroom';
 import { getHearts, addHeart, onPlanetChange } from '../store/profileStore';
@@ -7,10 +7,11 @@ import * as presence from '../services/presence';
 import DecorPanel from './DecorPanel';
 import TopBar from './TopBar';
 import TravelSheet from './TravelSheet';
-import { loadProgress } from './MissionView';
+import { loadProgress, PrinceFace } from './MissionView';
 import ZoomButtons from './ZoomButtons';
 import { getSettings, onSettings } from '../store/classSettings';
 import { ClassGoalChip } from './ClassGoal';
+import { princeToday } from '../engine/princeQuest';
 
 const EMOTES = ['👋', '❤️', '⭐', '😄', '🎉'];
 
@@ -104,6 +105,14 @@ export default function PlanetHud({ ownerId, onEmote }) {
           <EmoteBar onEmote={onEmote} />
           <ZoomButtons wheel />
           <div className="dock">
+            {isMine && princeToday(profile, todayKey()) && (
+              <div className="prince-row">
+                <button className="prince-call" onClick={() => useUI.getState().openSheet('prince')}>
+                  <span className="prince-face" aria-hidden><PrinceFace /></span>
+                  <span><b>어린 왕자</b>가 찾아왔어요! 부탁 들어 보기</span>
+                </button>
+              </div>
+            )}
             {isMine ? (
               <>
                 {!done ? (

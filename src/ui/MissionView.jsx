@@ -8,6 +8,8 @@ import { Prompt, Passage, Figure } from './QuestionBody';
 import { sfx } from '../services/sound';
 import { speak, canSpeak, stopSpeaking } from '../services/speech';
 import { recordAnswer, markConfused, reportQuestion, REPORT_REASONS, dueReviews } from '../store/learnStore';
+import { QUEST_BY_ID, PRINCE_REWARD } from '../data/prince';
+import { ITEM_BY_ID } from '../data/items';
 
 // 영어 문제에서 읽어 줄 영어: 영어가 문제에 있으면 문제, 아니면 정답 보기
 const hasEn = (t) => /[a-z]/i.test(t ?? '');
@@ -82,6 +84,50 @@ function RewardRow({ label, value, delay }) {
       <span>{label}</span>
       <b>+{v}</b>
     </div>
+  );
+}
+
+// 어린 왕자의 부탁을 다 들어준 뒤: 고마움의 말과 한정 선물
+function PrinceResult({ quest, gain, onExit }) {
+  useEffect(() => {
+    const t = setTimeout(() => sfx('buy'), 600);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div className="mission-result prince-result">
+      <div className="prince-face big" aria-hidden>
+        <PrinceFace />
+      </div>
+      <h2 className="title result-title">고마워, 친구야!</h2>
+      <p className="prince-say">{quest.outro}</p>
+      <div className="reward panel">
+        <div className="reward-row"><span>🎁 선물</span><b>{ITEM_BY_ID[quest.gift]?.name}</b></div>
+        <div className="reward-row"><span>✦ 별가루</span><b>+{gain}</b></div>
+        <p className="result-note small">선물은 꾸미기 → 가방에 들어 있어요</p>
+      </div>
+      <button className="btn btn-primary btn-block result-go" onClick={onExit}>
+        내 별에 선물 놓으러 가기 →
+      </button>
+    </div>
+  );
+}
+
+/** 어린 왕자 얼굴 (앱 그림으로 새로 그림: 금빛 머리, 초록 코트, 노란 목도리) */
+export function PrinceFace() {
+  return (
+    <svg viewBox="0 0 100 100" width="100%" height="100%">
+      <circle cx="50" cy="50" r="48" fill="#1d2462" />
+      <path d="M22 96 Q50 62 78 96 Z" fill="#5fae7a" />
+      <path d="M36 70 Q50 78 64 70 L72 74 Q60 86 50 84 Q40 86 28 74 Z" fill="#ffd76a" />
+      <path d="M62 74 Q78 72 88 60 Q80 78 66 80 Z" fill="#ffd76a" />
+      <circle cx="50" cy="48" r="22" fill="#f8e3cf" />
+      <path d="M28 44 L32 26 L38 36 L42 20 L48 33 L53 18 L57 32 L63 20 L66 35 L72 26 L72 44 Q50 32 28 44 Z" fill="#f5cf6a" />
+      <circle cx="42" cy="50" r="2.6" fill="#2b2338" />
+      <circle cx="58" cy="50" r="2.6" fill="#2b2338" />
+      <circle cx="37" cy="56" r="3.4" fill="#ff9fb4" opacity=".55" />
+      <circle cx="63" cy="56" r="3.4" fill="#ff9fb4" opacity=".55" />
+      <path d="M45 59 Q50 63 55 59" stroke="#2b2338" strokeWidth="2" fill="none" strokeLinecap="round" />
+    </svg>
   );
 }
 
@@ -182,12 +228,15 @@ export default function MissionView() {
         .slice(-10)
         .map((n, i) => ({ ...n.q, id: i, noteSource: n.source }));
     if (mode === 'practice') return buildPractice(missionMode.subject, `${profile.sid}:${Date.now()}`, todayKey());
+    if (mode === 'prince') return missionMode.questions ?? [];
     if (saved?.questions?.length) return saved.questions;
     const qs = buildDailyMission(profile.sid, todayKey(), { adaptive: true });
     if (!practice) saveProgress(profile.sid, [], qs);
     return qs;
   }, [mode, missionMode, profile.sid]); // eslint-disable-line react-hooks/exhaustive-deps
   const [reviewGain, setReviewGain] = useState(0);
+  const [princeGain, setPrinceGain] = useState(0);
+  const quest = mode === 'prince' ? QUEST_BY_ID[missionMode.questId] : null;
   const [wrongCount, setWrongCount] = useState(0);
   const resumeAt = saved ? Math.min(saved.results.length, questions.length - 1) : 0;
   const [idx, setIdx] = useState(resumeAt);
@@ -277,7 +326,10 @@ export default function MissionView() {
     }
     sfx('complete');
     const correct = results.filter(Boolean).length;
-    if (!practice) {
+    if (mode === 'prince') {
+      const quest = QUEST_BY_ID[missionMode.questId];
+      setPrinceGain(useGame.getState().completePrince(quest.id, quest.gift, PRINCE_REWARD));
+    } else if (!practice) {
       // 과목별 맞힌 수 / 문제 수
       const subjects = {};
       questions.forEach((qq, i) => {
@@ -291,7 +343,7 @@ export default function MissionView() {
     setWrongCount((useGame.getState().profile.wrongNotes ?? []).filter((n) => !n.cleared).length);
     missionFx('complete');
     setFinished(true);
-  }, [idx, questions, results, practice, completeMission, missionFx]);
+  }, [idx, questions, results, practice, completeMission, missionFx, mode, missionMode]);
 
   const pressKey = useCallback(
     (k) => {
@@ -407,13 +459,15 @@ export default function MissionView() {
           ))}
         </div>
         <span className="q-count">
-          {mode === 'review' ? <em>오답 노트 </em> : mode === 'practice' ? <em>{SUBJECT_META[missionMode.subject]?.label} 연습 </em> : practice && <em>연습 </em>}
+          {mode === 'prince' ? <em>🌹 어린 왕자의 부탁 </em> : mode === 'review' ? <em>오답 노트 </em> : mode === 'practice' ? <em>{SUBJECT_META[missionMode.subject]?.label} 연습 </em> : practice && <em>연습 </em>}
           {Math.min(idx + 1, questions.length)}<small>/{questions.length}</small>
         </span>
       </header>
 
       <div className="mission-stage" data-nosfx>
-        {finished ? (
+        {finished && quest ? (
+          <PrinceResult quest={quest} gain={princeGain} onExit={exit} />
+        ) : finished ? (
           <Result
             correct={results.filter(Boolean).length}
             total={questions.length}
@@ -451,6 +505,12 @@ export default function MissionView() {
                 </span>
               )}
             </div>
+            {quest && (
+              <div className="prince-line rise" key={`pl-${idx}-${!!feedback}`}>
+                <span className="prince-face" aria-hidden><PrinceFace /></span>
+                <p>{feedback ? quest.steps[idx] ?? quest.steps[quest.steps.length - 1] : idx === 0 ? quest.intro[quest.intro.length - 1] : `${idx + 1}번째 수수께끼야!`}</p>
+              </div>
+            )}
             {q.subject === 'english' && canSpeak() && (q.say || hasEn(q.prompt) || hasEn(q.passage) || feedback) && (
               <button className="speak-btn" data-nosfx onClick={() => speak(englishText(q, !!feedback))} aria-label="영어 듣기">
                 🔊 듣기

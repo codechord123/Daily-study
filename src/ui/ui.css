@@ -1237,3 +1237,20 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
   .st-tabs { display: grid; grid-template-columns: 1fr 1fr; overflow: visible; }
   .st-tab { font-size: 14px; }
 }
+/* 어린 왕자 */
+.prince-face { display: inline-block; flex: none; width: 44px; height: 44px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 2px #ffd76a, 0 4px 14px rgba(255,215,106,.35); }
+.prince-face.big { width: 96px; height: 96px; margin: 0 auto; }
+.prince-line { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; padding: 8px 12px 8px 8px; border-radius: 16px; background: linear-gradient(135deg, #fff7d6, #ffeec2); color: #6b4a00; font-size: 15px; line-height: 1.4; }
+.prince-line p { margin: 0; }
+.prince-result { text-align: center; }
+.prince-say { margin: 0 auto; max-width: 420px; color: var(--ink); font-size: 16px; line-height: 1.6; }
+.prince-row { flex-basis: 100%; display: flex; justify-content: center; }
+.prince-call { display: flex; align-items: center; gap: 10px; margin: 0 auto 2px; padding: 8px 16px 8px 8px; border-radius: 999px; border: 1px solid rgba(255,215,106,.6); background: rgba(30,24,70,.85); color: var(--ink); font: inherit; font-size: 15px; cursor: pointer; pointer-events: auto; animation: prince-bob 2.4s ease-in-out infinite; backdrop-filter: blur(6px); }
+.prince-call b { color: var(--gold); }
+@keyframes prince-bob { 50% { transform: translateY(-4px); } }
+.prince-sheet { text-align: center; display: grid; gap: 14px; justify-items: center; max-width: 440px; }
+.prince-sheet .prince-bubble { position: relative; padding: 14px 18px; border-radius: 18px; background: #fff7d6; color: #4a3600; font-size: 17px; line-height: 1.6; min-height: 70px; }
+.prince-sheet .prince-bubble::before { content: ''; position: absolute; top: -10px; left: 50%; margin-left: -10px; border: 10px solid transparent; border-top: 0; border-bottom-color: #fff7d6; }
+.prince-gifts { display: flex; flex-wrap: wrap; gap: 6px; }
+.prince-gift { padding: 4px 10px; border-radius: 999px; font-size: 13px; border: 1px dashed var(--panel-line); color: var(--ink-muted); }
+.prince-gift.got { border-style: solid; border-color: rgba(255,215,106,.6); color: var(--ink); background: rgba(255,215,106,.12); }

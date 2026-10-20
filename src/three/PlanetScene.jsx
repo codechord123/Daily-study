@@ -14,7 +14,7 @@ import { latLonToVec, vecToLatLon, lookAlongSurface, stepToward, surfaceQuaterni
 import { PLANET_RADIUS, NEON } from '../theme/tokens';
 import { createRig, rigDrag, rigUpdate, rigAdopt } from './cameraRig';
 import * as presence from '../services/presence';
-import { useGame } from '../store/useGame';
+import { useGame, todayKey } from '../store/useGame';
 import { useUI } from '../store/useUI';
 import { getPlanet, onPlanetChange } from '../store/profileStore';
 import { studentById } from '../data/classroom';
@@ -22,6 +22,8 @@ import Sparks from './Sparks';
 import MissionOrbit from './MissionOrbit';
 import StudyStation from './StudyStation';
 import { dueReviews } from '../store/learnStore';
+import { princeToday } from '../engine/princeQuest';
+import { PRINCE_LOOK } from '../data/prince';
 import { sfx } from '../services/sound';
 
 const R = PLANET_RADIUS;
@@ -401,6 +403,35 @@ function Peer({ sid, ghost }) {
   );
 }
 
+/* ---------- 어린 왕자: 부탁하러 온 날 내 별 위에 서 있다 (누르면 대화) ---------- */
+const PRINCE_SPOT = latLonToVec(5, 15);
+function PrinceVisitor() {
+  const group = useRef();
+  const bob = useRef();
+  useFrame(({ clock }) => {
+    if (bob.current) bob.current.position.y = Math.abs(Math.sin(clock.elapsedTime * 2)) * 0.04;
+  });
+  const open = (e) => {
+    e.stopPropagation();
+    sfx('tap');
+    useUI.getState().openSheet('prince');
+  };
+  return (
+    <group ref={group} position={PRINCE_SPOT.clone().multiplyScalar(R)} quaternion={surfaceQuaternion(PRINCE_SPOT)} onClick={open}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]} material={blobShadow()} scale={0.46} renderOrder={1}>
+        <planeGeometry args={[1, 1]} />
+      </mesh>
+      <group ref={bob}>
+        <Character scale={CHAR_SCALE} look={PRINCE_LOOK} name="어린 왕자" emote="🌹" emoteAt={1} noPet />
+      </group>
+      {/* 누르기 쉽게 보이지 않는 큰 판 */}
+      <mesh position={[0, 0.35, 0]} visible={false}>
+        <sphereGeometry args={[0.45, 8, 6]} />
+      </mesh>
+    </group>
+  );
+}
+
 /* ---------- 미션 중엔 별을 카드 옆(가로)·위(세로)로 비켜 그린다 ---------- */
 function MissionViewOffset({ active, look, decor }) {
   const { camera, size } = useThree();
@@ -547,6 +578,7 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
         lookFocus={lookFocus}
       />
       {inMission && <MissionOrbit />}
+      {!inMission && !decorating && profile.sid === ownerId && princeToday(profile, todayKey()) && <PrinceVisitor />}
       {/* 모든 별의 궤도를 도는 문제 정거장: 어느 별에서 눌러도 내 공부(오답·다시 볼 문제)가 열린다 */}
       {!inMission && !decorating && (
         <StudyStation badge={(profile.wrongNotes ?? []).filter((n) => !n.cleared).length || dueReviews(profile.sid, 99).length} />

@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { todayKey } from '../store/useGame';
 import { SUBJECT_META } from '../data/missions/grade5';
+import { PRINCE_QUESTS } from '../data/prince';
+import { ITEM_BY_ID } from '../data/items';
 
 const SUBJECTS = ['math', 'english', 'korean', 'social', 'science'];
 const DOW = ['월', '화', '수', '목', '금'];
@@ -53,6 +55,20 @@ export function RecordsBody({ profile }) {
         <div className="stat"><b>{stats.days}</b><span>미션 한 날</span></div>
         <div className="stat"><b>{stats.rate === null ? '–' : `${stats.rate}%`}</b><span>최근 정답률</span></div>
         <div className="stat"><b>{cleared}</b><span>정복한 오답</span></div>
+      </div>
+
+      <div className="rec-card">
+        <h3>🌹 어린 왕자의 선물 <small>{(profile.gifts ?? []).length} / {PRINCE_QUESTS.length}</small></h3>
+        <div className="prince-gifts">
+          {PRINCE_QUESTS.map((q) => {
+            const got = (profile.gifts ?? []).includes(q.gift);
+            return (
+              <span key={q.id} className={`prince-gift ${got ? 'got' : ''}`} title={q.title}>
+                {got ? ITEM_BY_ID[q.gift]?.name : '？ ' + q.title}
+              </span>
+            );
+          })}
+        </div>
       </div>
 
       <div className="records-grid">

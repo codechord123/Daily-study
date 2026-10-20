@@ -78,14 +78,14 @@ function Shop({ onBought }) {
   return (
     <>
       <div className="seg">
-        {ITEM_CATEGORIES.map((c) => (
+        {ITEM_CATEGORIES.filter((c) => !c.limited).map((c) => (
           <button key={c.id} className={`seg-btn ${cat === c.id ? 'on' : ''}`} onClick={() => setCat(c.id)}>
             {c.label}
           </button>
         ))}
       </div>
       <div className="item-grid">
-        {ITEMS.filter((i) => i.category === cat).map((it) => {
+        {ITEMS.filter((i) => i.category === cat && !i.limited).map((it) => {
           const price = priceOf(it.price);
           const short = profile.stardust < price;
           return (
