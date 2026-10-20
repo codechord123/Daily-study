@@ -9,6 +9,7 @@ const DEFAULTS = {
   override: { math: [2], english: [0, 1, 2, 3, 4], korean: [2], social: [2], science: [0] },
   travelOpen: true,
   teacherPin: '0000',
+  blocked: [], // 선생님이 '출제에서 빼기' 한 문제 (learnStore qId)
   freeDecor: true, // 시험 기간: 꾸미기에 별가루가 들지 않음 (선생님 화면에서 끄기)
 };
 const listeners = new Set();

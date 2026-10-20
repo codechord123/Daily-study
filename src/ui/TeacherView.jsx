@@ -5,6 +5,8 @@ import { loadProfile, saveProfile, newProfile } from '../store/profileStore';
 import { getSettings, setSettings, onSettings } from '../store/classSettings';
 import { cloudEnabled, onCloudStatus, getCloudStatus } from '../services/cloud';
 import ClassPanel from './ClassPanel';
+import LearnPanel from './LearnPanel';
+import { recordMany, clearLearn, dayNum, REPORT_REASONS, qId as qIdOf } from '../store/learnStore';
 import { BANK_SOCIAL, BANK_KOREAN, BANK_SCIENCE, BANK_ENGLISH, BANK_MATH } from '../data/missions/bank';
 
 // 단원마다 문항이 몇 개 있는지 (수학은 계산 문제를 자동으로 더 만든다)
@@ -40,6 +42,7 @@ function fillDemo() {
     p.wrongNotes = [];
     const skill = 0.45 + Math.random() * 0.5;
     let streak = 0;
+    const answers = [];
     for (let back = 20; back >= 0; back--) {
       const d = new Date(today);
       d.setDate(today.getDate() - back);
@@ -54,7 +57,8 @@ function fillDemo() {
       const subjects = {};
       let correct = 0;
       qs.forEach((q) => {
-        const ok = Math.random() < skill + (q.subject === 'english' ? 0.1 : 0);
+        const ok = Math.random() < skill + (q.subject === 'english' ? 0.1 : 0) - (q.level ?? 1) * 0.08;
+        answers.push([q, ok, dayNum(d.getTime())]);
         const t = (subjects[q.subject] ??= [0, 0]);
         t[1] += 1;
         if (ok) {
@@ -72,12 +76,18 @@ function fillDemo() {
     p.streak = streak;
     p.stardust = 40 + Math.floor(Math.random() * 300);
     saveProfile(p);
+    // 샘플 신고: 몇몇 학생이 아무 문제나 '이상해요'를 보낸 것처럼
+    const reports = Math.random() < 0.15 ? [answers[Math.floor(Math.random() * answers.length)][0]].filter((q) => q.std).map((q) => ({ id: qIdOf(q), subject: q.subject, unit: q.unit, prompt: String(q.prompt).slice(0, 160), reason: REPORT_REASONS[Math.floor(Math.random() * 3)], at: Date.now() })) : [];
+    recordMany(st.id, answers, reports);
   }
 }
 function clearDemo() {
   for (const st of ROSTER) {
     const p = loadProfile(st.id);
-    if (p?.demo) localStorage.removeItem(`ds:profile:${st.id}`);
+    if (p?.demo) {
+      localStorage.removeItem(`ds:profile:${st.id}`);
+      clearLearn(st.id);
+    }
   }
 }
 
@@ -203,6 +213,7 @@ export default function TeacherView() {
         {[
           ...(cloudEnabled ? [['t-class', '🏫 우리 반']] : []),
           ['t-students', '👩‍🎓 학생별 현황'],
+          ['t-learn', '📈 학습 분석'],
           ['t-units', '📚 출제 단원'],
           ['t-settings', '⚙︎ 설정'],
         ].map(([id, label]) => (
@@ -303,6 +314,8 @@ export default function TeacherView() {
             : '지금은 이 기기에 저장된 기록만 보여요. Firebase를 연결하면 반 전체 기기의 기록이 모여요.'}
         </p>
       </section>
+
+      <LearnPanel />
 
       {csv && (
         <div className="sheet-backdrop" style={{ position: 'fixed' }} onClick={() => setCsv(null)}>

@@ -12,7 +12,8 @@ export function newProfile(sid) {
   return {
     sid,
     ...(cloudEnabled && !getCloudStatus().synced ? { provisional: true } : {}),
-    stardust: 60, // 첫날 환영 선물
+    stardust: 60, // 첫날 환영 선물 (보안 규칙도 처음 별가루를 60까지만 허용)
+    earn: { day: 0, amount: 0 }, // 오늘 받은 별가루 (하루 상한은 보안 규칙이 확인)
     streak: 0,
     lastMissionDate: null,
     inventory: { tree: 1, flowers: 2 },
@@ -60,6 +61,19 @@ onRemote('profile', (p) => {
   if (!p?.sid) return;
   const local = loadProfile(p.sid);
   if (local && !local.provisional && (local.updatedAt ?? 0) >= (p.updatedAt ?? 0)) return;
+  try {
+    localStorage.setItem(KEY(p.sid), JSON.stringify(p));
+  } catch {
+    /* noop */
+  }
+  listeners.forEach((fn) => fn(p.sid));
+  ownListeners.forEach((fn) => fn(p));
+});
+
+// 서버가 막은 저장(별가루를 손으로 고친 경우 등): 서버 기록으로 덮어쓴다
+onRemote('restore', (p) => {
+  if (!p?.sid) return;
+  p.updatedAt = Date.now();
   try {
     localStorage.setItem(KEY(p.sid), JSON.stringify(p));
   } catch {

@@ -7,6 +7,7 @@ import RichText from './RichText';
 import { Prompt, Passage, Figure } from './QuestionBody';
 import { sfx } from '../services/sound';
 import { speak, canSpeak, stopSpeaking } from '../services/speech';
+import { recordAnswer, markConfused, reportQuestion, REPORT_REASONS } from '../store/learnStore';
 
 // 영어 문제에서 읽어 줄 영어: 영어가 문제에 있으면 문제, 아니면 정답 보기
 const hasEn = (t) => /[a-z]/i.test(t ?? '');
@@ -26,6 +27,13 @@ const englishText = (q, after = false) => {
   if (hasEn(q.prompt)) return q.prompt;
   return q.choices?.[q.answer];
 };
+
+// 국어·사회·과학은 우리말로 읽어 준다 (지문 → 문제 → 보기)
+const KO_READ = new Set(['korean', 'social', 'science']);
+const koreanText = (q) =>
+  [q.passage, q.sub, q.prompt, ...(q.kind === 'choice' ? q.choices.map((c, i) => (isImg(c) ? '' : `${i + 1}번, ${c}`)) : q.kind === 'ox' ? ['오, 엑스로 답해요'] : [])]
+    .filter(Boolean)
+    .join('\n');
 
 const KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'];
 const CHEERS = ['정답이에요!', '멋져요!', '바로 그거예요!', '똑똑해요!', '반짝반짝!'];
@@ -101,9 +109,11 @@ function Result({ correct, total, reward, practice, mode, wrongCount, reviewGain
       </p>
       {reward ? (
         <div className="reward panel">
-          <RewardRow label="별 조각" value={reward.base} delay={500} />
-          <RewardRow label="미션 완료" value={reward.finish} delay={750} />
-          <RewardRow label={`🔥 ${reward.streak}일 연속`} value={reward.streakBonus} delay={1000} />
+          <RewardRow label="맞힌 별 조각" value={reward.base} delay={500} />
+          <RewardRow label="끝까지 풀기" value={(reward.effort ?? 0) + reward.finish} delay={650} />
+          <RewardRow label={`🔥 ${reward.streak}일 연속`} value={reward.streakBonus} delay={800} />
+          {reward.fixBonus > 0 && <RewardRow label={`🔁 다시 맞힌 문제 ${reward.fixed}개`} value={reward.fixBonus} delay={950} />}
+          {reward.weekBonus > 0 && <RewardRow label="📅 이번 주 5일 개근" value={reward.weekBonus} delay={1100} />}
           <div className="reward-total">
             <span>받은 별가루</span>
             <b className={totalV === reward.total ? 'done' : ''}>
@@ -111,6 +121,7 @@ function Result({ correct, total, reward, practice, mode, wrongCount, reviewGain
               {totalV}
             </b>
           </div>
+          {reward.capped && <p className="result-note small">오늘 받을 수 있는 별가루를 다 받았어요</p>}
         </div>
       ) : mode === 'review' ? (
         <p className="result-note">{reviewGain > 0 ? `다시 맞힌 아침 미션 문제로 별가루 ✦ ${reviewGain}개를 받았어요` : '다시 맞힌 문제는 오답 노트에서 지워졌어요'}</p>
@@ -144,9 +155,10 @@ export function loadProgress(sid) {
     return null;
   }
 }
-function saveProgress(sid, results) {
+// 오늘 문제 목록도 함께 저장한다 (다시 보기·난이도는 푸는 동안 바뀌므로 다시 만들면 순서가 달라진다)
+function saveProgress(sid, results, questions) {
   try {
-    if (results) localStorage.setItem(progressKey(sid), JSON.stringify({ results }));
+    if (results) localStorage.setItem(progressKey(sid), JSON.stringify({ results, questions: questions ?? loadProgress(sid)?.questions }));
     else localStorage.removeItem(progressKey(sid));
   } catch {
     /* noop */
@@ -159,14 +171,17 @@ export default function MissionView() {
   const mode = missionMode?.type ?? 'daily';
   // 오늘 미션을 이미 했으면 다시 푸는 것은 연습
   const practice = useMemo(() => mode !== 'daily' || missionDoneToday(), [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  const saved = useMemo(() => (mode === 'daily' && !practice ? loadProgress(profile.sid) : null), []); // eslint-disable-line react-hooks/exhaustive-deps
   const questions = useMemo(() => {
     if (mode === 'review') return (profile.wrongNotes ?? []).filter((n) => !n.cleared).slice(-10).map((n, i) => ({ ...n.q, id: i, noteSource: n.source }));
     if (mode === 'practice') return buildPractice(missionMode.subject, `${profile.sid}:${Date.now()}`, todayKey());
-    return buildDailyMission(profile.sid, todayKey());
+    if (saved?.questions?.length) return saved.questions;
+    const qs = buildDailyMission(profile.sid, todayKey(), { adaptive: true });
+    if (!practice) saveProgress(profile.sid, [], qs);
+    return qs;
   }, [mode, missionMode, profile.sid]); // eslint-disable-line react-hooks/exhaustive-deps
   const [reviewGain, setReviewGain] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
-  const saved = useMemo(() => (mode === 'daily' && !practice ? loadProgress(profile.sid) : null), []); // eslint-disable-line react-hooks/exhaustive-deps
   const resumeAt = saved ? Math.min(saved.results.length, questions.length - 1) : 0;
   const [idx, setIdx] = useState(resumeAt);
   const [results, setResults] = useState(() => (saved ? saved.results.slice(0, resumeAt) : []));
@@ -176,6 +191,9 @@ export default function MissionView() {
   const [burst, setBurst] = useState(null);
   const [reward, setReward] = useState(null);
   const [finished, setFinished] = useState(false);
+  const [confused, setConfused] = useState(false); // 맞혔지만 헷갈렸어요
+  const [reporting, setReporting] = useState(false); // '이상해요' 이유 고르는 중
+  const [reported, setReported] = useState(false);
   const cardRef = useRef();
 
   const q = questions[idx];
@@ -209,6 +227,8 @@ export default function MissionView() {
       setResults(next);
       setMission({ results: next });
       if (mode === 'daily' && !practice) saveProgress(profile.sid, next);
+      // 학습 기록: 성취기준별 정답, 틀린 문제는 1·3·7일 뒤 다시
+      recordAnswer(profile.sid, q, ok);
       missionFx(ok ? 'correct' : 'wrong');
       if (ok) sfx('correct', combo + 1);
       else sfx('wrong');
@@ -224,6 +244,8 @@ export default function MissionView() {
         }
       } else if (!ok) {
         noteWrong(q, mode === 'daily' && !practice ? 'daily' : 'practice');
+      } else if (q.review) {
+        clearWrong(q.prompt, { reward: false }); // 다시 보기로 맞힌 문제는 오답 노트에서도 지운다 (보상은 미션 결과에서)
       }
       if (ok) {
         const r = (el ?? cardRef.current)?.getBoundingClientRect();
@@ -237,6 +259,9 @@ export default function MissionView() {
     setFeedback(null);
     setNum('');
     setHover(null);
+    setConfused(false);
+    setReporting(false);
+    setReported(false);
     document.activeElement?.blur?.(); // 앞 문제에서 누른 버튼의 포커스가 다음 문제에 남지 않게
     setBurst(null);
     if (idx + 1 < questions.length) {
@@ -253,7 +278,7 @@ export default function MissionView() {
         t[1] += 1;
         if (results[i]) t[0] += 1;
       });
-      setReward(completeMission({ correct, total: questions.length, subjects }));
+      setReward(completeMission({ correct, total: questions.length, subjects, fixed: questions.filter((qq, i) => qq.review && results[i]).length }));
       saveProgress(profile.sid, null);
     }
     setWrongCount((useGame.getState().profile.wrongNotes ?? []).filter((n) => !n.cleared).length);
@@ -398,7 +423,7 @@ export default function MissionView() {
         ) : (
           <article
             ref={cardRef}
-            className={`q-card page-in ${feedback ? (feedback.ok ? 'is-ok' : 'is-no') : ''} ${q.subject === 'english' && canSpeak() ? 'has-speak' : ''} ${q.image || q.svg || q.passage ? 'is-wide' : ''}`}
+            className={`q-card page-in ${feedback ? (feedback.ok ? 'is-ok' : 'is-no') : ''} ${(q.subject === 'english' || KO_READ.has(q.subject)) && canSpeak() ? 'has-speak' : ''} ${q.image || q.svg || q.passage ? 'is-wide' : ''}`}
             key={idx}
             data-subject={q.subject}
             style={{ '--subject': meta.color }}
@@ -409,6 +434,7 @@ export default function MissionView() {
                 {meta.label}
                 {q.unit && <small className="q-unit">{q.unit}</small>}
               </span>
+              {q.review && <span className="review-tag" title="예전에 틀렸거나 헷갈린 문제예요">🔁 다시 보기</span>}
               {combo >= 2 && (
                 <span className="combo" key={combo}>
                   {combo >= 3 ? '🔥' : '✦'} {combo}연속!
@@ -418,6 +444,11 @@ export default function MissionView() {
             {q.subject === 'english' && canSpeak() && (q.say || hasEn(q.prompt) || hasEn(q.passage) || feedback) && (
               <button className="speak-btn" data-nosfx onClick={() => speak(englishText(q, !!feedback))} aria-label="영어 듣기">
                 🔊 듣기
+              </button>
+            )}
+            {KO_READ.has(q.subject) && canSpeak() && (
+              <button className="speak-btn" data-nosfx onClick={() => speak(koreanText(q), 'ko-KR', 1)} aria-label="문제 읽어 주기">
+                🔊 읽기
               </button>
             )}
             <div className="q-layout">
@@ -503,6 +534,40 @@ export default function MissionView() {
                 <button className="btn btn-primary fb-next" onClick={next}>
                   {idx + 1 < questions.length ? '다음 →' : '결과 보기 ✦'}
                 </button>
+                <div className="fb-tools">
+                  {feedback.ok && (
+                    <button
+                      className={`fb-tool ${confused ? 'on' : ''}`}
+                      disabled={confused}
+                      onClick={() => {
+                        markConfused(profile.sid, q);
+                        setConfused(true);
+                      }}
+                    >
+                      {confused ? '✓ 내일 다시 볼게요' : '🤔 사실 헷갈렸어요'}
+                    </button>
+                  )}
+                  {reported ? (
+                    <span className="fb-tool on">✓ 선생님께 알렸어요</span>
+                  ) : reporting ? (
+                    REPORT_REASONS.map((why) => (
+                      <button
+                        key={why}
+                        className="fb-tool"
+                        onClick={() => {
+                          reportQuestion(profile.sid, q, why);
+                          setReported(true);
+                        }}
+                      >
+                        {why}
+                      </button>
+                    ))
+                  ) : (
+                    <button className="fb-tool ghost" onClick={() => setReporting(true)}>
+                      🚩 문제가 이상해요
+                    </button>
+                  )}
+                </div>
               </div>
             )}
               </div>

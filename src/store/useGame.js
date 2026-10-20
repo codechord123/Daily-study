@@ -17,6 +17,25 @@ function prevSchoolDay(d = new Date()) {
   return todayKey(p);
 }
 
+// 별가루 받기: 오늘 받은 양을 함께 적는다. 학급 서버의 보안 규칙이 이 기록으로
+// '하루에 받을 수 있는 양'을 넘는 별가루(손으로 고친 값)를 막는다. 상한은 firestore.rules 와 같게
+export const DAILY_EARN_MAX = 250;
+const kstDay = () => Math.floor((Date.now() + 9 * 3600e3) / 864e5);
+function earn(p, amount) {
+  const day = kstDay();
+  const e = p.earn?.day === day ? p.earn : { day, amount: 0 };
+  const gain = Math.max(0, Math.min(Math.round(amount), DAILY_EARN_MAX - e.amount));
+  p.earn = { day, amount: e.amount + gain };
+  p.stardust += gain;
+  return gain;
+}
+// 이번 주 월요일 (주 5일 개근 보너스)
+function weekKey(d = new Date()) {
+  const m = new Date(d);
+  m.setDate(m.getDate() - ((m.getDay() + 6) % 7));
+  return todayKey(m);
+}
+
 const SESSION_KEY = 'ds:session';
 let uidSeq = 0;
 const newUid = () => `${Date.now().toString(36)}${(uidSeq++).toString(36)}`;
@@ -91,17 +110,14 @@ export const useGame = create((set, get) => {
       });
     },
     // 오답 노트에서 다시 맞히면 지운다. 아침 미션에서 틀린 문제면 별가루 +3
-    clearWrong(prompt) {
+    clearWrong(prompt, { reward = true } = {}) {
       let gain = 0;
       update((p) => {
         const n = p.wrongNotes?.find((x) => x.q.prompt === prompt && !x.cleared);
         if (!n) return null;
         n.cleared = true;
         n.clearedAt = todayKey();
-        if (n.source === 'daily') {
-          gain = 3;
-          p.stardust += gain;
-        }
+        if (reward && n.source === 'daily') gain = earn(p, 3);
         return p;
       });
       return gain;
@@ -140,7 +156,8 @@ export const useGame = create((set, get) => {
     },
 
     // 미션 보상: 하루 1회만 지급, 연속 출석은 등교일 기준
-    completeMission({ correct, total, subjects }) {
+    // 맞힌 수만이 아니라 끝까지 푼 것·꾸준함·틀렸던 문제를 다시 맞힌 것도 별가루가 된다
+    completeMission({ correct, total, subjects, fixed = 0 }) {
       let reward = null;
       update((p) => {
         const today = todayKey();
@@ -152,11 +169,19 @@ export const useGame = create((set, get) => {
         if (days.length > 120) for (const d of days.slice(0, days.length - 120)) delete p.history[d];
         // 직전 등교일 이후(주말 포함)에 했으면 이어진다
         p.streak = p.lastMissionDate && p.lastMissionDate >= prevSchoolDay() ? p.streak + 1 : 1;
-        const base = correct * 5;
+        const base = correct * 4;
+        const effort = total; // 끝까지 푼 문제마다 1
         const finish = 20;
         const streakBonus = Math.min(p.streak, 5) * 4;
-        reward = { base, finish, streakBonus, total: base + finish + streakBonus, streak: p.streak };
-        p.stardust += reward.total;
+        const fixBonus = fixed * 3; // 예전에 틀렸던 문제를 다시 맞힘
+        // 이번 주 5일 모두 했으면 한 번
+        const wk = weekKey();
+        const weekDays = Object.keys(p.history).filter((d) => d >= wk).length;
+        const weekBonus = weekDays >= 5 && p.weekBonus !== wk ? 30 : 0;
+        if (weekBonus) p.weekBonus = wk;
+        const want = base + effort + finish + streakBonus + fixBonus + weekBonus;
+        const got = earn(p, want);
+        reward = { base, effort, finish, streakBonus, fixBonus, weekBonus, fixed, total: got, capped: got < want, streak: p.streak };
         p.lastMissionDate = today;
         return p;
       });

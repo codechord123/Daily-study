@@ -6,6 +6,25 @@ import { makeMathSet, MATH_UNITS } from './mathGen';
 import { getSettings } from '../store/classSettings';
 import { SCHEDULE, ENGLISH_WORDS } from '../data/missions/grade5s2';
 import { BANK_SOCIAL, BANK_KOREAN, BANK_SCIENCE, BANK_ENGLISH } from '../data/missions/bank';
+import { qId, dueReviews, recentAccuracy } from '../store/learnStore';
+
+// 난이도 맞추기: 최근 정답률이 높으면 어려운 문제(level 3)를, 낮으면 쉬운 문제(level 1)를 더 자주
+export function levelWeights(acc) {
+  if (acc == null) return null;
+  if (acc >= 0.85) return { 1: 1, 2: 2, 3: 3 };
+  if (acc < 0.6) return { 1: 3, 2: 2, 3: 0.5 };
+  return { 1: 1.5, 2: 2, 3: 1 };
+}
+/** 무게를 두고 하나 고르기 (무게가 없으면 고르게) */
+export function pickWeighted(r, pool, weights) {
+  if (!weights) return pool[randInt(r, 0, pool.length - 1)];
+  const w = pool.map((q) => weights[q.level] ?? 1);
+  let x = r() * w.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < pool.length; i++) if ((x -= w[i]) < 0) return pool[i];
+  return pool[pool.length - 1];
+}
+// 선생님이 '출제에서 빼기' 한 문제
+const blockedSet = () => new Set(getSettings().blocked ?? []);
 
 export const MISSION_COUNTS = { math: 6, english: 5, korean: 3, social: 3, science: 3 };
 export const MISSION_TOTAL = Object.values(MISSION_COUNTS).reduce((a, b) => a + b, 0);
@@ -68,7 +87,7 @@ function pickUnit(r, pos, subject, reviewRate = 0.4) {
   return cur > 0 && r() < reviewRate ? randInt(r, 0, cur - 1) : cur;
 }
 
-export function englishSet(r, count, pos) {
+export function englishSet(r, count, pos, weights = null) {
   // 새 문항 은행 위주 + 단어 뜻 1문제(5문제마다)
   const nWords = Math.max(1, Math.round(count / 5));
   const units = Array.from({ length: nWords }, () => pickUnit(r, pos, 'english', 0.3));
@@ -83,7 +102,7 @@ export function englishSet(r, count, pos) {
     const choices = shuffle(r, [right, ...pool.map((w) => (toKo ? w[1] : w[0]))]);
     return { subject: 'english', unit: UNIT_TITLES.english[u], kind: 'choice', prompt: toKo ? en : ko, say: en, sub: toKo ? '이 단어의 뜻은?' : '알맞은 영어 단어는?', big: true, choices, answer: choices.indexOf(right) };
   });
-  qs.push(...bankSet(r, 'english', count - nWords, pos, 0.25));
+  qs.push(...bankSet(r, 'english', count - nWords, pos, 0.25, weights));
   return qs;
 }
 
@@ -100,15 +119,16 @@ function shuffleChoices(r, q) {
   return { ...q, choices: order.map((i) => q.choices[i]), answer: order.indexOf(q.answer) };
 }
 
-function bankSet(r, subject, count, pos, reviewRate = 0.4) {
-  const bank = BANKS[subject];
+function bankSet(r, subject, count, pos, reviewRate = 0.4, weights = null) {
+  const blocked = blockedSet();
+  const bank = BANKS[subject].filter((q) => !blocked.has(qId(q)));
   const out = [];
   const seen = new Set();
   for (let tries = 0; out.length < count && tries < 80; tries++) {
     const u = pickUnit(r, pos, subject, reviewRate);
     const pool = bank.filter((q) => q.unit === u && !seen.has(qKey(q)));
     if (!pool.length) continue;
-    const q = pool[randInt(r, 0, pool.length - 1)];
+    const q = pickWeighted(r, pool, weights);
     seen.add(qKey(q));
     out.push({ subject, ...shuffleChoices(r, q), unit: UNIT_TITLES[subject][q.unit] });
   }
@@ -122,7 +142,8 @@ function bankSet(r, subject, count, pos, reviewRate = 0.4) {
   return out;
 }
 
-function mathSet(r, count, pos, reviewRate) {
+function mathSet(r, count, pos, reviewRate, weights = null) {
+  const blocked = blockedSet();
   const out = [];
   const seen = new Set();
   for (let i = 0; i < count; i++) {
@@ -131,7 +152,7 @@ function mathSet(r, count, pos, reviewRate) {
     let q;
     for (let tries = 0; tries < 12; tries++) {
       const u = pos.mathFixed || reviewRate !== undefined ? pickUnit(r, pos, 'math', reviewRate ?? 0.4) : auto();
-      q = makeMathSet(r, 1, u)[0];
+      q = makeMathSet(r, 1, u, { weights, blocked, qId, pickWeighted })[0];
       if (!seen.has(q.prompt)) break;
     }
     seen.add(q.prompt);
@@ -140,17 +161,38 @@ function mathSet(r, count, pos, reviewRate) {
   return out;
 }
 
-export function buildDailyMission(sid, dateKey) {
+export const REVIEW_PER_DAY = 3; // 아침 미션에 섞어 낼 '다시 보기' 문제 수
+
+/**
+ * 오늘의 미션. adaptive 를 주면 그 학생의 학습 기록으로
+ *  - 과목별 최근 정답률에 맞춰 난이도를 고르고
+ *  - 1·3·7일 뒤 다시 볼 문제(틀렸거나 헷갈린 문제)를 같은 과목 자리에 섞는다
+ */
+export function buildDailyMission(sid, dateKey, { adaptive = false } = {}) {
   const r = seeded(`${sid}:${dateKey}`);
   const pos = curriculumPosition(dateKey);
   const c = MISSION_COUNTS;
+  const w = (s) => (adaptive ? levelWeights(recentAccuracy(sid, s)) : null);
   // 탐구 과목은 국어·사회·과학이 번갈아 나오게 섞는다
-  const ko = bankSet(r, 'korean', c.korean, pos, 0.25);
-  const so = bankSet(r, 'social', c.social, pos, 0.25);
-  const sc = bankSet(r, 'science', c.science, pos);
+  const ko = bankSet(r, 'korean', c.korean, pos, 0.25, w('korean'));
+  const so = bankSet(r, 'social', c.social, pos, 0.25, w('social'));
+  const sc = bankSet(r, 'science', c.science, pos, 0.4, w('science'));
   const inquiry = [];
   for (let i = 0; i < Math.max(ko.length, so.length, sc.length); i++) inquiry.push(...[ko[i], so[i], sc[i]].filter(Boolean));
-  const qs = [...mathSet(r, c.math, pos), ...englishSet(r, c.english, pos), ...inquiry];
+  const qs = [...mathSet(r, c.math, pos, undefined, w('math')), ...englishSet(r, c.english, pos, w('english')), ...inquiry];
+  if (adaptive) {
+    // 다시 보기: 같은 과목의 뒤쪽 문제와 바꾼다 (과목별 문제 수는 그대로)
+    const blocked = blockedSet();
+    const ids = new Set(qs.map(qId));
+    for (const e of dueReviews(sid, REVIEW_PER_DAY * 2)) {
+      if (qs.filter((q) => q.review).length >= REVIEW_PER_DAY) break;
+      if (ids.has(e.id) || blocked.has(e.id) || !MISSION_COUNTS[e.q.subject]) continue;
+      const at = qs.findLastIndex((q) => q.subject === e.q.subject && !q.review);
+      if (at < 0) continue;
+      qs[at] = { ...shuffleChoices(r, e.q), review: true };
+      ids.add(e.id);
+    }
+  }
   return qs.map((q, i) => ({ id: i, ...q }));
 }
 

@@ -8,6 +8,29 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function isTeacher(c) { return signedIn() && get(/databases/$(database)/documents/classes/$(c)).data.teacherUid == request.auth.uid; }
     function isMember(c) { return signedIn() && exists(/databases/$(database)/documents/classes/$(c)/members/$(request.auth.uid)); }
+    // 별가루 조작 막기: 늘어난 별가루는 '오늘 받은 별가루(earn)' 기록으로 설명돼야 하고, 하루 250개까지.
+    // earn.day 는 한국 날짜 번호(서버 시각으로 계산). 날짜를 되돌리거나 받은 양을 줄여 다시 받을 수 없다.
+    // 쓰는 것(줄어드는 것)은 자유. 새로 산 옷·장식(ownedParts)은 별가루가 줄 때만 늘어날 수 있다.
+    // 한도는 src/store/useGame.js DAILY_EARN_MAX 와 같게
+    function kstDay() { return math.floor((request.time.toMillis() + 32400000) / 86400000); }
+    function fairStardust() {
+      let nd = request.resource.data;
+      let od = resource == null ? {} : resource.data;
+      let before = od.get('stardust', 60);
+      let after = nd.get('stardust', 0);
+      let zero = {'day': 0, 'amount': 0};
+      let ne = nd.get('earn', zero);
+      let oe = od.get('earn', zero);
+      let sameDay = ne.get('day', 0) == oe.get('day', 0);
+      let added = sameDay ? ne.get('amount', 0) - oe.get('amount', 0) : ne.get('amount', 0);
+      return after is int && after >= 0
+        && ne.get('day', 0) is int && ne.get('amount', 0) is int
+        && ne.get('amount', 0) >= 0 && ne.get('amount', 0) <= 250
+        && ne.get('day', 0) <= kstDay()
+        && (sameDay ? ne.get('amount', 0) >= oe.get('amount', 0) : (ne.get('day', 0) > oe.get('day', 0) && ne.get('day', 0) >= kstDay() - 1))
+        && after - before <= added
+        && (after < before || nd.get('ownedParts', []).size() <= od.get('ownedParts', []).size());
+    }
     function ownsSeat(c, sid) { return signedIn() && get(/databases/$(database)/documents/classes/$(c)/seats/$(sid)).data.uid == request.auth.uid; }
 
     // 학급 코드 → 학급 (코드를 아는 사람만 한 건씩 읽는다. 목록 읽기는 막음)
@@ -45,7 +68,12 @@ service cloud.firestore {
 
       match /students/{sid} {
         allow read: if isTeacher(c) || isMember(c);
-        allow write: if isTeacher(c) || (ownsSeat(c, sid) && request.resource.data.sid == sid);
+        allow write: if isTeacher(c) || (ownsSeat(c, sid) && request.resource.data.sid == sid && fairStardust());
+      }
+
+      // 학습 기록 (다시 볼 문제·성취기준별 정답·신고): 본인과 선생님만
+      match /learn/{sid} {
+        allow read, write: if isTeacher(c) || ownsSeat(c, sid);
       }
 
       match /hearts/{sid} {

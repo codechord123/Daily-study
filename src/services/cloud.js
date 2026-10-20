@@ -5,6 +5,7 @@
 //               classes/{classId}/seats/{sid}    번호 자리의 주인 계정 (gen: 다시 가입할 때마다 +1)
 //               classes/{classId}/members/{uid}  이 학급 학생인지 (보안 규칙이 읽는다)
 //               classes/{classId}/students/*     학생 프로필(별·캐릭터·기록)
+//               classes/{classId}/learn/{sid}    학습 기록(다시 볼 문제·성취기준별 정답·신고). 본인과 선생님만
 //               classes/{classId}/hearts/*       받은 하트 수 (1씩만 증가)
 //  - Realtime DB presence/{classId}/{sid}      실시간 위치 (연결이 끊기면 자동 삭제)
 //               seats/{classId}/{sid}, teachers/{classId}  위치를 쓸 수 있는 사람 (보안 규칙용)
@@ -73,7 +74,7 @@ const cachedAccount = (uid) => {
 };
 
 // 다른 모듈이 원격 변경을 받을 곳 (순환 import 피하려고 등록 방식)
-const handlers = { profile: null, hearts: null, settings: null, presence: null, synced: null };
+const handlers = { profile: null, hearts: null, settings: null, presence: null, synced: null, learn: null, restore: null };
 export function onRemote(kind, fn) {
   handlers[kind] = fn;
 }
@@ -162,7 +163,7 @@ function forgetOtherClass(classId) {
   try {
     if (localStorage.getItem('ds:class') === classId) return;
     Object.keys(localStorage)
-      .filter((k) => k.startsWith('ds:profile:') || k.startsWith('ds:hearts:') || k === 'ds:class-settings' || k.startsWith('ds:progress:'))
+      .filter((k) => k.startsWith('ds:profile:') || k.startsWith('ds:hearts:') || k === 'ds:class-settings' || k.startsWith('ds:progress:') || k.startsWith('ds:learn:'))
       .forEach((k) => localStorage.removeItem(k));
     localStorage.setItem('ds:class', classId);
   } catch {
@@ -222,6 +223,9 @@ function startClassSync() {
     }, retry),
   );
   unsubs.push(fs.onSnapshot(fs.collection(db, 'classes', CLASS_ID, 'hearts'), (snap) => snap.docChanges().forEach((ch) => handlers.hearts?.(ch.doc.id, ch.doc.data().count ?? 0)), retry));
+  // 학습 기록: 선생님은 반 전체, 학생은 자기 것만
+  if (account.status === 'teacher') unsubs.push(fs.onSnapshot(fs.collection(db, 'classes', CLASS_ID, 'learn'), (snap) => snap.docChanges().forEach((ch) => ch.type !== 'removed' && handlers.learn?.(ch.doc.data())), (e) => console.warn('학습 기록 구독 실패', e?.code)));
+  else if (account.sid) unsubs.push(fs.onSnapshot(fs.doc(db, 'classes', CLASS_ID, 'learn', account.sid), (d) => d.exists() && handlers.learn?.(d.data()), (e) => console.warn('학습 기록 구독 실패', e?.code)));
   const off = rd.onValue(rd.ref(rtdb, `presence/${CLASS_ID}`), (s) => handlers.presence?.(s.val() ?? {}), retry);
   unsubs.push(off);
 }
@@ -454,8 +458,29 @@ export function uploadProfile(profile) {
     profile.sid,
     setTimeout(() => {
       pending.delete(profile.sid);
-      fb.fs.setDoc(fb.fs.doc(fb.db, 'classes', CLASS_ID, 'students', profile.sid), JSON.parse(JSON.stringify(profile))).catch((e) => console.warn('저장 실패', e));
+      const ref = fb.fs.doc(fb.db, 'classes', CLASS_ID, 'students', profile.sid);
+      fb.fs.setDoc(ref, JSON.parse(JSON.stringify(profile))).catch((e) => {
+        console.warn('저장 실패', e);
+        // 보안 규칙이 막았다(별가루를 손으로 고친 경우 등): 서버에 있는 진짜 기록으로 되돌린다
+        if (e?.code === 'permission-denied')
+          fb.fs.getDoc(ref).then((d) => d.exists() && handlers.restore?.(d.data())).catch(() => {});
+      });
     }, 600),
+  );
+}
+
+const learnPending = new Map();
+export function uploadLearn(data) {
+  if (!fb) return;
+  const mine = (account.status === 'student' && account.sid === data.sid) || (account.status === 'teacher' && data.sid === 'teacher');
+  if (!mine) return;
+  clearTimeout(learnPending.get(data.sid));
+  learnPending.set(
+    data.sid,
+    setTimeout(() => {
+      learnPending.delete(data.sid);
+      fb.fs.setDoc(fb.fs.doc(fb.db, 'classes', CLASS_ID, 'learn', data.sid), JSON.parse(JSON.stringify(data))).catch((e) => console.warn('학습 기록 저장 실패', e));
+    }, 1500),
   );
 }
 

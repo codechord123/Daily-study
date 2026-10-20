@@ -220,7 +220,7 @@ export function jetStop() {
 const MUSIC_VOLUME = 0.35;
 const TRACKS = {
   home: ['bgm-home'],
-  mission: ['bgm-mission', 'bgm-home'],
+  mission: [], // 문제 풀 때는 음악 없음 (영어 듣기와 겹치지 않게)
   space: ['bgm-space', 'bgm-home'],
   login: ['bgm-home'],
 };
@@ -233,6 +233,7 @@ let current = null; // { name, audio }
 function findTrack(scene) {
   return (TRACKS[scene] ?? TRACKS.home).find((n) => !missing.has(n));
 }
+const silent = (scene) => TRACKS[scene]?.length === 0;
 
 function fade(audio, to, ms, done) {
   const from = audio.volume;
@@ -276,6 +277,7 @@ function loadTrack(name, extIndex = 0) {
 
 export async function playMusic(scene, force = false) {
   currentScene = scene;
+  if (silent(scene)) return stopMusic(scene);
   if (!prefs.music || !ctx) return; // 첫 입력 전에는 장면만 기억
   let name = findTrack(scene);
   if (!name) return;
@@ -286,7 +288,7 @@ export async function playMusic(scene, force = false) {
     if (!name) return;
     audio = await loadTrack(name);
   }
-  if (currentScene !== scene) return; // 불러오는 사이 화면이 바뀜
+  if (currentScene !== scene || held) return; // 불러오는 사이 화면이 바뀌었거나 읽어 주는 중
   if (current?.name === name && !force) return;
   const prev = current;
   current = { name, audio };
@@ -294,7 +296,8 @@ export async function playMusic(scene, force = false) {
   audio.play().then(() => fade(audio, MUSIC_VOLUME, 1200)).catch(() => {});
 }
 
-export function stopMusic() {
+export function stopMusic(scene = 'mission') {
+  currentScene = scene; // 첫 터치·설정 바꾸기 때 앞 화면 음악을 다시 틀지 않게
   if (!current) return;
   const prev = current;
   current = null;
@@ -317,7 +320,7 @@ export function releaseMusic() {
   if (!held) return;
   held = false;
   try {
-    if (prefs.music && current) current.audio.play().catch(() => {});
+    if (prefs.music && current && !silent(currentScene)) current.audio.play().catch(() => {});
   } catch {
     /* noop */
   }

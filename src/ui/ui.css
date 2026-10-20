@@ -1065,3 +1065,45 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
   .q-card.is-wide .ox-btn { min-height: 64px; font-size: 36px; }
   .q-card.is-wide .q-figure { margin-bottom: 8px; }
 }
+/* 다시 보기·헷갈림·신고 */
+.review-tag { font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--subject) 22%, #fff); color: var(--ink-dark); white-space: nowrap; }
+.fb-tools { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.fb-tool { min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(0,0,0,.14); background: rgba(255,255,255,.6); color: inherit; font-size: 13px; cursor: pointer; }
+.fb-tool.ghost { background: transparent; opacity: .75; }
+.fb-tool.on { background: rgba(255,255,255,.85); font-weight: 700; cursor: default; }
+.fb-tool:disabled { opacity: 1; }
+.result-note.small { font-size: 13px; margin-top: 6px; }
+.feedback { flex-wrap: wrap; }
+.feedback > div:first-child { flex: 1 1 0; min-width: 0; }
+/* 선생님 · 학습 분석 */
+.t-sub { margin: var(--s-3) 0 0; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.t-badge { background: var(--bad, #ff6b8a); color: #fff; border-radius: 999px; padding: 0 8px; font-size: 12px; line-height: 20px; }
+.t-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.t-list li { border-radius: var(--r-sm); background: rgba(255,255,255,.04); border: 1px solid var(--panel-line); }
+.t-list li.seen { opacity: .6; }
+.t-row-btn { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; display: flex; gap: 10px; align-items: center; padding: 10px 12px; }
+.t-row-btn:focus-visible { outline: 2px solid var(--gold); }
+.t-row-main { flex: 1; min-width: 0; display: grid; gap: 2px; font-size: 14px; }
+.t-row-main > * { overflow: hidden; text-overflow: ellipsis; }
+.t-row-main .muted { font-size: 13px; white-space: nowrap; }
+.t-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+.t-miss { flex: none; font-style: normal; color: var(--bad, #ff6b8a); font-weight: 700; display: grid; text-align: right; font-size: 15px; }
+.t-miss small { font-weight: 400; color: var(--ink-muted); font-size: 12px; }
+.t-row-open { padding: 0 12px 12px 32px; display: grid; gap: 8px; }
+.t-peek { font-size: 14px; display: grid; gap: 4px; }
+.t-peek p { margin: 0; white-space: pre-wrap; }
+.t-peek-pass { padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,.05); }
+.t-peek ol { margin: 0; padding-left: 20px; }
+.t-peek li.right { color: var(--good, #6fe3a5); font-weight: 700; }
+.t-std { display: grid; gap: 8px; }
+.t-std-row { display: grid; grid-template-columns: 96px 1fr 120px 44px; grid-template-areas: 'code text bar pct' 'code n n n'; column-gap: 10px; align-items: center; font-size: 13px; }
+.t-std-code { grid-area: code; font-weight: 700; align-self: start; }
+.t-std-text { grid-area: text; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-std-row .bar-track { grid-area: bar; }
+.t-std-row em { grid-area: pct; font-style: normal; text-align: right; font-weight: 700; }
+.t-std-row em.low { color: var(--bad, #ff6b8a); }
+.t-std-row small { grid-area: n; }
+@media (max-width: 640px) {
+  .t-std-row { grid-template-columns: 1fr 44px; grid-template-areas: 'code pct' 'text text' 'bar bar' 'n n'; }
+  .t-std-text { white-space: normal; }
+}
