@@ -1001,3 +1001,9 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 }
 
 .t-head-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+/* 세로 화면에서도 카드가 길면 위가 잘리지 않게: 아래 붙임을 여백으로 (넘치면 카드째 스크롤) */
+@media (max-aspect-ratio: 11/10) {
+  .mission-stage { align-items: flex-start; }
+  .mission-stage > * { margin-top: auto; margin-bottom: 0; }
+  .q-card.is-wide .q-figure img { max-height: 26vh; }
+}

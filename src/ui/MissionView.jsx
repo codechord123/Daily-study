@@ -12,10 +12,13 @@ import { speak, canSpeak, stopSpeaking } from '../services/speech';
 const hasEn = (t) => /[a-z]/i.test(t ?? '');
 // 학습지 그림: 'ws/…png' 경로, 보기는 'img:ws/…png'
 const isImg = (c) => typeof c === 'string' && c.startsWith('img:');
+// 문제 은행에 직접 그린 그림(svg 글자)을 그림 주소로
+const svgUrl = (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 // 지문의 'A:' 같은 말머리와 빈칸 밑줄은 읽지 않는다
 const passageSpeech = (t) => t.replace(/^[^\n:]{1,12}:\s*/gm, '').replace(/_{2,}/g, ', ');
 /** 읽어 줄 영어: 문제가 영어면 문제, 답을 맞힌 뒤엔 정답 보기, 아니면 지문 */
 const englishText = (q, after = false) => {
+  if (q.say) return q.say; // 문제마다 정해 둔 '읽어 줄 문장'
   if (hasEn(q.prompt)) return q.prompt;
   if (after && hasEn(q.choices?.[q.answer])) return q.choices[q.answer];
   if (hasEn(q.passage)) return passageSpeech(q.passage);
@@ -182,8 +185,8 @@ export default function MissionView() {
   }, [results]);
 
   useEffect(() => {
-    if (q?.subject === 'english' && /[a-z]/i.test(q.prompt)) {
-      const t = setTimeout(() => speak(q.prompt), 450);
+    if (q?.subject === 'english' && (q.say || /[a-z]/i.test(q.prompt))) {
+      const t = setTimeout(() => speak(q.say || q.prompt), 450);
       return () => clearTimeout(t);
     }
   }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -390,7 +393,7 @@ export default function MissionView() {
         ) : (
           <article
             ref={cardRef}
-            className={`q-card page-in ${feedback ? (feedback.ok ? 'is-ok' : 'is-no') : ''} ${q.subject === 'english' && canSpeak() ? 'has-speak' : ''} ${q.image || q.passage ? 'is-wide' : ''}`}
+            className={`q-card page-in ${feedback ? (feedback.ok ? 'is-ok' : 'is-no') : ''} ${q.subject === 'english' && canSpeak() ? 'has-speak' : ''} ${q.image || q.svg || q.passage ? 'is-wide' : ''}`}
             key={idx}
             data-subject={q.subject}
             style={{ '--subject': meta.color }}
@@ -407,15 +410,15 @@ export default function MissionView() {
                 </span>
               )}
             </div>
-            {q.subject === 'english' && canSpeak() && (hasEn(q.prompt) || hasEn(q.passage) || feedback) && (
+            {q.subject === 'english' && canSpeak() && (q.say || hasEn(q.prompt) || hasEn(q.passage) || feedback) && (
               <button className="speak-btn" data-nosfx onClick={() => speak(englishText(q, !!feedback))} aria-label="영어 듣기">
                 🔊 듣기
               </button>
             )}
             <div className="q-layout">
-              {(q.image || q.passage) && (
+              {(q.image || q.svg || q.passage) && (
                 <div className="q-media">
-                  {q.image && <Figure src={q.image} />}
+                  {(q.image || q.svg) && <Figure src={q.image ?? svgUrl(q.svg)} />}
                   {q.passage && <Passage text={q.passage} />}
                 </div>
               )}
