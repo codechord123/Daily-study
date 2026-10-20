@@ -1009,3 +1009,17 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 }
 /* 직접 그린 그림(svg)은 칸 너비에 맞춰 크게 */
 .q-figure img[src^="data:image/svg"] { width: 100%; height: auto; }
+/* 아이폰 사파리: 아래 주소창(툴바)이 화면 위에 떠서 카드 맨 아래(확인 버튼)를 가린다.
+   세로 화면에서는 툴바만큼 아래를 비워 두고, 숫자판·그림을 조금 줄여 한 화면에 들어오게 */
+@media (max-aspect-ratio: 11/10) {
+  .mission-stage { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 64px); scroll-padding-bottom: 80px; }
+  .key { min-height: 40px; }
+  .num-display { height: 50px; }
+  .q-card.is-wide .q-figure img, .q-figure img { max-height: 24vh; }
+  .q-figure { padding: 6px; margin-bottom: 10px; }
+  .q-card .q-top { margin-bottom: 10px; }
+}
+@media (max-aspect-ratio: 11/10) and (max-height: 760px) {
+  .key { min-height: 36px; font-size: 18px; }
+  .q-card.is-wide .q-figure img, .q-figure img { max-height: 20vh; }
+}
