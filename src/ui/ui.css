@@ -1023,3 +1023,19 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
   .key { min-height: 36px; font-size: 18px; }
   .q-card.is-wide .q-figure img, .q-figure img { max-height: 20vh; }
 }
+/* 휴대폰: '확인' 버튼과 정답 안내(다음)는 카드 아래에 붙어 늘 보이게 (사파리 툴바·긴 그림 문제) */
+@media (max-aspect-ratio: 11/10) {
+  .q-card .feedback {
+    position: sticky; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); z-index: 3;
+    box-shadow: 0 -10px 24px rgba(251, 244, 230, .95), 0 6px 18px rgba(42, 35, 70, .18);
+  }
+  .q-card:has(.num-answer) .q-figure img { max-height: 18vh; }
+  .mission-stage { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
+}
+
+/* 수 입력: '확인'은 입력 칸 오른쪽 (휴대폰에서 숫자판 아래로 밀려 가리지 않게) */
+.num-answer { grid-template-columns: 1fr auto; grid-template-areas: 'disp sub' 'pad pad'; }
+.num-answer .num-display { grid-area: disp; }
+.num-answer .keypad { grid-area: pad; }
+.num-answer .num-submit { grid-area: sub; width: auto; min-width: 96px; height: 100%; min-height: 50px; padding: 0 22px; }
+.unit-count { margin-left: 6px; font-size: 11px; opacity: .75; }

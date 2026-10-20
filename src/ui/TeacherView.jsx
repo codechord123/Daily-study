@@ -5,6 +5,15 @@ import { loadProfile, saveProfile, newProfile } from '../store/profileStore';
 import { getSettings, setSettings, onSettings } from '../store/classSettings';
 import { cloudEnabled, onCloudStatus, getCloudStatus } from '../services/cloud';
 import ClassPanel from './ClassPanel';
+import { BANK_SOCIAL, BANK_KOREAN, BANK_SCIENCE, BANK_ENGLISH, BANK_MATH } from '../data/missions/bank';
+
+// 단원마다 문항이 몇 개 있는지 (수학은 계산 문제를 자동으로 더 만든다)
+const BANK_OF = { social: BANK_SOCIAL, korean: BANK_KOREAN, science: BANK_SCIENCE, english: BANK_ENGLISH, math: BANK_MATH };
+function unitCount(subject, unit) {
+  const n = BANK_OF[subject].filter((q) => q.unit === unit).length;
+  if (subject === 'math') return n ? `${n}+계산` : '계산 문제';
+  return n ? `${n}문항` : '준비 중';
+}
 import { useAccount } from './CloudLogin';
 import { onPlanetChange } from '../store/profileStore';
 import { SUBJECT_META } from '../data/missions/grade5';
@@ -164,7 +173,8 @@ export default function TeacherView() {
   const toggleUnit = (subject, i) => {
     const cur = Array.isArray(settings.override[subject]) ? settings.override[subject] : settings.override[subject] == null ? [] : [settings.override[subject]];
     const next = cur.includes(i) ? cur.filter((x) => x !== i) : [...cur, i].sort((a, b) => a - b);
-    setSettings({ override: { [subject]: next.length ? next : null } });
+    if (!next.length) return; // 적어도 한 단원은 골라 둔다
+    setSettings({ override: { [subject]: next } });
   };
   const chosen = (subject) => {
     const v = settings.override[subject];
@@ -324,22 +334,20 @@ export default function TeacherView() {
           <h2>출제 단원</h2>
           <span className="muted">매일 {Object.values(MISSION_COUNTS).reduce((a, b) => a + b, 0)}문제 = {SUBJECTS.map((s) => `${SUBJECT_META[s].label} ${MISSION_COUNTS[s]}`).join(' · ')}</span>
         </div>
-        <p className="muted">단원을 고르면 <b>고른 단원에서만</b> 문제가 나와요(여러 개 가능). 아무것도 고르지 않으면 학기 시작일로 진도를 계산해 지금 단원 위주로 내고 지난 단원을 복습시켜요.</p>
+        <p className="muted"><b>고른 단원 안에서만</b> 문제가 무작위로 나와요(여러 개 고르면 섞어서). 진도에 맞춰 단원을 바꿔 주세요. 칩의 숫자는 그 단원에 있는 문항 수예요.</p>
         <div className="unit-picker">
           {SUBJECTS.map((s) => (
             <div key={s} className="unit-row">
               <span className="unit-subj" style={{ '--c': SUBJECT_META[s].color }}>{SUBJECT_META[s].icon} {SUBJECT_META[s].label}</span>
               <div className="unit-chips">
-                <button className={`unit-chip auto ${chosen(s).length ? '' : 'on'}`} onClick={() => setSettings({ override: { [s]: null } })}>
-                  날짜로 자동
-                </button>
                 {UNIT_TITLES[s].map((t, i) => (
                   <button key={t} className={`unit-chip ${chosen(s).includes(i) ? 'on' : ''}`} onClick={() => toggleUnit(s, i)} aria-pressed={chosen(s).includes(i)}>
                     {i + 1}. {t}
+                    <small className="unit-count">{unitCount(s, i)}</small>
                   </button>
                 ))}
               </div>
-              <span className="unit-now">{chosen(s).length ? '고른 단원만' : `지금: ${titles[s]}`}</span>
+              <span className="unit-now">{chosen(s).length > 1 ? `${chosen(s).length}개 단원 섞어서` : '이 단원만'}</span>
             </div>
           ))}
         </div>
@@ -350,10 +358,6 @@ export default function TeacherView() {
       <section className="t-panel" id="t-settings">
         <h2>설정</h2>
         <div className="t-settings">
-          <label htmlFor="sem-start">2학기 시작일</label>
-          <input id="sem-start" type="date" value={settings.semesterStart} onChange={(e) => e.target.value && setSettings({ semesterStart: e.target.value })} />
-          <span className="muted">지금 {pos.week + 1}주차</span>
-
           <label htmlFor="travel">친구 별 여행</label>
           <button id="travel" className={`toggle ${settings.travelOpen ? 'on' : ''}`} onClick={() => setSettings({ travelOpen: !settings.travelOpen })} aria-pressed={settings.travelOpen}>
             <span />

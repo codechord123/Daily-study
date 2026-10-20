@@ -300,3 +300,25 @@ export function stopMusic() {
   current = null;
   fade(prev.audio, 0, 500, () => prev.audio.pause());
 }
+
+// 영어 읽기 동안 배경음악을 잠시 멈춘다.
+// 아이폰은 음악 소리 크기를 코드로 줄일 수 없고, 음악과 음성이 함께 나면 음성이 끊긴다.
+let held = false;
+export function holdMusic() {
+  if (held) return;
+  held = true;
+  try {
+    current?.audio.pause(); // 정답·오답 효과음(Web Audio)은 그대로 둔다
+  } catch {
+    /* noop */
+  }
+}
+export function releaseMusic() {
+  if (!held) return;
+  held = false;
+  try {
+    if (prefs.music && current) current.audio.play().catch(() => {});
+  } catch {
+    /* noop */
+  }
+}

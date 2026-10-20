@@ -211,6 +211,8 @@ export default function MissionView() {
       if (ok) sfx('correct', combo + 1);
       else sfx('wrong');
       setFeedback({ ok, picked: value, cheer: CHEERS[Math.floor(Math.random() * CHEERS.length)] });
+      // 휴대폰: 카드가 길어 정답 안내가 화면 밖이면 보이는 곳까지 내려 준다
+      setTimeout(() => document.querySelector('.q-card .feedback')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 60);
       if (q.subject === 'english') setTimeout(() => speak(englishText(q, true)), 500);
       // 오답 노트: 틀리면 적고, 오답 노트에서 다시 맞히면 지운다
       if (mode === 'review') {
