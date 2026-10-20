@@ -7,7 +7,8 @@
 //               classes/{classId}/students/*     학생 프로필(별·캐릭터·기록)
 //               classes/{classId}/learn/{sid}    학습 기록(다시 볼 문제·성취기준별 정답·신고). 본인과 선생님만
 //               classes/{classId}/hearts/*       받은 하트 수 (1씩만 증가)
-//  - Realtime DB presence/{classId}/{sid}      실시간 위치 (연결이 끊기면 자동 삭제)
+//  - Realtime DB presence/{classId}/{sid}      누가 어느 별에 있는지 (연결이 끊기면 자동 삭제)
+//               rooms/{classId}/{planetId}/{sid} 같은 별 친구끼리의 움직임·모양 (내가 있는 별의 방만 듣는다)
 //               seats/{classId}/{sid}, teachers/{classId}  위치를 쓸 수 있는 사람 (보안 규칙용)
 // 원격 데이터는 localStorage에 비춰 두고, 화면 코드는 지금처럼 동기식으로 읽는다.
 import { setRoster, makeRoster } from '../data/classroom';
@@ -74,7 +75,7 @@ const cachedAccount = (uid) => {
 };
 
 // 다른 모듈이 원격 변경을 받을 곳 (순환 import 피하려고 등록 방식)
-const handlers = { profile: null, hearts: null, settings: null, presence: null, synced: null, learn: null, restore: null };
+const handlers = { profile: null, hearts: null, settings: null, presence: null, room: null, synced: null, learn: null, restore: null };
 export function onRemote(kind, fn) {
   handlers[kind] = fn;
 }
@@ -442,6 +443,11 @@ export async function cloudSignOut() {
   // 내 위치 지우기는 기다리지 않는다 (로그아웃이 먼저 끝나야 새로고침해도 로그인 화면)
   const mySid = account.status === 'teacher' ? 'teacher' : account.sid;
   if (mySid) fb.rd.remove(fb.rd.ref(fb.rtdb, `presence/${CLASS_ID}/${mySid}`)).catch(() => {});
+  if (roomRef) fb.rd.remove(roomRef).catch(() => {});
+  roomOff?.();
+  roomOff = null;
+  roomPlanet = null;
+  roomRef = null;
   setAccount({ status: 'signedOut' });
   await fb.au.signOut(fb.auth);
 }
@@ -527,26 +533,53 @@ export function uploadSettings(settings) {
   fb.fs.setDoc(fb.fs.doc(fb.db, 'classes', CLASS_ID), { settings: rest }, { merge: true }).catch((e) => console.warn('설정 저장 실패', e));
 }
 
-let presenceRef = null;
+// 실시간 '함께 있기': 반 전체에는 어느 별에 있는지만, 움직임은 같은 별 방(rooms)에서만
+let roomRef = null; // 내가 들어가 있는 방의 내 자리
+let roomOff = null; // 듣고 있는 방
+let roomPlanet = null;
+const canPresence = () => fb && (account.status === 'student' || account.status === 'teacher');
+
+/** 이 별의 방을 듣는다 (전에 듣던 방은 그만) */
+export function presenceRoom(planetId) {
+  if (!canPresence() || roomPlanet === planetId) return; // 로그인 전이면 presenceSet 때 다시 부른다
+  roomOff?.();
+  roomOff = null;
+  roomPlanet = planetId;
+  const off = fb.rd.onValue(fb.rd.ref(fb.rtdb, `rooms/${CLASS_ID}/${planetId}`), (snap) => handlers.room?.(planetId, snap.val() ?? {}), () => {});
+  roomOff = off;
+}
+
 export function presenceSet(state) {
-  if (!fb || (account.status !== 'student' && account.status !== 'teacher')) return !!fb;
-  const ref = fb.rd.ref(fb.rtdb, `presence/${CLASS_ID}/${state.sid}`);
-  if (!presenceRef || presenceRef.toString() !== ref.toString()) {
-    presenceRef = ref;
-    fb.rd.onDisconnect(ref).remove();
+  if (!canPresence()) return !!fb;
+  const { rd, rtdb } = fb;
+  if (roomPlanet !== state.planetId) presenceRoom(state.planetId);
+  const index = rd.ref(rtdb, `presence/${CLASS_ID}/${state.sid}`);
+  const room = rd.ref(rtdb, `rooms/${CLASS_ID}/${state.planetId}/${state.sid}`);
+  // 다른 별로 옮겼으면 앞 별의 내 자리를 치운다
+  if (roomRef && roomRef.toString() !== room.toString()) {
+    rd.onDisconnect(roomRef).cancel().catch(() => {});
+    rd.remove(roomRef).catch(() => {});
   }
-  fb.rd.set(ref, JSON.parse(JSON.stringify({ ...state, t: Date.now() }))).catch(() => {});
+  rd.onDisconnect(index).remove();
+  rd.onDisconnect(room).remove();
+  roomRef = room;
+  const t = Date.now();
+  rd.set(index, { planetId: state.planetId, t }).catch(() => {});
+  rd.set(room, JSON.parse(JSON.stringify({ ...state, t }))).catch(() => {});
   return true;
 }
-/** 바뀐 칸만 보낸다 (내려받는 쪽도 바뀐 칸만 받는다) */
+/** 바뀐 칸만, 같은 별 방에만 보낸다 */
 export function presencePatch(sid, patch) {
-  if (!fb || (account.status !== 'student' && account.status !== 'teacher')) return !!fb;
-  if (!presenceRef) return false;
-  fb.rd.update(fb.rd.ref(fb.rtdb, `presence/${CLASS_ID}/${sid}`), JSON.parse(JSON.stringify({ ...patch, t: Date.now() }))).catch(() => {});
+  if (!canPresence()) return !!fb;
+  if (!roomRef) return false;
+  fb.rd.update(roomRef, JSON.parse(JSON.stringify({ ...patch, t: Date.now() }))).catch(() => {});
   return true;
 }
 export function presenceLeave(sid) {
   if (!fb) return false;
-  if (account.status === 'student' || account.status === 'teacher') fb.rd.remove(fb.rd.ref(fb.rtdb, `presence/${CLASS_ID}/${sid}`)).catch(() => {});
+  if (canPresence()) {
+    fb.rd.remove(fb.rd.ref(fb.rtdb, `presence/${CLASS_ID}/${sid}`)).catch(() => {});
+    if (roomRef) fb.rd.remove(roomRef).catch(() => {});
+  }
   return true;
 }

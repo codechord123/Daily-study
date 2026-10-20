@@ -21,6 +21,16 @@
           ".write": "auth != null && (root.child('seats').child($classId).child($sid).val() === auth.uid || ($sid === 'teacher' && root.child('teachers').child($classId).val() === auth.uid))"
         }
       }
+    },
+    "rooms": {
+      "$classId": {
+        "$planetId": {
+          ".read": "auth != null",
+          "$sid": {
+            ".write": "auth != null && (root.child('seats').child($classId).child($sid).val() === auth.uid || ($sid === 'teacher' && root.child('teachers').child($classId).val() === auth.uid))"
+          }
+        }
+      }
     }
   }
 }

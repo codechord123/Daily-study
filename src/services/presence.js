@@ -1,22 +1,24 @@
 // 실시간 "함께 있기" 어댑터.
-// 지금: BroadcastChannel(같은 브라우저의 다른 탭) + 데모용 친구 봇.
-// 나중: Firebase Realtime DB presence/{classId}/{planetId}/{sid} 로 교체.
-// 화면 코드는 join / update / subscribe / onlineMap 만 사용한다.
+//  - 학급 서버(Firebase 실시간 DB)가 있으면
+//      presence/{classId}/{sid}          누가 어느 별에 있는지만 (별을 옮길 때만 바뀐다 → 반 모두가 받아도 작다)
+//      rooms/{classId}/{planetId}/{sid}  그 별에 함께 있는 친구끼리만 주고받는 움직임·이모트·캐릭터 모양
+//    내가 있는 별의 방만 듣는다. 실시간 DB는 내려받은 양만큼 요금이 들어서(무료: 한 달 10GB)
+//    반 25명 모두의 움직임을 받던 것을, 같은 별에 있는 친구(보통 2~5명) 것만 받도록 나눴다.
+//  - 없으면 BroadcastChannel(같은 브라우저의 다른 탭) + 데모용 친구 봇
+// 화면 코드는 join / update / subscribe / peersOn / onlineMap 만 사용한다.
 import { ROSTER } from '../data/classroom';
 import { getPlanet } from '../store/profileStore';
-import { cloudEnabled, presenceSet, presencePatch, presenceLeave, onRemote } from './cloud';
+import { cloudEnabled, presenceSet, presencePatch, presenceLeave, presenceRoom, onRemote } from './cloud';
 
 const CHANNEL = 'ds-presence';
-// 학급 서버(실시간 DB)는 내려받는 양만큼 요금이 든다(무료: 한 달 10GB). 반 전체가 모두의 상태를 받으므로 아껴 보낸다:
-//  - 들어올 때만 전체(캐릭터 모양 포함), 그 뒤엔 바뀐 칸만
-//  - 위치는 움직일 때만 0.5초에 한 번, 가만히 있으면 보내지 않는다
-//  - 살아 있다는 신호는 5초에 한 번, 화면을 내려 두면 보내지 않는다
-const HEARTBEAT_MS = 5000;
-const POS_MS = 500;
-const STALE_MS = 15000; // 이만큼 소식이 없으면 나간 것으로 본다
+// 같은 별 안에서만 주고받으니 처음처럼 자주 보내도 된다
+const HEARTBEAT_MS = 3000; // 살아 있다는 신호 (화면을 내려 두면 보내지 않음)
+const POS_MS = 250; // 움직일 때 위치 (가만히 있으면 보내지 않음)
+const STALE_MS = 8000; // 이만큼 신호가 없으면 나간 것으로 본다
 
 const bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(CHANNEL) : null;
-const peers = new Map(); // sid -> state
+const peers = new Map(); // 같은 별에 있는 친구: sid -> state (위치·모양 포함)
+const where = new Map(); // 반 전체: sid -> planetId (학급 서버일 때)
 const subs = new Set();
 let me = null;
 
@@ -37,11 +39,18 @@ let lastSend = 0;
 let posTimer = 0;
 
 export function join(sid, planetId, character) {
+  const moved = me?.planetId !== planetId;
   me = { type: 'state', sid, planetId, character, pos: null, moving: false, emote: null, emoteAt: 0 };
+  if (cloudEnabled && moved) {
+    // 다른 별로 왔으면 그 별의 방을 새로 듣는다 (앞 별 친구들은 지운다)
+    for (const k of [...peers.keys()]) if (!peers.get(k).bot) peers.delete(k);
+    presenceRoom(planetId);
+    emit();
+  }
   sendFull();
 }
 
-// 위치·추진 같은 자주 바뀌는 값은 모아서 천천히, 이모트처럼 드문 것은 바로
+// 위치·추진 같은 자주 바뀌는 값은 모아서, 이모트처럼 드문 것은 바로
 const FAST = new Set(['pos', 'moving', 'yaw', 'thrust']);
 export function update(patch) {
   if (!me) return;
@@ -85,22 +94,34 @@ export function leave() {
 function heartbeat() {
   if (!me) return;
   if (!cloudEnabled) return bc?.postMessage({ ...me, t: Date.now() });
-  if (typeof document !== 'undefined' && document.hidden) return; // 화면을 내려 두면 쉬고, 돌아오면 다시
+  if (typeof document !== 'undefined' && document.hidden) return;
   if (Date.now() - lastSend >= HEARTBEAT_MS - 50) sendDiff(true);
 }
-if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => !document.hidden && sendFull());
+// 화면을 내리면 잠깐 나간 것으로(친구 화면에서 바로 사라짐), 다시 열면 들어온다
+if (typeof document !== 'undefined')
+  document.addEventListener('visibilitychange', () => {
+    if (!cloudEnabled || !me) return;
+    if (document.hidden) presenceLeave(me.sid);
+    else sendFull();
+  });
 
-// Firebase 실시간 DB: 반 전체 접속 상태를 통째로 받는다
+// 반 전체: 누가 어느 별에 있는지 (여행 화면의 '지금 n명')
 onRemote('presence', (all) => {
+  where.clear();
+  for (const [sid, st] of Object.entries(all)) if (sid !== me?.sid && st?.planetId) where.set(sid, st.planetId);
+  emit();
+});
+// 내가 있는 별의 방: 함께 있는 친구의 움직임
+onRemote('room', (planetId, all) => {
+  if (planetId !== me?.planetId) return;
   const now = Date.now();
   for (const sid of [...peers.keys()]) if (!all[sid] && !peers.get(sid).bot) peers.delete(sid);
   for (const [sid, st] of Object.entries(all)) {
     if (sid === me?.sid) continue;
-    // 오래 소식이 없으면 끊긴 것으로 본다 (기기 시계가 조금 달라도 되게 넉넉히)
-    if (now - (st.t ?? 0) > STALE_MS + 10000) continue;
     // 그 친구의 신호(t)가 새로 왔을 때만 '방금 봤음'으로 (다른 친구 소식에 덩달아 살아 있는 것으로 보지 않게)
     const prev = peers.get(sid);
-    peers.set(sid, { ...st, seen: prev && prev.t === st.t ? prev.seen : now });
+    if (!prev && now - (st.t ?? 0) > STALE_MS + 10000) continue; // 오래된 흔적 (기기 시계가 조금 달라도 되게 넉넉히)
+    peers.set(sid, { ...st, sid, planetId, seen: prev && prev.t === st.t ? prev.seen : now });
   }
   emit();
 });
@@ -121,7 +142,7 @@ setInterval(() => {
 
 if (typeof window !== 'undefined') window.addEventListener('beforeunload', leave);
 
-/** 특정 별에 있는 다른 사람들 */
+/** 특정 별에 있는 다른 사람들 (움직임까지 아는 것은 내가 있는 별뿐) */
 export function peersOn(planetId) {
   return [...peers.values()].filter((p) => p.planetId === planetId);
 }
@@ -129,7 +150,8 @@ export function peersOn(planetId) {
 /** 별마다 지금 몇 명이 있는지 */
 export function onlineMap() {
   const map = {};
-  for (const p of peers.values()) map[p.planetId] = (map[p.planetId] ?? 0) + 1;
+  if (cloudEnabled) for (const planetId of where.values()) map[planetId] = (map[planetId] ?? 0) + 1;
+  else for (const p of peers.values()) map[p.planetId] = (map[p.planetId] ?? 0) + 1;
   if (me) map[me.planetId] = (map[me.planetId] ?? 0) + 1;
   return map;
 }
@@ -139,7 +161,7 @@ export function getPeer(sid) {
 }
 
 export function isOnline(sid) {
-  return peers.has(sid);
+  return where.has(sid) || peers.has(sid);
 }
 
 export function subscribe(fn) {
