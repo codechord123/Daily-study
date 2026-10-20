@@ -34,6 +34,7 @@ export default function TopBar() {
       {open && (
         <div className="menu panel">
           <button className="menu-item" onClick={() => (setOpen(false), openSheet('records'))}>📒 나의 기록</button>
+          <button className="menu-item" onClick={() => (setOpen(false), openSheet('station'))}>🛰 문제 정거장</button>
           <button className="menu-item" onClick={() => setQuality(quality === 'low' ? 'high' : 'low')}>
             화질: {quality === 'low' ? '가볍게' : '선명하게'} <small>바꾸기</small>
           </button>

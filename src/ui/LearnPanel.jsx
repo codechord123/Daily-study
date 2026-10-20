@@ -8,6 +8,20 @@ import { STANDARDS, stdSubject } from '../data/missions/standards';
 import { UNIT_TITLES } from '../engine/dailyMission';
 import { BANK_SOCIAL, BANK_KOREAN, BANK_SCIENCE, BANK_ENGLISH, BANK_MATH } from '../data/missions/bank';
 import RichText from './RichText';
+import PresentView from './PresentView';
+
+// 화면에 띄울 때 정답이 늘 ①에 오지 않게 보기를 섞는다 (문제마다 같은 순서)
+function shuffled(q, seed) {
+  if (q.kind !== 'choice') return q;
+  let h = [...seed].reduce((a, c) => Math.imul(a ^ c.charCodeAt(0), 16777619), 2166136261) >>> 0;
+  const order = q.choices.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
+    const j = h % (i + 1);
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return { ...q, choices: order.map((i) => q.choices[i]), answer: order.indexOf(q.answer) };
+}
 
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : null);
 const SEEN_KEY = 'ds:reports-seen';
@@ -70,6 +84,7 @@ export default function LearnPanel() {
   const [open, setOpen] = useState(null);
   const [seen, setSeen] = useState(readSeen);
   const [blocked, setBlocked] = useState(() => getSettings().blocked ?? []);
+  const [present, setPresent] = useState(null); // 수업 화면에 띄우는 중: 시작 번호
   useEffect(() => onLearnChange(() => setTick((x) => x + 1)), []);
   useEffect(() => onSettings((s) => setBlocked(s.blocked ?? [])), []);
 
@@ -124,6 +139,7 @@ export default function LearnPanel() {
       /* noop */
     }
   };
+  const slides = data.missed.filter((m) => m.q).map((m) => ({ ...m, q: shuffled(m.q, m.id) }));
   const newReports = data.reportRows.filter((r) => !seen.has(r.id));
   const oldReports = data.reportRows.filter((r) => seen.has(r.id));
 
@@ -180,7 +196,12 @@ export default function LearnPanel() {
         <p className="muted">학생들이 문제를 풀면 성취기준마다 정답률이 모여요.</p>
       )}
 
-      <h3 className="t-sub">❗ 많이 틀린 문제 (3번 넘게 나온 문제 중)</h3>
+      <div className="t-sub-row">
+        <h3 className="t-sub">❗ 많이 틀린 문제 (3번 넘게 나온 문제 중)</h3>
+        {slides.length > 0 && (
+          <button className="btn btn-sm btn-primary" onClick={() => setPresent(0)}>📺 수업 화면에 띄우기</button>
+        )}
+      </div>
       {data.missed.length ? (
         <ol className="t-list">
           {data.missed.map((m) => (
@@ -197,6 +218,7 @@ export default function LearnPanel() {
                 <div className="t-row-open">
                   <QuestionPeek q={m.q} />
                   <div className="t-actions">
+                    {m.q && <button className="btn btn-sm" onClick={() => setPresent(slides.findIndex((x) => x.id === m.id))}>📺 이 문제 띄우기</button>}
                     <BlockButton id={m.id} blocked={blocked} />
                   </div>
                 </div>
@@ -212,6 +234,7 @@ export default function LearnPanel() {
           출제에서 뺀 문제 {blocked.length}개 <button className="btn btn-sm" onClick={() => setSettings({ blocked: [] })}>모두 다시 내기</button>
         </p>
       )}
+      {present != null && <PresentView items={slides} start={present} onClose={() => setPresent(null)} />}
     </section>
   );
 }

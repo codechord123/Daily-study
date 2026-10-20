@@ -7,7 +7,7 @@ import RichText from './RichText';
 import { Prompt, Passage, Figure } from './QuestionBody';
 import { sfx } from '../services/sound';
 import { speak, canSpeak, stopSpeaking } from '../services/speech';
-import { recordAnswer, markConfused, reportQuestion, REPORT_REASONS } from '../store/learnStore';
+import { recordAnswer, markConfused, reportQuestion, REPORT_REASONS, dueReviews } from '../store/learnStore';
 
 // 영어 문제에서 읽어 줄 영어: 영어가 문제에 있으면 문제, 아니면 정답 보기
 const hasEn = (t) => /[a-z]/i.test(t ?? '');
@@ -173,7 +173,14 @@ export default function MissionView() {
   const practice = useMemo(() => mode !== 'daily' || missionDoneToday(), [mode]); // eslint-disable-line react-hooks/exhaustive-deps
   const saved = useMemo(() => (mode === 'daily' && !practice ? loadProgress(profile.sid) : null), []); // eslint-disable-line react-hooks/exhaustive-deps
   const questions = useMemo(() => {
-    if (mode === 'review') return (profile.wrongNotes ?? []).filter((n) => !n.cleared).slice(-10).map((n, i) => ({ ...n.q, id: i, noteSource: n.source }));
+    // 오답 노트 (과목을 고르면 그 과목만), 또는 문제 정거장의 '다시 보기' 미리 풀기
+    if (mode === 'review' && missionMode.source === 'queue')
+      return dueReviews(profile.sid, 10).filter((e) => !missionMode.subject || e.q.subject === missionMode.subject).map((e, i) => ({ ...e.q, id: i, review: true }));
+    if (mode === 'review')
+      return (profile.wrongNotes ?? [])
+        .filter((n) => !n.cleared && (!missionMode.subject || n.q.subject === missionMode.subject))
+        .slice(-10)
+        .map((n, i) => ({ ...n.q, id: i, noteSource: n.source }));
     if (mode === 'practice') return buildPractice(missionMode.subject, `${profile.sid}:${Date.now()}`, todayKey());
     if (saved?.questions?.length) return saved.questions;
     const qs = buildDailyMission(profile.sid, todayKey(), { adaptive: true });

@@ -12,6 +12,7 @@ import MissionView from './ui/MissionView';
 import Toast from './ui/Toast';
 import WarpOverlay from './ui/WarpOverlay';
 import RecordsSheet from './ui/RecordsSheet';
+import StationSheet from './ui/StationSheet';
 import TeacherView from './ui/TeacherView';
 import Onboarding from './ui/Onboarding';
 import SceneGuard, { webglAvailable } from './ui/SceneGuard';
@@ -139,6 +140,7 @@ export default function App() {
         {profile && screen === 'space' && <FlightHud />}
         {profile && screen === 'mission' && <MissionView key={missionMode?.at ?? 'daily'} />}
         {profile && sheet === 'records' && screen !== 'mission' && <RecordsSheet />}
+        {profile && sheet === 'station' && screen !== 'mission' && <StationSheet />}
         {profile && !profile.onboarded && screen === 'home' && <Onboarding />}
         <WarpOverlay />
         <Toast />

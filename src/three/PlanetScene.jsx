@@ -20,6 +20,8 @@ import { getPlanet, onPlanetChange } from '../store/profileStore';
 import { studentById } from '../data/classroom';
 import Sparks from './Sparks';
 import MissionOrbit from './MissionOrbit';
+import StudyStation from './StudyStation';
+import { dueReviews } from '../store/learnStore';
 import { sfx } from '../services/sound';
 
 const R = PLANET_RADIUS;
@@ -545,6 +547,10 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
         lookFocus={lookFocus}
       />
       {inMission && <MissionOrbit />}
+      {/* 내 별에서만: 궤도를 도는 문제 정거장 (오답·다시 볼 문제 수 표시) */}
+      {!inMission && !decorating && profile.sid === ownerId && (
+        <StudyStation badge={(profile.wrongNotes ?? []).filter((n) => !n.cleared).length || dueReviews(profile.sid, 99).length} />
+      )}
       <MissionViewOffset active={!!inMission} look={lookFocus} decor={decorating} />
       {/* 내 모습을 꾸밀 때는 친구가 앞을 가리지 않게 잠깐 숨긴다 */}
       {!lookFocus && peerIds.map((sid, i) => (
