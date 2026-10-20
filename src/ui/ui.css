@@ -881,3 +881,121 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 /* 비밀번호 바꾸기 */
 .pw-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(8, 6, 24, .55); backdrop-filter: blur(3px); }
 .pw-dialog { max-height: calc(100dvh - 32px); overflow-y: auto; }
+
+/* ================= 문제 카드 업그레이드: 학습지 + 게임 ================= */
+/* 그림·긴 지문이 있는 문제는 넓게, 가로 화면에서는 왼쪽 그림·지문 / 오른쪽 문제 */
+.q-card.is-wide { width: min(960px, 100%); }
+@media (min-aspect-ratio: 11/10) and (min-width: 820px) {
+  .mission-stage:has(.q-card.is-wide) { justify-content: center; padding-right: 0; }
+  .mission:has(.q-card.is-wide) { background: linear-gradient(90deg, rgba(7,10,34,.35), rgba(7,10,34,.72) 40%, rgba(7,10,34,.8)); }
+  .q-card.is-wide .q-layout { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+  .q-card.is-wide .q-media { position: sticky; top: 0; }
+  .q-card.is-wide .q-figure img { max-height: min(52vh, 460px); }
+  .q-card.is-wide .pass { max-height: 52vh; }
+}
+
+/* 문제 문장: 상황(작게) → 지시(꼬리표) → 묻는 말(크게) */
+.q-ask { margin-bottom: var(--s-4); }
+.q-ask .q-prompt { margin: 0; }
+.q-context { margin: 0 0 4px; font-size: 16px; line-height: 1.5; color: #625a7e; word-break: keep-all; }
+.q-instruction {
+  display: inline-block; margin: 4px 0 10px; padding: 3px 12px; border-radius: 999px;
+  font-size: 14px; font-weight: 700; color: var(--ink-dark);
+  background: color-mix(in srgb, var(--subject) 26%, #fff);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--subject) 45%, transparent);
+}
+.q-instruction + .q-instruction { margin-left: 6px; }
+
+/* □ 빈칸: 고르는 보기가 미리 들어가고, 답을 내면 정답이 채워진다 */
+.blank {
+  display: inline-block; min-width: 2.2em; padding: 0 .3em; margin: 0 .12em; text-align: center;
+  line-height: 1.25; vertical-align: baseline; border-radius: 8px;
+  border: 2.5px dashed color-mix(in srgb, var(--subject) 75%, #2a2346);
+  background: rgba(255,255,255,.75);
+}
+.blank.filled.is-preview { color: color-mix(in srgb, var(--subject) 60%, #2a2346); border-style: solid; opacity: .85; animation: blank-in 180ms var(--ease-soft); }
+.blank.filled.is-right { border: 2.5px solid #f0b43c; background: linear-gradient(135deg, #fff8dc, #ffe39a); color: #7a4c00; box-shadow: 0 0 18px rgba(255,200,90,.7); animation: right-pop 520ms var(--ease-soft); }
+.blank.filled.is-fix { border: 2.5px solid #9b7cc4; background: #f1eafb; color: #4b3a78; animation: blank-in 260ms var(--ease-soft); }
+@keyframes blank-in { from { transform: translateY(4px) scale(.92); opacity: 0; } to { transform: none; } }
+
+/* 그림: 흰 종이 위에, 수학은 모눈 종이. 누르면 크게 */
+.q-figure {
+  position: relative; display: block; width: 100%; margin: 0 0 var(--s-3); padding: 10px; cursor: zoom-in;
+  border: 1px solid rgba(42,35,70,.1); border-radius: 16px; background: #fff;
+  box-shadow: 0 4px 0 rgba(42,35,70,.06), 0 10px 26px rgba(42,35,70,.08);
+}
+.q-card[data-subject='math'] .q-figure {
+  background-color: #fff;
+  background-image: linear-gradient(rgba(90,140,220,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(90,140,220,.08) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+.q-figure img { display: block; max-width: 100%; max-height: 34vh; margin: 0 auto; object-fit: contain; }
+.zoom-chip {
+  position: absolute; right: 8px; bottom: 8px; padding: 2px 9px; border-radius: 999px; font-size: 12px;
+  background: rgba(42,35,70,.72); color: #fff; opacity: .75;
+}
+.q-figure:hover .zoom-chip { opacity: 1; }
+.q-zoom {
+  position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px;
+  background: rgba(8,6,24,.82); backdrop-filter: blur(4px); cursor: zoom-out; animation: rise 200ms var(--ease-soft);
+}
+.q-zoom img { max-width: min(96vw, 1100px); max-height: 86vh; object-fit: contain; background: #fff; border-radius: 16px; padding: 14px; }
+.zoom-close { position: absolute; bottom: calc(18px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); color: #fff; font-size: 14px; opacity: .8; }
+
+/* 지문 */
+.pass { margin: 0 0 var(--s-3); max-height: 40vh; overflow-y: auto; font-size: 17px; line-height: 1.65; white-space: pre-wrap; word-break: keep-all; color: #322b4a; }
+/* 줄 공책 */
+.pass-prose {
+  padding: 8px 16px; border-radius: 14px; border: 1px solid rgba(42,35,70,.08); background-color: #fffdf6;
+  background-image: repeating-linear-gradient(transparent 0, transparent calc(1.65em - 1px), rgba(120,100,180,.16) calc(1.65em - 1px), rgba(120,100,180,.16) 1.65em);
+  background-attachment: local; background-position: 0 8px;
+  box-shadow: 0 3px 0 rgba(42,35,70,.05);
+}
+/* 사료·옛 글: 한지 */
+.pass-source {
+  padding: 14px 18px; border-radius: 6px 14px 14px 6px; font-family: var(--font-title);
+  background: radial-gradient(circle at 20% 10%, rgba(255,255,255,.7), transparent 50%), #f5ecd6;
+  border: 1px solid #e2d2a8; border-left: 5px solid #b78e4a; color: #3f3420;
+  box-shadow: inset 0 0 30px rgba(170,130,60,.12);
+}
+/* 보기 상자 */
+.pass-bogi {
+  position: relative; margin-top: 12px; padding: 18px 16px 10px; border-radius: 14px; background: #fff;
+  border: 2px solid color-mix(in srgb, var(--subject) 55%, #2a2346);
+}
+.bogi-label {
+  position: absolute; top: -12px; left: 14px; padding: 1px 12px; border-radius: 999px; font-size: 13px; font-weight: 700;
+  white-space: nowrap; line-height: 20px; color: var(--ink-dark); background: color-mix(in srgb, var(--subject) 45%, #fff);
+  box-shadow: 0 0 0 2px #fff;
+}
+/* 대화: 말풍선 */
+.pass-dialog { display: flex; flex-direction: column; gap: 8px; white-space: normal; padding: 4px 2px; }
+.bubble-row { display: flex; align-items: flex-end; gap: 8px; }
+.bubble-row.right { flex-direction: row-reverse; }
+.bubble-who {
+  flex: none; min-width: 32px; height: 28px; padding: 0 8px; border-radius: 999px; display: grid; place-items: center;
+  font-size: 13px; font-weight: 700; color: var(--ink-dark); background: color-mix(in srgb, var(--subject) 40%, #fff);
+}
+.bubble {
+  margin: 0; max-width: 82%; padding: 8px 14px; border-radius: 18px 18px 18px 6px; white-space: pre-wrap;
+  background: #fff; box-shadow: 0 2px 0 rgba(42,35,70,.07), 0 0 0 1px rgba(42,35,70,.06);
+}
+.bubble-row.right .bubble { border-radius: 18px 18px 6px 18px; background: color-mix(in srgb, var(--subject) 18%, #fff); }
+.pass-note { margin: 0; font-size: 14px; color: #6b6386; }
+
+/* 보기 번호는 학습지처럼 ①②③ */
+.choice-key { width: 34px; height: 34px; border-radius: 50%; font-size: 20px; line-height: 1; font-family: inherit; }
+.choices.has-img .choice { justify-content: center; }
+.choices.has-img .choice-text { flex: 1; }
+@media (max-aspect-ratio: 11/10) {
+  .q-context { font-size: 15px; }
+  .pass { font-size: 16px; max-height: 32vh; }
+  .q-figure img { max-height: 30vh; }
+}
+
+.num-unit { margin-left: 8px; font-size: .6em; color: #7a6f98; }
+/* 가로 화면에서 카드가 화면보다 길면 위가 잘리지 않게 (가운데 맞춤은 여백으로) */
+@media (min-aspect-ratio: 11/10) {
+  .mission-stage { align-items: flex-start; }
+  .mission-stage > * { margin-top: auto; margin-bottom: auto; }
+}

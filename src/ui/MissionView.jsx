@@ -4,6 +4,7 @@ import { useUI } from '../store/useUI';
 import { buildDailyMission, buildPractice, isCorrect } from '../engine/dailyMission';
 import { SUBJECT_META } from '../data/missions/grade5';
 import RichText from './RichText';
+import { Prompt, Passage, Figure } from './QuestionBody';
 import { sfx } from '../services/sound';
 import { speak, canSpeak, stopSpeaking } from '../services/speech';
 
@@ -166,6 +167,7 @@ export default function MissionView() {
   const [results, setResults] = useState(() => (saved ? saved.results.slice(0, resumeAt) : []));
   const [feedback, setFeedback] = useState(null); // { ok, picked, cheer }
   const [num, setNum] = useState('');
+  const [hover, setHover] = useState(null); // 마우스를 올린 보기 → 빈칸 미리 보기
   const [burst, setBurst] = useState(null);
   const [reward, setReward] = useState(null);
   const [finished, setFinished] = useState(false);
@@ -227,6 +229,7 @@ export default function MissionView() {
   const next = useCallback(() => {
     setFeedback(null);
     setNum('');
+    setHover(null);
     setBurst(null);
     if (idx + 1 < questions.length) {
       sfx('page');
@@ -294,6 +297,27 @@ export default function MissionView() {
     go('home');
     if (finished) setMode('decorate');
   };
+
+  // 문제 속 □ 빈칸에 보여 줄 말: 답을 낸 뒤엔 정답, 고르기 전엔 마우스를 올린 보기나 입력 중인 수
+  const plainChoice = (i) => (i != null && q?.choices && !isImg(q.choices[i]) ? q.choices[i] : null);
+  const blankFill = !q
+    ? null
+    : feedback
+      ? q.kind === 'number'
+        ? String(q.answer)
+        : q.kind === 'choice'
+          ? plainChoice(q.answer)
+          : null
+      : q.kind === 'number'
+        ? num
+        : q.kind === 'choice'
+          ? plainChoice(hover)
+          : null;
+  const blankState = feedback ? (feedback.ok ? 'is-right' : 'is-fix') : 'is-preview';
+  // 수로 답하는 문제의 단위 '(cm)'·'(°)'는 문장에서 떼어 입력 칸 옆에 붙인다
+  const unitMatch = q?.kind === 'number' ? String(q.prompt).match(/\s*\(([^()\d]{1,6})\)\s*$/) : null;
+  const numUnit = unitMatch?.[1] ?? '';
+  const viewQ = unitMatch ? { ...q, prompt: q.prompt.slice(0, unitMatch.index) } : q;
 
   const correctLabel = () => {
     if (q.kind === 'number') return String(q.answer);
@@ -366,8 +390,9 @@ export default function MissionView() {
         ) : (
           <article
             ref={cardRef}
-            className={`q-card page-in ${feedback ? (feedback.ok ? 'is-ok' : 'is-no') : ''} ${q.subject === 'english' && canSpeak() ? 'has-speak' : ''}`}
+            className={`q-card page-in ${feedback ? (feedback.ok ? 'is-ok' : 'is-no') : ''} ${q.subject === 'english' && canSpeak() ? 'has-speak' : ''} ${q.image || q.passage ? 'is-wide' : ''}`}
             key={idx}
+            data-subject={q.subject}
             style={{ '--subject': meta.color }}
           >
             <div className="q-top">
@@ -382,21 +407,21 @@ export default function MissionView() {
                 </span>
               )}
             </div>
-            {q.sub && <p className="q-sub">{q.sub}</p>}
             {q.subject === 'english' && canSpeak() && (hasEn(q.prompt) || hasEn(q.passage) || feedback) && (
               <button className="speak-btn" data-nosfx onClick={() => speak(englishText(q, !!feedback))} aria-label="영어 듣기">
                 🔊 듣기
               </button>
             )}
-            {q.image && <img className="q-image" src={q.image} alt="문제 그림" />}
-            {q.passage && (
-              <blockquote className="q-passage">
-                <RichText text={q.passage} />
-              </blockquote>
-            )}
-            <h2 className={`q-prompt ${q.big ? 'is-big' : ''}`}>
-              <RichText text={q.prompt} />
-            </h2>
+            <div className="q-layout">
+              {(q.image || q.passage) && (
+                <div className="q-media">
+                  {q.image && <Figure src={q.image} />}
+                  {q.passage && <Passage text={q.passage} />}
+                </div>
+              )}
+              <div className="q-main">
+            {q.sub && <p className="q-sub">{q.sub}</p>}
+            <Prompt q={viewQ} fill={blankFill} fillState={blankState} />
             {q.hint && !feedback && <p className="q-hint">💡 {q.hint}</p>}
 
             {q.kind === 'choice' && (
@@ -406,10 +431,14 @@ export default function MissionView() {
                     key={i}
                     className={`choice ${choiceState(i === q.answer, i === feedback?.picked)}`}
                     onClick={(e) => answer(i, e.currentTarget)}
+                    onPointerEnter={() => setHover(i)}
+                    onPointerLeave={() => setHover((h) => (h === i ? null : h))}
+                    onFocus={() => setHover(i)}
+                    onBlur={() => setHover((h) => (h === i ? null : h))}
                     disabled={!!feedback}
                     style={{ animationDelay: `${120 + i * 60}ms` }}
                   >
-                    <span className="choice-key">{i + 1}</span>
+                    <span className="choice-key" aria-hidden="true">{'①②③④⑤⑥'[i]}</span>
                     <span className="choice-text">
                       {isImg(c) ? <img className="choice-img" src={c.slice(4)} alt={`${i + 1}번 그림`} /> : <RichText text={c} />}
                     </span>
@@ -437,6 +466,7 @@ export default function MissionView() {
                 <div className={`num-display ${feedback ? (feedback.ok ? 'ok' : 'no') : ''}`} aria-live="polite">
                   {num || <span className="num-ph">답을 눌러요</span>}
                   {!feedback && num && <span className="caret" />}
+                  {numUnit && <span className="num-unit">{numUnit}</span>}
                 </div>
                 <div className="keypad">
                   {KEYPAD.map((k) => (
@@ -469,6 +499,8 @@ export default function MissionView() {
                 </button>
               </div>
             )}
+              </div>
+            </div>
           </article>
         )}
       </div>
