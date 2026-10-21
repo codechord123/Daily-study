@@ -18,8 +18,9 @@ if (typeof window !== 'undefined' && window.speechSynthesis) {
     window.removeEventListener('pointerdown', wake, true);
     window.removeEventListener('keydown', wake, true);
     try {
-      const u = new SpeechSynthesisUtterance(' ');
-      u.volume = 0;
+      // 빈 글자: 아이폰은 volume 을 무시해서 글자가 있으면 소리가 나 버린다
+      const u = new SpeechSynthesisUtterance('');
+      keep(u);
       window.speechSynthesis.speak(u);
     } catch {
       /* noop */
@@ -101,6 +102,16 @@ const finish = (id) => {
   releaseTimer = setTimeout(releaseMusic, 400);
 };
 
+// 아이폰·아이패드(사파리 엔진): 목소리를 고르면 받지 않은 음성일 때 소리 없이 끝나는 일이 있어 기본 목소리로,
+// 문장마다 이어 말하기(끝 알림 뒤 다음 문장)는 누른 순간이 지나 막히는 일이 있어 한 번에 말한다
+const IOS = typeof navigator !== 'undefined' && (/iP(hone|ad|od)/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1));
+// 말하는 중인 문장을 붙잡아 둔다 (사파리·크롬은 붙잡지 않은 문장을 치워 버려 끝 알림이 안 오고 멈춘다)
+let alive = [];
+const keep = (u) => {
+  alive.push(u);
+  if (alive.length > 20) alive = alive.slice(-20);
+};
+
 export function speak(text, lang = 'en-US', rate = 0.9) {
   if (!canSpeak()) return false;
   const ko = lang.startsWith('ko');
@@ -118,7 +129,7 @@ export function speak(text, lang = 'en-US', rate = 0.9) {
   clearTimeout(releaseTimer);
   holdMusic(); // 음악과 겹치면 아이폰에서 음성이 끊긴다
   // 문장마다 하나씩, 앞 문장이 끝나면 다음 문장 (아이폰은 한꺼번에 줄 세우면 일부를 건너뛴다)
-  const parts = say.match(/[^.?!]+[.?!]*/g)?.map((x) => x.trim()).filter(Boolean) ?? [say];
+  const parts = IOS ? [say] : say.match(/[^.?!]+[.?!]*/g)?.map((x) => x.trim()).filter(Boolean) ?? [say];
   const next = (i, plain = false) => {
     if (id !== speakId) return;
     if (i >= parts.length) return finish(id);
@@ -126,8 +137,9 @@ export function speak(text, lang = 'en-US', rate = 0.9) {
     u.lang = lang;
     u.rate = ko ? Math.max(rate, 1) : rate; // 영어는 아이들이 듣기 좋게 조금 천천히
     u.pitch = 1;
-    const v = plain ? null : pickVoice(lang);
+    const v = plain || IOS ? null : pickVoice(lang);
     if (v) u.voice = v;
+    keep(u);
     let done = false;
     const go = () => {
       if (done) return;
@@ -152,7 +164,8 @@ export function speak(text, lang = 'en-US', rate = 0.9) {
   };
   // 아이폰은 누른 그 순간(같은 동작 안)에 말해야 소리가 난다. 그래서 곧바로 읽는다.
   // 다만 읽던 것을 멈춘 직후엔 첫 문장을 버리는 일이 있어 그때만 잠깐 쉬었다가
-  if (busy) setTimeout(() => next(0), 120);
+  // (아이폰은 멈춘 직후에도 곧바로 말해야 누른 순간 안에 들어간다)
+  if (busy && !IOS) setTimeout(() => next(0), 120);
   else next(0);
   return true;
 }
