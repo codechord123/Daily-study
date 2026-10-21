@@ -7,6 +7,8 @@ import RichText from './RichText';
 import { Prompt, Passage, Figure } from './QuestionBody';
 import { sfx } from '../services/sound';
 import { speak, canSpeak, stopSpeaking } from '../services/speech';
+import { playClip, stopClip } from '../services/enAudio';
+import { englishSource } from '../services/enClips';
 import { recordAnswer, markConfused, reportQuestion, REPORT_REASONS, dueReviews } from '../store/learnStore';
 import { QUEST_BY_ID, PRINCE_REWARD } from '../data/prince';
 import { ITEM_BY_ID } from '../data/items';
@@ -31,6 +33,16 @@ const englishText = (q, after = false) => {
 };
 
 // 국어·사회·과학은 우리말로 읽어 준다 (지문 → 문제 → 보기)
+// 영어 듣기: 미리 만든 소리 파일이 있으면 그것을, 없으면 기기 음성으로
+const sayEnglish = (q, after = false) => {
+  stopSpeaking();
+  const tts = () => speak(englishText(q, after));
+  if (!playClip(englishSource(q, after), tts)) {
+    stopClip();
+    tts();
+  }
+};
+
 const KO_READ = new Set(['korean', 'social', 'science']);
 const koreanText = (q) =>
   [q.passage, q.sub, q.prompt, ...(q.kind === 'choice' ? q.choices.map((c, i) => (isImg(c) ? '' : `${i + 1}번, ${c}`)) : q.kind === 'ox' ? ['오, 엑스로 답해요'] : [])]
@@ -262,11 +274,17 @@ export default function MissionView() {
 
   useEffect(() => {
     if (q?.subject === 'english' && (q.say || hasEn(q.prompt) || hasEn(q.passage))) {
-      const t = setTimeout(() => speak(englishText(q)), 450);
+      const t = setTimeout(() => sayEnglish(q), 450);
       return () => clearTimeout(t);
     }
   }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => stopSpeaking, []);
+  useEffect(
+    () => () => {
+      stopSpeaking();
+      stopClip();
+    },
+    [],
+  );
 
   // 3D 장면에 미션 시작·종료 알림
   useEffect(() => {
@@ -291,7 +309,7 @@ export default function MissionView() {
       setFeedback({ ok, picked: value, cheer: CHEERS[Math.floor(Math.random() * CHEERS.length)] });
       // 휴대폰: 카드가 길어 정답 안내가 화면 밖이면 보이는 곳까지 내려 준다
       setTimeout(() => document.querySelector('.q-card .feedback')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 60);
-      if (q.subject === 'english') setTimeout(() => speak(englishText(q, true)), 500);
+      if (q.subject === 'english') setTimeout(() => sayEnglish(q, true), 500);
       // 오답 노트: 틀리면 적고, 오답 노트에서 다시 맞히면 지운다
       if (mode === 'review') {
         if (ok) {
@@ -512,12 +530,12 @@ export default function MissionView() {
               </div>
             )}
             {q.subject === 'english' && canSpeak() && (q.say || hasEn(q.prompt) || hasEn(q.passage) || feedback) && (
-              <button className="speak-btn" data-nosfx onClick={() => speak(englishText(q, !!feedback))} aria-label="영어 듣기">
+              <button className="speak-btn" data-nosfx onClick={() => sayEnglish(q, !!feedback)} aria-label="영어 듣기">
                 🔊 듣기
               </button>
             )}
             {KO_READ.has(q.subject) && canSpeak() && (
-              <button className="speak-btn" data-nosfx onClick={() => speak(koreanText(q), 'ko-KR', 1)} aria-label="문제 읽어 주기">
+              <button className="speak-btn" data-nosfx onClick={() => (stopClip(), speak(koreanText(q), 'ko-KR', 1))} aria-label="문제 읽어 주기">
                 🔊 읽기
               </button>
             )}
