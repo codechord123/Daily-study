@@ -13,24 +13,51 @@ const RECENT = 20; // 과목별 최근 몇 문제로 난이도를 맞출지
 /** 한국 날짜로 오늘이 며칠째인지 (보안 규칙과 같은 계산) */
 export const dayNum = (t = Date.now()) => Math.floor((t + 9 * 3600e3) / 864e5);
 
-/** 문제 이름표: 지문+문제 글로 만든 짧은 해시 (보기 순서를 섞어도 같다) */
-export function qId(q) {
-  const s = `${q.passage ?? ''}|${q.prompt}`;
+const hash = (s) => {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);
     h = Math.imul(h, 0x01000193);
   }
   return (h >>> 0).toString(36);
+};
+/**
+ * 문제 이름표: 지문 + 문제 글 + 그림 + 보기(정렬해서, 섞어도 같게)로 만든 짧은 해시.
+ * 문제 글이 같아도 그림·지문·보기가 다르면 다른 문제다 (예: '이 도형의 대칭축은 몇 개일까요?')
+ */
+export function qId(q) {
+  const choices = q.kind === 'choice' && Array.isArray(q.choices) ? [...q.choices].sort().join('¦') : '';
+  return hash(`${q.passage ?? ''}|${q.prompt}|${q.svg ? hash(q.svg) : ''}|${choices}`);
 }
+/** 예전 이름표(지문+문제 글만): 전에 저장한 '출제에서 빼기'·'미션에 넣기'를 알아보려고 */
+export const legacyId = (q) => hash(`${q.passage ?? ''}|${q.prompt}`);
+const LEARN_VER = 2;
 
-const empty = (sid) => ({ sid, review: [], items: {}, std: {}, recent: {}, reports: [], picks: {} });
+const empty = (sid) => ({ sid, v: LEARN_VER, review: [], items: {}, std: {}, recent: {}, reports: [], picks: {} });
 const listeners = new Set();
+
+// 이름표를 바꾼 뒤 예전 기록: 다시 볼 문제는 문제 사본이 있어 새 이름표로 고친다
+function migrate(d) {
+  if ((d.v ?? 1) >= LEARN_VER) return d;
+  const seen = new Set();
+  d.review = d.review.filter((e) => {
+    if (!e?.q) return false;
+    e.id = qId(e.q);
+    if (seen.has(e.id)) return false;
+    seen.add(e.id);
+    return true;
+  });
+  d.v = LEARN_VER;
+  return d;
+}
 
 export function getLearn(sid) {
   try {
     const raw = localStorage.getItem(KEY(sid));
-    if (raw) return { ...empty(sid), ...JSON.parse(raw) };
+    if (raw) {
+      const d = JSON.parse(raw);
+      return migrate({ ...empty(sid), ...d, v: d.v ?? 1 });
+    }
   } catch {
     /* noop */
   }

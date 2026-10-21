@@ -295,13 +295,13 @@ export default function MissionView() {
       // 오답 노트: 틀리면 적고, 오답 노트에서 다시 맞히면 지운다
       if (mode === 'review') {
         if (ok) {
-          const gain = clearWrong(q.prompt);
+          const gain = clearWrong(q);
           setReviewGain((g) => g + gain);
         }
       } else if (!ok) {
         noteWrong(q, mode === 'daily' && !practice ? 'daily' : 'practice');
       } else if (q.review) {
-        clearWrong(q.prompt, { reward: false }); // 다시 보기로 맞힌 문제는 오답 노트에서도 지운다 (보상은 미션 결과에서)
+        clearWrong(q, { reward: false }); // 다시 보기로 맞힌 문제는 오답 노트에서도 지운다 (보상은 미션 결과에서)
       }
       if (ok) {
         const r = (el ?? cardRef.current)?.getBoundingClientRect();

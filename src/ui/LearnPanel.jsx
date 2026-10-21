@@ -1,7 +1,7 @@
 // 선생님 화면 · 학습 분석: 성취기준별 정답률, 많이 틀린 문제, 학생들이 보낸 '문제가 이상해요'
 import { useEffect, useMemo, useState } from 'react';
 import { ROSTER } from '../data/classroom';
-import { getLearn, onLearnChange, qId } from '../store/learnStore';
+import { getLearn, onLearnChange, qId, legacyId } from '../store/learnStore';
 import { getSettings, setSettings, onSettings } from '../store/classSettings';
 import { SUBJECT_META } from '../data/missions/grade5';
 import { STANDARDS, stdSubject } from '../data/missions/standards';
@@ -52,7 +52,11 @@ export function questionOf(id) {
   if (!QMAP) {
     QMAP = new Map();
     for (const [subject, bank] of Object.entries({ social: BANK_SOCIAL, korean: BANK_KOREAN, science: BANK_SCIENCE, english: BANK_ENGLISH, math: BANK_MATH }))
-      for (const q of bank) QMAP.set(qId(q), { subject, ...q, unitTitle: UNIT_TITLES[subject][q.unit] });
+      for (const q of bank) {
+        const item = { subject, ...q, unitTitle: UNIT_TITLES[subject][q.unit] };
+        QMAP.set(qId(q), item);
+        if (!QMAP.has(legacyId(q))) QMAP.set(legacyId(q), item); // 예전 이름표로 모인 기록
+      }
   }
   return QMAP.get(id);
 }

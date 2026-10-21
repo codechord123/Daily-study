@@ -6,7 +6,7 @@ import { makeMathSet, MATH_UNITS } from './mathGen';
 import { getSettings } from '../store/classSettings';
 import { SCHEDULE, ENGLISH_WORDS } from '../data/missions/grade5s2';
 import { BANK_SOCIAL, BANK_KOREAN, BANK_SCIENCE, BANK_ENGLISH, BANK_MATH } from '../data/missions/bank';
-import { qId, dueReviews, recentAccuracy } from '../store/learnStore';
+import { qId, legacyId, dueReviews, recentAccuracy } from '../store/learnStore';
 
 // 난이도 맞추기: 최근 정답률이 높으면 어려운 문제(level 3)를, 낮으면 쉬운 문제(level 1)를 더 자주
 export function levelWeights(acc) {
@@ -29,7 +29,12 @@ export function bankQuestion(id) {
   if (!BY_ID) {
     BY_ID = new Map();
     const all = { korean: BANK_KOREAN, social: BANK_SOCIAL, science: BANK_SCIENCE, english: BANK_ENGLISH, math: BANK_MATH };
-    for (const [subject, bank] of Object.entries(all)) for (const q of bank) BY_ID.set(qId(q), { subject, ...q, unit: UNIT_TITLES[subject][q.unit] });
+    for (const [subject, bank] of Object.entries(all))
+      for (const q of bank) {
+        const item = { subject, ...q, unit: UNIT_TITLES[subject][q.unit] };
+        BY_ID.set(qId(q), item);
+        if (!BY_ID.has(legacyId(q))) BY_ID.set(legacyId(q), item); // 예전 이름표로 넣어 둔 '미션에 넣기'
+      }
   }
   return BY_ID.get(id);
 }
@@ -37,6 +42,8 @@ export const ASSIGN_MAX = 5;
 
 // 선생님이 '출제에서 빼기' 한 문제
 const blockedSet = () => new Set(getSettings().blocked ?? []);
+// 예전 이름표로 뺀 문제도 알아본다
+const isBlocked = (blocked, q) => blocked.has(qId(q)) || blocked.has(legacyId(q));
 
 export const MISSION_COUNTS = { math: 6, english: 5, korean: 3, social: 3, science: 3 };
 export const MISSION_TOTAL = Object.values(MISSION_COUNTS).reduce((a, b) => a + b, 0);
@@ -121,7 +128,7 @@ export function englishSet(r, count, pos, weights = null) {
 // 과학 '물체의 운동': 속력 계산 생성
 // 2022 개정 교육과정을 바탕으로 새로 만든 문항만 낸다 (학습지 옮긴 문항·예전 임시 문항은 쓰지 않음)
 const BANKS = { korean: BANK_KOREAN, social: BANK_SOCIAL, science: BANK_SCIENCE, english: BANK_ENGLISH };
-const qKey = (q) => `${q.passage ?? ''}|${q.prompt}`;
+const qKey = (q) => qId(q); // 한 미션 안에서 같은 문제 두 번 내지 않기
 
 // 은행 과목(국어·사회·과학) count문제, 같은 문제 겹치지 않게
 /** 정답이 늘 같은 자리에 오지 않게 보기 순서를 섞는다 */
@@ -133,7 +140,7 @@ function shuffleChoices(r, q) {
 
 function bankSet(r, subject, count, pos, reviewRate = 0.4, weights = null) {
   const blocked = blockedSet();
-  const bank = BANKS[subject].filter((q) => !blocked.has(qId(q)));
+  const bank = BANKS[subject].filter((q) => !isBlocked(blocked, q));
   const out = [];
   const seen = new Set();
   for (let tries = 0; out.length < count && tries < 80; tries++) {
@@ -164,10 +171,10 @@ function mathSet(r, count, pos, reviewRate, weights = null) {
     let q;
     for (let tries = 0; tries < 12; tries++) {
       const u = pos.mathFixed || reviewRate !== undefined ? pickUnit(r, pos, 'math', reviewRate ?? 0.4) : auto();
-      q = makeMathSet(r, 1, u, { weights, blocked, qId, pickWeighted })[0];
-      if (!seen.has(q.prompt)) break;
+      q = makeMathSet(r, 1, u, { weights, blocked, qId, legacyId, pickWeighted })[0];
+      if (!seen.has(qId(q))) break;
     }
-    seen.add(q.prompt);
+    seen.add(qId(q));
     out.push(q);
   }
   return out;

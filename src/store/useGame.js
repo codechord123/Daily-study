@@ -5,6 +5,7 @@ import { PLANET_DECO } from '../theme/tokens';
 import { priceOf } from './classSettings';
 import { loadProfile, newProfile, saveProfile, onRemoteProfile, onSynced } from './profileStore';
 import { cloudEnabled, cloudSignOut, setUploadDelay } from '../services/cloud';
+import { qId } from './learnStore';
 
 // 새 기능 안내 판 (ui/Onboarding.jsx NEWS_VERSION 과 같게)
 const NEWS_VERSION = 1;
@@ -101,22 +102,29 @@ export const useGame = create((set, get) => {
       set({ missionMode: mode, screen: 'mission', mode: 'walk', visiting: null });
     },
 
-    // 틀린 문제를 오답 노트에 (같은 문제는 한 번만)
+    // 틀린 문제를 오답 노트에 (같은 문제는 한 번만). 문제 글이 같아도 그림·지문·보기가 다르면 다른 문제
     noteWrong(q, source) {
       update((p) => {
         p.wrongNotes ??= [];
-        if (p.wrongNotes.some((n) => n.q.prompt === q.prompt && !n.cleared)) return null;
-        const { id, ...rest } = q; // eslint-disable-line no-unused-vars
+        const id = qId(q);
+        if (p.wrongNotes.some((n) => !n.cleared && qId(n.q) === id)) return null;
+        const { id: _i, review: _r, assigned: _a, noteSource: _n, ...rest } = q; // eslint-disable-line no-unused-vars
         p.wrongNotes.push({ q: rest, date: todayKey(), source, cleared: false });
-        if (p.wrongNotes.length > 80) p.wrongNotes = p.wrongNotes.filter((n) => !n.cleared).slice(-80);
+        // 남은 오답은 80개까지, 정복한 오답은 최근 40개만 남긴다 (별 저장이 너무 커지지 않게)
+        if (p.wrongNotes.length > 120) {
+          const open = p.wrongNotes.filter((n) => !n.cleared).slice(-80);
+          const done = p.wrongNotes.filter((n) => n.cleared).slice(-40);
+          p.wrongNotes = p.wrongNotes.filter((n) => open.includes(n) || done.includes(n));
+        }
         return p;
       });
     },
-    // 오답 노트에서 다시 맞히면 지운다. 아침 미션에서 틀린 문제면 별가루 +3
-    clearWrong(prompt, { reward = true } = {}) {
+    // 오답 노트에서 다시 맞히면 정복. 아침 미션에서 틀린 문제면 별가루 +3
+    clearWrong(q, { reward = true } = {}) {
       let gain = 0;
+      const id = qId(q);
       update((p) => {
-        const n = p.wrongNotes?.find((x) => x.q.prompt === prompt && !x.cleared);
+        const n = p.wrongNotes?.find((x) => !x.cleared && qId(x.q) === id);
         if (!n) return null;
         n.cleared = true;
         n.clearedAt = todayKey();

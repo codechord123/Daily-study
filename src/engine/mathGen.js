@@ -288,12 +288,12 @@ export const MATH_UNITS = [
 
 /** current: 지금 단원 번호. 지금 단원에서 3문제 + 지난 단원 복습 2문제 */
 export function makeMathSet(r, count, current, opts = {}) {
-  const { weights = null, blocked = null, qId = null, pickWeighted = null } = opts;
+  const { weights = null, blocked = null, qId = null, legacyId = null, pickWeighted = null } = opts;
   const out = [];
   const used = new Set();
   const draw = (u) => {
     // 새로 만든 생각하는 문제가 있는 단원은 대부분 거기서 낸다 (나머지는 계산 연습 생성)
-    const bank = BANK_MATH.filter((q) => q.unit === u && !used.has(q.prompt) && !(blocked && qId && blocked.has(qId(q))));
+    const bank = BANK_MATH.filter((q) => q.unit === u && !used.has(q.prompt) && !(blocked && qId && (blocked.has(qId(q)) || (legacyId && blocked.has(legacyId(q))))));
     if (bank.length && r() < 0.85) {
       const q = weights && pickWeighted ? pickWeighted(r, bank, weights) : bank[Math.floor(r() * bank.length)];
       used.add(q.prompt);
