@@ -260,6 +260,7 @@ export default function MissionView() {
   const [reward, setReward] = useState(null);
   const [finished, setFinished] = useState(false);
   const [confused, setConfused] = useState(false); // 맞혔지만 헷갈렸어요
+  const [showHint, setShowHint] = useState(false);
   const [reporting, setReporting] = useState(false); // '이상해요' 이유 고르는 중
   const [reported, setReported] = useState(false);
   const cardRef = useRef();
@@ -334,6 +335,7 @@ export default function MissionView() {
     setNum('');
     setHover(null);
     setConfused(false);
+    setShowHint(false);
     setReporting(false);
     setReported(false);
     document.activeElement?.blur?.(); // 앞 문제에서 누른 버튼의 포커스가 다음 문제에 남지 않게
@@ -549,7 +551,8 @@ export default function MissionView() {
               <div className="q-main">
             {q.sub && <p className="q-sub">{q.sub}</p>}
             <Prompt q={viewQ} fill={blankFill} fillState={blankState} />
-            {q.hint && !feedback && <p className="q-hint">💡 {q.hint}</p>}
+            {/* 힌트는 바로 보이면 답을 알려 주는 셈이라, 필요한 학생만 눌러서 본다 */}
+            {q.hint && !feedback && (showHint ? <p className="q-hint">💡 {q.hint}</p> : <button className="hint-btn" onClick={() => setShowHint(true)}>💡 힌트 보기</button>)}
 
             {q.kind === 'choice' && (
               <div className={`choices ${q.choices.length > 2 ? 'grid' : ''} ${q.choices.some((c) => c.length > 9 && !isImg(c)) ? 'long' : ''} ${q.choices.some(isImg) ? 'has-img' : ''}`}>

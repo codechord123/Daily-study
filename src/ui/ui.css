@@ -1254,3 +1254,4 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .prince-gifts { display: flex; flex-wrap: wrap; gap: 6px; }
 .prince-gift { padding: 4px 10px; border-radius: 999px; font-size: 13px; border: 1px dashed var(--panel-line); color: var(--ink-muted); }
 .prince-gift.got { border-style: solid; border-color: rgba(255,215,106,.6); color: var(--ink); background: rgba(255,215,106,.12); }
+.hint-btn { justify-self: start; min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px dashed color-mix(in srgb, var(--subject) 60%, #998); background: transparent; color: var(--ink-dark); opacity: .8; font: inherit; font-size: 14px; cursor: pointer; margin: 4px 0 8px; }

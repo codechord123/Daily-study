@@ -124,16 +124,16 @@ const unit3 = [
     return { kind: 'number', prompt: `두 삼각형이 서로 합동이에요. 한 삼각형의 세 변이 ${a}cm, ${b}cm, ${c}cm일 때, 다른 삼각형의 둘레는? (cm)`, answer: a + b + c, hint: '합동이면 대응변의 길이가 같아요' };
   },
   (r) => {
-    const L = randInt(r, 3, 12) * 2;
-    return { kind: 'number', prompt: `선대칭도형에서 두 대응점을 이은 선분의 길이가 ${L}cm예요. 한 대응점에서 대칭축까지의 거리는? (cm)`, answer: L / 2, hint: '대칭축은 대응점을 이은 선분을 똑같이 둘로 나눠요' };
+    const side = randInt(r, 5, 13), base = randInt(r, 3, side - 1), P = side * 2 + base;
+    return { kind: 'number', prompt: `선대칭도형인 이등변삼각형의 둘레가 ${P}cm, 밑변이 ${base}cm예요. 한 옆변의 길이는? (cm)`, answer: side, hint: '두 옆변은 대응변이라 길이가 같아요', explain: `두 옆변의 합은 ${P} − ${base} = ${P - base}cm, 한 옆변은 ${P - base} ÷ 2 = ${side}cm예요.` };
   },
   (r) => {
-    const deg = randInt(r, 4, 14) * 5;
-    return { kind: 'number', prompt: `두 사각형이 서로 합동이에요. 한 사각형의 한 각이 ${deg}°일 때, 그 대응각의 크기는? (°)`, answer: deg };
+    const a = randInt(r, 6, 14) * 5, b = randInt(r, 4, 12) * 5, c = 180 - a - b;
+    return { kind: 'number', prompt: `두 삼각형이 서로 합동이에요. 한 삼각형의 두 각이 ${a}°, ${b}°일 때, 다른 삼각형에서 나머지 한 각의 대응각은 몇 도일까요? (°)`, answer: c, hint: '삼각형의 세 각의 합은 180°예요', explain: `나머지 한 각은 180° − ${a}° − ${b}° = ${c}°이고, 대응각의 크기는 같아요.` };
   },
   (r) => {
-    const d = randInt(r, 2, 9);
-    return { kind: 'number', prompt: `점대칭도형에서 대칭의 중심부터 한 점까지의 거리가 ${d}cm예요. 그 점과 대응점을 이은 선분의 길이는? (cm)`, answer: d * 2, hint: '대칭의 중심은 대응점을 이은 선분을 똑같이 둘로 나눠요' };
+    const a = randInt(r, 3, 9), b = randInt(r, 2, 8);
+    return { kind: 'number', prompt: `점대칭도형인 평행사변형에서 대칭의 중심부터 이웃한 두 꼭짓점까지의 거리가 각각 ${a}cm, ${b}cm예요. 두 대각선의 길이의 합은? (cm)`, answer: 2 * (a + b), hint: '대칭의 중심은 대응점을 이은 선분을 똑같이 둘로 나눠요', explain: `두 대각선은 ${a * 2}cm, ${b * 2}cm라서 합은 ${2 * (a + b)}cm예요.` };
   },
   (r) => {
     const a = randInt(r, 4, 12), b = randInt(r, 3, 9);
