@@ -110,10 +110,10 @@ export const useGame = create((set, get) => {
         if (p.wrongNotes.some((n) => !n.cleared && qId(n.q) === id)) return null;
         const { id: _i, review: _r, assigned: _a, noteSource: _n, ...rest } = q; // eslint-disable-line no-unused-vars
         p.wrongNotes.push({ q: rest, date: todayKey(), source, cleared: false });
-        // 남은 오답은 80개까지, 정복한 오답은 최근 40개만 남긴다 (별 저장이 너무 커지지 않게)
-        if (p.wrongNotes.length > 120) {
+        // 남은 오답은 80개까지, 정복한 오답은 최근 60개만 남긴다 (선생님이 해결한 문제도 볼 수 있게) (별 저장이 너무 커지지 않게)
+        if (p.wrongNotes.length > 140) {
           const open = p.wrongNotes.filter((n) => !n.cleared).slice(-80);
-          const done = p.wrongNotes.filter((n) => n.cleared).slice(-40);
+          const done = p.wrongNotes.filter((n) => n.cleared).slice(-60);
           p.wrongNotes = p.wrongNotes.filter((n) => open.includes(n) || done.includes(n));
         }
         return p;

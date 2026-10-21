@@ -1255,3 +1255,30 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .prince-gift { padding: 4px 10px; border-radius: 999px; font-size: 13px; border: 1px dashed var(--panel-line); color: var(--ink-muted); }
 .prince-gift.got { border-style: solid; border-color: rgba(255,215,106,.6); color: var(--ink); background: rgba(255,215,106,.12); }
 .hint-btn { justify-self: start; min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px dashed color-mix(in srgb, var(--subject) 60%, #998); background: transparent; color: var(--ink-dark); opacity: .8; font: inherit; font-size: 14px; cursor: pointer; margin: 4px 0 8px; }
+
+/* 큰 가로 화면(크롬북·교실 모니터): 문제 카드를 화면 크기에 맞춰 통째로 키운다.
+   vh로 정한 높이 한도는 키운 만큼 나눠서 화면 밖으로 넘치지 않게 */
+@media (min-aspect-ratio: 11/10) and (min-width: 1200px) and (min-height: 700px) { .mission-stage { --qz: 1.12; } }
+@media (min-aspect-ratio: 11/10) and (min-width: 1400px) and (min-height: 820px) { .mission-stage { --qz: 1.25; } }
+@media (min-aspect-ratio: 11/10) and (min-width: 1650px) and (min-height: 960px) { .mission-stage { --qz: 1.42; } }
+@media (min-aspect-ratio: 11/10) and (min-width: 2100px) and (min-height: 1200px) { .mission-stage { --qz: 1.7; } }
+@media (min-aspect-ratio: 11/10) and (min-width: 1200px) and (min-height: 700px) {
+  .mission-stage .q-card { zoom: var(--qz, 1); }
+  .mission-stage .q-figure img { max-height: calc(34vh / var(--qz, 1)); }
+  .mission-stage .q-card.is-wide .q-figure img { max-height: min(calc(52vh / var(--qz, 1)), 460px); }
+  .mission-stage .pass { max-height: calc(40vh / var(--qz, 1)); }
+  .mission-stage .q-card.is-wide .pass { max-height: calc(52vh / var(--qz, 1)); }
+  .mission-stage .q-passage { max-height: calc(38vh / var(--qz, 1)); }
+  .mission-stage .q-image { max-height: calc(30vh / var(--qz, 1)); }
+  .q-context, .q-sub { font-size: 17px; }
+}
+
+/* 선생님 · 문제 한눈에 보기: 그림도 함께 */
+.t-peek-fig { display: block; max-width: min(100%, 420px); max-height: 260px; object-fit: contain; background: #fff; border-radius: 10px; padding: 6px; }
+.t-peek-choice { display: inline-block; vertical-align: middle; max-height: 70px; max-width: 160px; background: #fff; border-radius: 6px; padding: 2px; }
+.t-who { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.t-who span { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: rgba(255,120,140,.16); color: var(--ink); }
+.t-who span.done { background: rgba(111,227,165,.16); color: var(--good, #6fe3a5); }
+.sd-state { flex: none; font-style: normal; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: rgba(255,120,140,.16); white-space: nowrap; }
+.sd-state.done { background: rgba(111,227,165,.16); color: var(--good, #6fe3a5); }
+.sd-notes { max-height: 420px; overflow-y: auto; }

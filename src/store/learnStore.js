@@ -216,7 +216,10 @@ export function reportQuestion(sid, q, reason) {
   change(sid, (d) => {
     const id = qId(q);
     if (d.reports.some((x) => x.id === id && x.reason === reason)) return false;
-    d.reports.push({ id, subject: q.subject, unit: q.unit ?? '', prompt: String(q.prompt).slice(0, 160), passage: q.passage ? String(q.passage).slice(0, 160) : '', reason, at: Date.now() });
+    // 문제 전체도 함께 (계산 연습처럼 문항 은행에 없는 문제도 선생님이 그대로 볼 수 있게)
+    const { kind, prompt, passage, sub, choices, answer, explain, svg, image, unit } = q;
+    const full = JSON.parse(JSON.stringify({ kind, prompt, passage, sub, choices, answer, explain, svg, image, unit }));
+    d.reports.push({ id, subject: q.subject, unit: q.unit ?? '', prompt: String(q.prompt).slice(0, 160), passage: q.passage ? String(q.passage).slice(0, 160) : '', reason, at: Date.now(), q: full });
     d.reports = d.reports.slice(-REPORT_MAX);
   });
 }

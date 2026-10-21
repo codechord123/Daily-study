@@ -1,18 +1,22 @@
 // 선생님 화면 · 학생 한 명 자세히: 성취기준별 정답률(반 평균과 비교), 최근 기록, 오답·다시 볼 문제, 자주 틀린 문제
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ROSTER } from '../data/classroom';
 import { loadProfile } from '../store/profileStore';
-import { getLearn } from '../store/learnStore';
+import { getLearn, qId } from '../store/learnStore';
 import { SUBJECT_META } from '../data/missions/grade5';
 import { STANDARDS, stdSubject } from '../data/missions/standards';
 import RichText from './RichText';
 import { useEscape } from './useEscape';
+import { QuestionPeek, shuffled } from './LearnPanel';
+import PresentView from './PresentView';
 
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : null);
 const SUBJECTS = ['math', 'english', 'korean', 'social', 'science'];
 
 export default function StudentDetail({ sid, questionOf, onClose }) {
-  useEscape(onClose);
+  const [open, setOpen] = useState(null);
+  const [present, setPresent] = useState(null);
+  useEscape(onClose, present == null);
   const st = ROSTER.find((s) => s.id === sid);
   const p = loadProfile(sid);
   const l = getLearn(sid);
@@ -38,6 +42,12 @@ export default function StudentDetail({ sid, questionOf, onClose }) {
     .slice(0, 8)
     .map(([id, [w, t]]) => ({ id, w, t, q: questionOf(id), pick: Object.entries(l.picks?.[id] ?? {}).sort((a, b) => b[1] - a[1])[0] }));
   const stds = Object.entries(l.std).sort((a, b) => a[0].localeCompare(b[0]));
+  // 오답 노트 전체 (다시 풀어 해결한 문제도): 최근 것부터
+  const allNotes = (p?.wrongNotes ?? [])
+    .filter((n) => n?.q)
+    .map((n) => ({ ...n, id: qId(n.q), q: questionOf(qId(n.q)) ?? n.q }))
+    .reverse();
+  const noteSlides = allNotes.map((n) => ({ id: n.id, q: shuffled(n.q, n.id) }));
 
   return (
     <div className="sheet-backdrop" style={{ position: 'fixed' }} onClick={onClose}>
@@ -115,6 +125,41 @@ export default function StudentDetail({ sid, questionOf, onClose }) {
             </div>
 
             <div className="rec-card">
+              <div className="t-sub-row">
+                <h3>틀린 문제 모두 <small>오답 노트 · 다시 풀어 해결한 것도</small></h3>
+                {noteSlides.length > 0 && <button className="btn btn-sm" onClick={() => setPresent(0)}>📺 띄워 보기</button>}
+              </div>
+              {allNotes.length ? (
+                <ul className="t-list sd-notes">
+                  {allNotes.map((n, i) => (
+                    <li key={`${n.id}-${i}`}>
+                      <button className="t-row-btn" onClick={() => setOpen(open === i ? null : i)}>
+                        <span className="t-dot" style={{ background: SUBJECT_META[n.q.subject]?.color }} />
+                        <span className="t-row-main">
+                          <b><RichText text={n.q.prompt} /></b>
+                          <small className="muted">
+                            {SUBJECT_META[n.q.subject]?.label} · {n.date?.slice(5).replace('-', '/')} 틀림{n.q.svg || n.q.image ? ' · 그림 문제' : ''}
+                          </small>
+                        </span>
+                        <em className={`sd-state ${n.cleared ? 'done' : ''}`}>{n.cleared ? `✓ 해결 ${n.clearedAt?.slice(5).replace('-', '/') ?? ''}` : '아직'}</em>
+                      </button>
+                      {open === i && (
+                        <div className="t-row-open">
+                          <QuestionPeek q={n.q} />
+                          <div className="t-actions">
+                            <button className="btn btn-sm" onClick={() => setPresent(i)}>📺 이 문제 띄우기</button>
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted">틀린 문제가 없어요.</p>
+              )}
+            </div>
+
+            <div className="rec-card">
               <h3>자주 틀린 문제</h3>
               {missed.length ? (
                 <ul className="st-list">
@@ -152,6 +197,11 @@ export default function StudentDetail({ sid, questionOf, onClose }) {
           </>
         )}
       </section>
+      {present != null && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <PresentView items={noteSlides} start={present} onClose={() => setPresent(null)} />
+        </div>
+      )}
     </div>
   );
 }

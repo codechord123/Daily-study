@@ -2,6 +2,7 @@
 //  - 문제 문장: 상황 설명(작게) / 지시(꼬리표) / 묻는 말(크게)로 나누고, □는 보기를 고르면 채워지는 빈칸
 //  - 지문: 대화는 말풍선, ㉠·①·보기는 '보기' 상자, 『』 사료는 한지, 나머지는 줄 공책
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import RichText from './RichText';
 import { useEscape } from './useEscape';
 
@@ -150,12 +151,15 @@ export function Figure({ src }) {
         <img src={src} alt="문제 그림" />
         <span className="zoom-chip">🔍 크게</span>
       </button>
-      {zoom && (
-        <div className="q-zoom" onClick={() => setZoom(false)} role="dialog" aria-label="크게 본 그림">
-          <img src={src} alt="문제 그림 크게" />
-          <span className="zoom-close">눌러서 닫기</span>
-        </div>
-      )}
+      {/* 카드가 커져(zoom) 있어도 크게 보기는 화면 기준으로 */}
+      {zoom &&
+        createPortal(
+          <div className="q-zoom" onClick={() => setZoom(false)} role="dialog" aria-label="크게 본 그림">
+            <img src={src} alt="문제 그림 크게" />
+            <span className="zoom-close">눌러서 닫기</span>
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

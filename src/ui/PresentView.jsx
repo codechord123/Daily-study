@@ -67,7 +67,7 @@ export default function PresentView({ items, start = 0, onClose }) {
         <button className="btn" onClick={onClose}>닫기 ✕</button>
       </header>
 
-      <article className={`q-card present-card ${show ? 'is-ok' : ''} ${q.svg || q.passage ? 'is-wide' : ''}`} data-subject={q.subject} style={{ '--subject': meta.color }} key={i}>
+      <article className={`q-card present-card ${show ? 'is-ok' : ''} ${q.image || q.svg || q.passage ? 'is-wide' : ''}`} data-subject={q.subject} style={{ '--subject': meta.color }} key={i}>
         <div className="q-top">
           <span className="q-subject">
             <span className="q-icon">{meta.icon}</span>
@@ -77,9 +77,9 @@ export default function PresentView({ items, start = 0, onClose }) {
           {q.std && <span className="present-std">{q.std}</span>}
         </div>
         <div className="q-layout">
-          {(q.svg || q.passage) && (
+          {(q.image || q.svg || q.passage) && (
             <div className="q-media">
-              {q.svg && <Figure src={svgUrl(q.svg)} />}
+              {(q.image || q.svg) && <Figure src={q.image ?? svgUrl(q.svg)} />}
               {q.passage && <Passage text={q.passage} />}
             </div>
           )}

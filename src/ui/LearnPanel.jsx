@@ -1,6 +1,7 @@
 // 선생님 화면 · 학습 분석: 성취기준별 정답률, 많이 틀린 문제, 학생들이 보낸 '문제가 이상해요'
 import { useEffect, useMemo, useState } from 'react';
 import { ROSTER } from '../data/classroom';
+import { loadProfile, onRemoteProfile } from '../store/profileStore';
 import { getLearn, onLearnChange, qId, legacyId } from '../store/learnStore';
 import { getSettings, setSettings, onSettings } from '../store/classSettings';
 import { SUBJECT_META } from '../data/missions/grade5';
@@ -24,7 +25,7 @@ import RichText from './RichText';
 import PresentView from './PresentView';
 
 // 화면에 띄울 때 정답이 늘 ①에 오지 않게 보기를 섞는다 (문제마다 같은 순서)
-function shuffled(q, seed) {
+export function shuffled(q, seed) {
   if (q.kind !== 'choice') return q;
   let h = [...seed].reduce((a, c) => Math.imul(a ^ c.charCodeAt(0), 16777619), 2166136261) >>> 0;
   const order = q.choices.map((_, i) => i);
@@ -61,24 +62,28 @@ export function questionOf(id) {
   return QMAP.get(id);
 }
 
-function QuestionPeek({ q }) {
-  if (!q) return <p className="muted">문항 은행에서 찾을 수 없는 문제예요 (계산 연습 문제 등).</p>;
+const svgUrl = (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+
+// 문제 한눈에 보기: 그림·지문·보기(그림 보기도)·정답·풀이
+export function QuestionPeek({ q }) {
+  if (!q) return <p className="muted">문제 내용을 찾을 수 없어요.</p>;
   return (
     <div className="t-peek">
+      {(q.image || q.svg) && <img className="t-peek-fig" src={q.image ?? svgUrl(q.svg)} alt="문제 그림" />}
       {q.passage && <p className="t-peek-pass"><RichText text={q.passage} /></p>}
       <p><RichText text={q.prompt} /></p>
       {q.kind === 'choice' && (
         <ol>
           {q.choices.map((c, i) => (
             <li key={i} className={i === q.answer ? 'right' : ''}>
-              {c.startsWith?.('img:') ? '(그림)' : <RichText text={c} />}
+              {c.startsWith?.('img:') ? <img className="t-peek-choice" src={c.slice(4)} alt={`${i + 1}번 그림`} /> : <RichText text={c} />}
               {i === q.answer && ' ✓'}
             </li>
           ))}
         </ol>
       )}
       {q.kind !== 'choice' && <p>정답: <b>{q.kind === 'ox' ? (q.answer ? 'O' : 'X') : String(q.answer)}</b></p>}
-      {q.explain && <p className="muted">💡 {q.explain}</p>}
+      {q.explain && <p className="muted">💡 <RichText text={q.explain} /></p>}
     </div>
   );
 }
@@ -119,10 +124,12 @@ export default function LearnPanel() {
   const [open, setOpen] = useState(null);
   const [seen, setSeen] = useState(readSeen);
   const [blocked, setBlocked] = useState(() => getSettings().blocked ?? []);
-  const [present, setPresent] = useState(null);
+  const [present, setPresent] = useState(null); // { items, start }
+  const [showAllWrong, setShowAllWrong] = useState(false);
   const [assigned, setAssigned] = useState(() => getSettings().assigned ?? null);
   useEffect(() => onSettings((s) => setAssigned(s.assigned ?? null)), []); // 수업 화면에 띄우는 중: 시작 번호
   useEffect(() => onLearnChange(() => setTick((x) => x + 1)), []);
+  useEffect(() => onRemoteProfile(() => setTick((x) => x + 1)), []);
   useEffect(() => onSettings((s) => setBlocked(s.blocked ?? [])), []);
 
   const data = useMemo(() => {
@@ -164,8 +171,23 @@ export default function LearnPanel() {
       .map(([id, e]) => ({ id, ...e, rate: pct(e.w, e.t), q: questionOf(id) }))
       .sort((a, b) => b.rate - a.rate || b.w - a.w)
       .slice(0, 10);
-    const reportRows = Object.values(reports).sort((a, b) => b.last - a.last);
-    return { stdRows, missed, reportRows, review };
+    const reportRows = Object.values(reports)
+      .map((r) => ({ ...r, q: questionOf(r.id) ?? (r.q && { subject: r.subject, ...r.q }) }))
+      .sort((a, b) => b.last - a.last);
+    // 최근 2주 동안 오답 노트에 들어간 문제 (다시 풀어 해결한 것도): 문제마다 누가 틀렸고 해결했는지
+    const since = todayKey(new Date(Date.now() - 13 * 864e5));
+    const wrong = {};
+    for (const st of ROSTER) {
+      for (const n of loadProfile(st.id)?.wrongNotes ?? []) {
+        if (!n?.q || n.date < since) continue;
+        const id = qId(n.q);
+        const e = (wrong[id] ??= { id, q: questionOf(id) ?? n.q, who: [], last: '' });
+        if (!e.who.some((w) => w.sid === st.id)) e.who.push({ sid: st.id, name: st.nickname, cleared: !!n.cleared });
+        if (n.date > e.last) e.last = n.date;
+      }
+    }
+    const wrongRows = Object.values(wrong).sort((a, b) => b.who.length - a.who.length || b.last.localeCompare(a.last));
+    return { stdRows, missed, reportRows, review, wrongRows };
   }, [tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const markSeen = (id) => {
@@ -178,6 +200,9 @@ export default function LearnPanel() {
     }
   };
   const slides = data.missed.filter((m) => m.q).map((m) => ({ ...m, q: shuffled(m.q, m.id) }));
+  const reportSlides = data.reportRows.filter((r) => r.q).map((r) => ({ id: r.id, q: r.q }));
+  const wrongShown = showAllWrong ? data.wrongRows : data.wrongRows.slice(0, 12);
+  const wrongSlides = wrongShown.map((w) => ({ id: w.id, q: shuffled(w.q, w.id), who: w.who.length }));
   const newReports = data.reportRows.filter((r) => !seen.has(r.id));
   const oldReports = data.reportRows.filter((r) => seen.has(r.id));
 
@@ -188,7 +213,12 @@ export default function LearnPanel() {
         <span className="muted">틀린 문제·헷갈린 문제는 1·3·7일 뒤 아침 미션에 다시 나와요 (지금 반 전체 {data.review}문제 대기)</span>
       </div>
 
-      <h3 className="t-sub" id="t-reports">🚩 학생들이 알려 준 문제 {newReports.length > 0 && <span className="t-badge">{newReports.length}</span>}</h3>
+      <div className="t-sub-row" id="t-reports">
+        <h3 className="t-sub">🚩 학생들이 알려 준 문제 {newReports.length > 0 && <span className="t-badge">{newReports.length}</span>}</h3>
+        {reportSlides.length > 0 && (
+          <button className="btn btn-sm btn-primary" onClick={() => setPresent({ items: reportSlides, start: 0 })}>📺 모두 띄워 보기</button>
+        )}
+      </div>
       {data.reportRows.length ? (
         <ul className="t-list">
           {[...newReports, ...oldReports].map((r) => (
@@ -203,8 +233,9 @@ export default function LearnPanel() {
               </button>
               {open === `r${r.id}` && (
                 <div className="t-row-open">
-                  <QuestionPeek q={questionOf(r.id)} />
+                  <QuestionPeek q={r.q} />
                   <div className="t-actions">
+                    {r.q && <button className="btn btn-sm" onClick={() => setPresent({ items: reportSlides, start: reportSlides.findIndex((x) => x.id === r.id) })}>📺 크게 띄워 보기</button>}
                     {!seen.has(r.id) && <button className="btn btn-sm" onClick={() => markSeen(r.id)}>확인했어요</button>}
                     <BlockButton id={r.id} blocked={blocked} />
                   </div>
@@ -234,10 +265,57 @@ export default function LearnPanel() {
         <p className="muted">학생들이 문제를 풀면 성취기준마다 정답률이 모여요.</p>
       )}
 
+      <div className="t-sub-row" id="t-wrong">
+        <h3 className="t-sub">🗂 최근 2주 틀린 문제 (오답 노트로 해결한 것도)</h3>
+        {wrongSlides.length > 0 && (
+          <button className="btn btn-sm btn-primary" onClick={() => setPresent({ items: wrongSlides, start: 0 })}>📺 수업 화면에 띄우기</button>
+        )}
+      </div>
+      {data.wrongRows.length ? (
+        <ol className="t-list">
+          {wrongShown.map((w) => (
+            <li key={w.id}>
+              <button className="t-row-btn" onClick={() => setOpen(open === `w${w.id}` ? null : `w${w.id}`)}>
+                <span className="t-dot" style={{ background: SUBJECT_META[w.q?.subject]?.color }} />
+                <span className="t-row-main">
+                  <b><RichText text={w.q.prompt} /></b>
+                  <span className="muted">{SUBJECT_META[w.q?.subject]?.label} · {w.q?.unitTitle ?? w.q?.unit ?? ''}{w.q?.svg || w.q?.image ? ' · 그림 문제' : ''}</span>
+                  <span className="t-who">
+                    {w.who.map((x) => (
+                      <span key={x.sid} className={x.cleared ? 'done' : ''} title={x.cleared ? '오답 노트에서 다시 풀어 해결' : '아직 해결 전'}>
+                        {x.name}{x.cleared ? ' ✓' : ''}
+                      </span>
+                    ))}
+                  </span>
+                </span>
+                <em className="t-miss">{w.who.length}명<small>{w.who.filter((x) => x.cleared).length}명 해결</small></em>
+              </button>
+              {open === `w${w.id}` && (
+                <div className="t-row-open">
+                  <QuestionPeek q={w.q} />
+                  <div className="t-actions">
+                    <button className="btn btn-sm" onClick={() => setPresent({ items: wrongSlides, start: wrongSlides.findIndex((x) => x.id === w.id) })}>📺 이 문제 띄우기</button>
+                    <AssignButton id={w.id} assigned={assigned} />
+                    <BlockButton id={w.id} blocked={blocked} />
+                  </div>
+                </div>
+              )}
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="muted">최근 2주 동안 틀린 문제가 없어요.</p>
+      )}
+      {data.wrongRows.length > 12 && (
+        <button className="btn btn-sm btn-ghost" onClick={() => setShowAllWrong((v) => !v)}>
+          {showAllWrong ? '접기' : `${data.wrongRows.length - 12}문제 더 보기`}
+        </button>
+      )}
+
       <div className="t-sub-row" id="t-missed">
         <h3 className="t-sub">❗ 많이 틀린 문제 (3번 넘게 나온 문제 중)</h3>
         {slides.length > 0 && (
-          <button className="btn btn-sm btn-primary" onClick={() => setPresent(0)}>📺 수업 화면에 띄우기</button>
+          <button className="btn btn-sm btn-primary" onClick={() => setPresent({ items: slides, start: 0 })}>📺 수업 화면에 띄우기</button>
         )}
       </div>
       {data.missed.length ? (
@@ -257,7 +335,7 @@ export default function LearnPanel() {
                 <div className="t-row-open">
                   <QuestionPeek q={m.q} />
                   <div className="t-actions">
-                    {m.q && <button className="btn btn-sm" onClick={() => setPresent(slides.findIndex((x) => x.id === m.id))}>📺 이 문제 띄우기</button>}
+                    {m.q && <button className="btn btn-sm" onClick={() => setPresent({ items: slides, start: slides.findIndex((x) => x.id === m.id) })}>📺 이 문제 띄우기</button>}
                     <AssignButton id={m.id} assigned={assigned} />
                     <BlockButton id={m.id} blocked={blocked} />
                   </div>
@@ -280,7 +358,7 @@ export default function LearnPanel() {
           출제에서 뺀 문제 {blocked.length}개 <button className="btn btn-sm" onClick={() => setSettings({ blocked: [] })}>모두 다시 내기</button>
         </p>
       )}
-      {present != null && <PresentView items={slides} start={present} onClose={() => setPresent(null)} />}
+      {present && <PresentView items={present.items} start={Math.max(0, present.start)} onClose={() => setPresent(null)} />}
     </section>
   );
 }
