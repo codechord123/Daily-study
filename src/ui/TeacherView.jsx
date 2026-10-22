@@ -43,7 +43,7 @@ function useSettings() {
 }
 
 // 시연용: 기록이 없는 학생에게 지난 3주 가상 기록을 만든다 (demo 표시)
-function fillDemo() {
+export function fillDemo() {
   const today = new Date();
   for (const st of ROSTER) {
     if (loadProfile(st.id)) continue;

@@ -12,6 +12,7 @@
 //               seats/{classId}/{sid}, teachers/{classId}  위치를 쓸 수 있는 사람 (보안 규칙용)
 // 원격 데이터는 localStorage에 비춰 두고, 화면 코드는 지금처럼 동기식으로 읽는다.
 import { setRoster, makeRoster } from '../data/classroom';
+import { DEMO } from '../demo';
 
 const env = import.meta.env;
 const EMULATOR = env.VITE_FIREBASE_EMULATOR === '1';
@@ -24,9 +25,9 @@ const DEFAULT_CONFIG = {
   projectId: 'learn-cube-281e2',
   appId: '1:446916411202:web:65ccd65ee6bed9548f12db',
 };
-const useDefault = env.PROD && env.VITE_FIREBASE_OFF !== '1' && !EMULATOR;
+const useDefault = env.PROD && env.VITE_FIREBASE_OFF !== '1' && !EMULATOR && !DEMO;
 const cfg = (key, envKey) => env[envKey] || (useDefault ? DEFAULT_CONFIG[key] : undefined);
-export const cloudEnabled = EMULATOR || !!cfg('projectId', 'VITE_FIREBASE_PROJECT_ID');
+export const cloudEnabled = !DEMO && (EMULATOR || !!cfg('projectId', 'VITE_FIREBASE_PROJECT_ID'));
 // 지금 들어와 있는 학급 (로그인하면 정해진다)
 export let CLASS_ID = env.VITE_CLASS_ID || 'star5';
 

@@ -1282,3 +1282,17 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .sd-state { flex: none; font-style: normal; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: rgba(255,120,140,.16); white-space: nowrap; }
 .sd-state.done { background: rgba(111,227,165,.16); color: var(--good, #6fe3a5); }
 .sd-notes { max-height: 420px; overflow-y: auto; }
+
+/* 체험판 안내 띠: 화면 아래 가운데, 작게 */
+.demo-bar {
+  position: fixed; left: 50%; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 70;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 16px);
+  padding: 6px 8px 6px 14px; border-radius: 999px; font-size: 13px; color: var(--ink);
+  background: rgba(20, 18, 48, .82); border: 1px solid rgba(255, 215, 106, .5); backdrop-filter: blur(6px);
+}
+.demo-bar b { color: var(--gold); }
+.demo-bar span { color: var(--ink-muted); }
+/* 로그인 밖에서는 작게, 위 가운데 (아래 버튼들을 가리지 않게) */
+.demo-bar.is-mini { top: calc(10px + env(safe-area-inset-top, 0px)); bottom: auto; padding: 2px 4px 2px 12px; font-size: 12px; gap: 2px; }
+.demo-bar.is-mini .btn { padding: 4px 8px; min-height: 0; font-size: 12px; }
+@media (max-width: 700px) { .demo-bar.is-mini { top: calc(72px + env(safe-area-inset-top, 0px)); left: auto; right: 12px; transform: none; } }

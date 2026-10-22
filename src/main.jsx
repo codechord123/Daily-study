@@ -1,3 +1,4 @@
+import { DEMO } from './demo'; // 체험판이면 저장소를 먼저 갈라 둔다 (맨 먼저)
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
@@ -6,6 +7,8 @@ import './theme/styles.css';
 import './ui/ui.css';
 
 startCloud();
+// 체험판: 샘플 학생들의 지난 3주 기록을 채워 둔다 (이미 있으면 그대로)
+if (DEMO) import('./ui/TeacherView').then((m) => m.fillDemo());
 
 // 3D 위 이름표(drei Html)가 장면이 바뀔 때 이미 떼어진 요소를 한 번 더 떼려다 오류가 난다.
 // 그런 경우는 조용히 넘어가도록 방어한다 (React 공식 이슈 #11538에서 쓰는 우회법).

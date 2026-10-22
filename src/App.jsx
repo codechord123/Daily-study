@@ -20,6 +20,7 @@ import * as presence from './services/presence';
 import { sfx, playMusic, stopMusic } from './services/sound';
 import { cloudEnabled, cloudReady } from './services/cloud';
 import { useAccount } from './ui/CloudLogin';
+import { DEMO, resetDemo, exitDemo } from './demo';
 
 export default function App() {
   const { profile, screen, visiting, launchFrom, restoreSession, visit, missionMode } = useGame();
@@ -121,6 +122,14 @@ export default function App() {
         {profile && profile.onboarded && (profile.newsSeen ?? 0) < NEWS_VERSION && screen === 'home' && profile.sid !== 'teacher' && <Onboarding news key="news" />}
         <WarpOverlay />
         <Toast />
+        {DEMO && screen !== 'mission' && (
+          <div className={`demo-bar ${screen === 'login' ? '' : 'is-mini'}`} role="note">
+            <b>체험판</b>
+            {screen === 'login' && <span>실제 학급과 연결되지 않아요 · 학급 코드 STAR5 · 선생님 비밀번호 0000</span>}
+            <button className="btn btn-sm btn-ghost" onClick={resetDemo}>처음부터</button>
+            <button className="btn btn-sm btn-ghost" onClick={exitDemo}>끝내기</button>
+          </div>
+        )}
       </div>
     </div>
   );
