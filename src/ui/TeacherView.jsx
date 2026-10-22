@@ -7,6 +7,7 @@ import { cloudEnabled, onCloudStatus, getCloudStatus } from '../services/cloud';
 import ClassPanel from './ClassPanel';
 import LearnPanel, { questionOf } from './LearnPanel';
 import StudentDetail from './StudentDetail';
+import StatsPanel from './StatsPanel';
 import { useClassWeek, PraiseBoard, goalTarget } from './ClassGoal';
 import YearEnd from './YearEnd';
 import { PRINCE_QUESTS, QUEST_BY_ID } from '../data/prince';
@@ -30,6 +31,7 @@ const TAB_KEY = 'ds:teacher-tab';
 const T_TABS = [
   ['today', '📋 오늘'],
   ['week', '🌌 이번 주'],
+  ['stats', '📊 통계'],
   ['learn', '📈 학습 분석'],
   ['units', '📚 출제 단원'],
   ['class', '⚙︎ 우리 반·설정'],
@@ -350,6 +352,7 @@ export default function TeacherView() {
 
       {tab === 'week' && <ClassWeekPanel settings={settings} />}
 
+      {tab === 'stats' && <StatsPanel onStudent={setDetail} />}
       {tab === 'learn' && <LearnPanel />}
       {detail && <StudentDetail sid={detail} questionOf={questionOf} onClose={() => setDetail(null)} />}
 

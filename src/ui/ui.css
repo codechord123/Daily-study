@@ -1296,3 +1296,26 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .demo-bar.is-mini { top: calc(10px + env(safe-area-inset-top, 0px)); bottom: auto; padding: 2px 4px 2px 12px; font-size: 12px; gap: 2px; }
 .demo-bar.is-mini .btn { padding: 4px 8px; min-height: 0; font-size: 12px; }
 @media (max-width: 700px) { .demo-bar.is-mini { top: calc(72px + env(safe-area-inset-top, 0px)); left: auto; right: 12px; transform: none; } }
+
+/* 선생님 · 통계: 날짜별 막대, 날짜별 표, 학생 × 날짜 기록표 */
+.st-chart { display: flex; align-items: flex-end; gap: 4px; height: 150px; padding: 18px 4px 0; overflow-x: auto; border-bottom: 1px solid var(--panel-line); }
+.st-bar { flex: 1 0 22px; max-width: 42px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px; padding: 0; border: 0; background: none; color: var(--ink-muted); cursor: pointer; font: inherit; }
+.st-bar-fill { width: 100%; min-height: 2px; border-radius: 6px 6px 0 0; background: var(--cyan); opacity: .85; }
+.st-bar-n { font-size: 11px; font-variant-numeric: tabular-nums; }
+.st-bar-d { font-size: 11px; padding: 2px 0; }
+.st-bar.on .st-bar-fill, .st-bar:hover .st-bar-fill { opacity: 1; box-shadow: 0 0 12px currentColor; }
+.st-bar.on .st-bar-d { color: var(--gold); font-weight: 700; }
+.st-bar-fill.hi { background: #6fe3a5; } .st-bar-fill.mid { background: #ffd76a; } .st-bar-fill.lo { background: #ff8fa3; }
+.st-days { min-width: 620px; }
+.st-open td { background: rgba(255,255,255,.03); white-space: normal; }
+.st-who { display: flex; flex-wrap: wrap; gap: 6px; }
+.st-chip { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--panel-line); background: rgba(255,255,255,.05); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+.st-chip b { margin-left: 4px; font-variant-numeric: tabular-nums; }
+.st-chip.hi { border-color: rgba(111,227,165,.5); } .st-chip.mid { border-color: rgba(255,215,106,.5); } .st-chip.lo { border-color: rgba(255,143,163,.6); }
+.st-grid { min-width: 0; width: auto; font-size: 13px; }
+.st-grid th, .st-grid td { padding: 6px 7px; text-align: center; }
+.st-grid th.on { color: var(--gold); }
+.st-sticky { position: sticky; left: 0; z-index: 1; text-align: left !important; background: #171a3a; }
+.st-cell { border-radius: 4px; color: var(--ink); }
+.st-cell.hi { background: rgba(111,227,165,.22); } .st-cell.mid { background: rgba(255,215,106,.2); } .st-cell.lo { background: rgba(255,143,163,.26); }
+.st-cell:not(.hi):not(.mid):not(.lo) { color: rgba(169,176,214,.4); }
