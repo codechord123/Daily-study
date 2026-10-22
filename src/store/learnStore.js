@@ -2,6 +2,7 @@
 // 별(프로필)과 따로 둔다: 별은 반 친구들도 보지만 학습 기록은 나와 선생님만 본다.
 // Firestore classes/{c}/learn/{sid}, 이 기기에는 ds:learn:{sid}
 import { uploadLearn, onRemote } from '../services/cloud';
+import { isRetired } from '../data/missions/retired';
 
 const KEY = (sid) => `ds:learn:${sid}`;
 export const GAPS = [1, 3, 7]; // 틀린(헷갈린) 문제를 다시 낼 간격(일). 3번 이어 맞히면 졸업
@@ -38,6 +39,7 @@ const listeners = new Set();
 
 // 이름표를 바꾼 뒤 예전 기록: 다시 볼 문제는 문제 사본이 있어 새 이름표로 고친다
 function migrate(d) {
+  if (d.review.some((e) => isRetired(e?.q))) d.review = d.review.filter((e) => !isRetired(e?.q)); // 더 내지 않는 옛 문제
   if ((d.v ?? 1) >= LEARN_VER) return d;
   const seen = new Set();
   d.review = d.review.filter((e) => {

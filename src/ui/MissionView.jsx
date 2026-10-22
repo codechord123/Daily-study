@@ -12,6 +12,7 @@ import { englishSource } from '../services/enClips';
 import { recordAnswer, markConfused, reportQuestion, REPORT_REASONS, dueReviews } from '../store/learnStore';
 import { QUEST_BY_ID, PRINCE_REWARD } from '../data/prince';
 import { ITEM_BY_ID } from '../data/items';
+import { isRetired } from '../data/missions/retired';
 
 // 영어 문제에서 읽어 줄 영어: 영어가 문제에 있으면 문제, 아니면 정답 보기
 const hasEn = (t) => /[a-z]/i.test(t ?? '');
@@ -236,7 +237,7 @@ export default function MissionView() {
       return dueReviews(profile.sid, 10).filter((e) => !missionMode.subject || e.q.subject === missionMode.subject).map((e, i) => ({ ...e.q, id: i, review: true }));
     if (mode === 'review')
       return (profile.wrongNotes ?? [])
-        .filter((n) => !n.cleared && (!missionMode.subject || n.q.subject === missionMode.subject))
+        .filter((n) => !n.cleared && !isRetired(n.q) && (!missionMode.subject || n.q.subject === missionMode.subject))
         .slice(-10)
         .map((n, i) => ({ ...n.q, id: i, noteSource: n.source }));
     if (mode === 'practice') return buildPractice(missionMode.subject, `${profile.sid}:${Date.now()}`, todayKey());

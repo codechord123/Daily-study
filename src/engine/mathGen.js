@@ -2,6 +2,7 @@
 // 1 수의 범위와 어림하기 · 2 분수의 곱셈 · 3 합동과 대칭 · 4 소수의 곱셈 · 5 직육면체 · 6 평균과 가능성
 import { randInt, shuffle } from './rng';
 import { BANK_MATH } from '../data/missions/bank';
+import { fit, polygon, line, text, vertexNames, sideLabel, dim, angleMark, dot, svgDoc, triangleBySides, triangleByAngles, minAngle } from './mathFigures';
 
 const gcd = (a, b) => (b ? gcd(b, a % b) : a);
 const frac = (n, d) => {
@@ -119,25 +120,81 @@ const unit3 = [
     const [shape, ans] = pick(r, POINT_SYM);
     return { kind: 'ox', prompt: `${shape}은(는) 점대칭도형이다.`, answer: ans, explain: ans ? '한 점을 중심으로 180° 돌리면 겹쳐요.' : '180° 돌리면 처음 모양과 겹치지 않아요.' };
   },
+  // 합동인 두 삼각형(하나는 뒤집어 그림): 대응변 찾기 / 두 그림에서 길이를 모아 둘레 구하기
   (r) => {
-    const a = randInt(r, 4, 9), b = randInt(r, 5, 10), c = randInt(r, 6, 12);
-    return { kind: 'number', prompt: `두 삼각형이 서로 합동이에요. 한 삼각형의 세 변이 ${a}cm, ${b}cm, ${c}cm일 때, 다른 삼각형의 둘레는? (cm)`, answer: a + b + c, hint: '합동이면 대응변의 길이가 같아요' };
+    let a, b, c, P;
+    do {
+      [a, b, c] = [randInt(r, 4, 9), randInt(r, 6, 10), randInt(r, 4, 9)];
+      P = triangleBySides(a, b, c);
+    } while (a + c <= b || a + b <= c || b + c <= a || a === c || minAngle(P) < 38);
+    const right = r() < 0.5 ? P.map(([x, y]) => [-x, y]) : P.map(([x, y]) => [-x, -y]); // 왼쪽 삼각형을 뒤집거나 돌린 것
+    const L = fit(P, [34, 40, 108, 130]);
+    const R = fit(right, [222, 40, 108, 130]);
+    const l = P.map(L);
+    const rr = right.map(R);
+    const askSum = r() < 0.5;
+    const body =
+      polygon(l) + polygon(rr) + vertexNames(l, ['ㄱ', 'ㄴ', 'ㄷ']).join('') + vertexNames(rr, ['ㄹ', 'ㅁ', 'ㅂ']).join('') +
+      sideLabel(l[0], l[1], l, `${a}cm`) + sideLabel(l[1], l[2], l, `${b}cm`) +
+      (askSum ? sideLabel(rr[2], rr[0], rr, `${c}cm`) : sideLabel(l[2], l[0], l, `${c}cm`));
+    const base = { kind: 'number', svg: svgDoc(210, body), hint: '대응점끼리 짝을 지어 보면 대응변이 보여요' };
+    if (askSum)
+      return { ...base, prompt: `삼각형 ㄱㄴㄷ과 삼각형 ㄹㅁㅂ은 서로 합동이에요. 삼각형 ㄱㄴㄷ의 둘레는 몇 cm일까요? (cm)`, answer: a + b + c, explain: `변 ㄷㄱ은 변 ㅂㄹ과 대응변이라 ${c}cm예요. 둘레는 ${a} + ${b} + ${c} = ${a + b + c}cm예요.` };
+    const ask = pick(r, [['ㄹㅁ', a, 'ㄱㄴ', 0, 1], ['ㅁㅂ', b, 'ㄴㄷ', 1, 2], ['ㅂㄹ', c, 'ㄷㄱ', 2, 0]]);
+    base.svg = svgDoc(210, body + sideLabel(rr[ask[3]], rr[ask[4]], rr, '?cm')); // 묻는 변도 그림에 표시
+    return { ...base, prompt: `삼각형 ㄱㄴㄷ과 삼각형 ㄹㅁㅂ은 서로 합동이에요. 변 ${ask[0]}은 몇 cm일까요? (cm)`, answer: ask[1], explain: `변 ${ask[0]}의 대응변은 변 ${ask[2]}이라 ${ask[1]}cm예요.` };
   },
+  // 선대칭도형인 이등변삼각형: 둘레와 밑변으로 옆변 구하기
   (r) => {
-    const side = randInt(r, 5, 13), base = randInt(r, 3, side - 1), P = side * 2 + base;
-    return { kind: 'number', prompt: `선대칭도형인 이등변삼각형의 둘레가 ${P}cm, 밑변이 ${base}cm예요. 한 옆변의 길이는? (cm)`, answer: side, hint: '두 옆변은 대응변이라 길이가 같아요', explain: `두 옆변의 합은 ${P} − ${base} = ${P - base}cm, 한 옆변은 ${P - base} ÷ 2 = ${side}cm예요.` };
+    const side = randInt(r, 6, 12), base = randInt(r, 4, side - 1), P = side * 2 + base;
+    const h = Math.sqrt(side * side - (base / 2) ** 2);
+    const pts = [[base / 2, h], [0, 0], [base, 0]].map(fit([[base / 2, h], [0, 0], [base, 0]], [110, 26, 140, 150]));
+    const body = polygon(pts) + line([pts[0][0], pts[0][1] - 12], [pts[0][0], pts[1][1] + 10], { color: '#ec4899', dash: true, width: 2.5 }) +
+      text(pts[0][0] + 16, pts[0][1] - 8, 'ㄱ') + vertexNames(pts, ['', 'ㄴ', 'ㄷ']).slice(1).join('') + dim(pts[1], pts[2], `${base}cm`, [0, 24]) + sideLabel(pts[0], pts[1], pts, '?cm');
+    return { kind: 'number', svg: svgDoc(220, body), prompt: `분홍 점선을 대칭축으로 하는 선대칭도형이에요. 삼각형 ㄱㄴㄷ의 둘레가 ${P}cm일 때, 변 ㄱㄴ은 몇 cm일까요? (cm)`, answer: side, hint: '변 ㄱㄴ과 변 ㄱㄷ은 대응변이에요', explain: `두 변 ㄱㄴ, ㄱㄷ의 합은 ${P} − ${base} = ${P - base}cm, 변 ㄱㄴ은 ${P - base} ÷ 2 = ${side}cm예요.` };
   },
+  // 합동인 두 삼각형: 두 각을 보고 나머지 한 각의 대응각 구하기
   (r) => {
-    const a = randInt(r, 6, 14) * 5, b = randInt(r, 4, 12) * 5, c = 180 - a - b;
-    return { kind: 'number', prompt: `두 삼각형이 서로 합동이에요. 한 삼각형의 두 각이 ${a}°, ${b}°일 때, 다른 삼각형에서 나머지 한 각의 대응각은 몇 도일까요? (°)`, answer: c, hint: '삼각형의 세 각의 합은 180°예요', explain: `나머지 한 각은 180° − ${a}° − ${b}° = ${c}°이고, 대응각의 크기는 같아요.` };
+    let B, C;
+    do [B, C] = [randInt(r, 7, 16) * 5, randInt(r, 7, 16) * 5];
+    while (180 - B - C < 50 || 180 - B - C > 100 || B === C);
+    const A = 180 - B - C;
+    const P = triangleByAngles(8, B, C);
+    const right = r() < 0.5 ? P.map(([x, y]) => [-x, y]) : P.map(([x, y]) => [-x, -y]);
+    const l = P.map(fit(P, [28, 30, 114, 124]));
+    const rr = right.map(fit(right, [220, 30, 114, 124]));
+    const body = polygon(l) + polygon(rr) + vertexNames(l, ['ㄱ', 'ㄴ', 'ㄷ']).join('') + vertexNames(rr, ['ㄹ', 'ㅁ', 'ㅂ']).join('') +
+      angleMark(l[1], l[2], l[0], `${B}°`) + angleMark(l[2], l[0], l[1], `${C}°`) + angleMark(rr[0], rr[1], rr[2], '?');
+    return { kind: 'number', svg: svgDoc(180, body), prompt: `삼각형 ㄱㄴㄷ과 삼각형 ㄹㅁㅂ은 서로 합동이에요. 각 ㅁㄹㅂ은 몇 도일까요? (°)`, answer: A, hint: '삼각형의 세 각의 합은 180°예요', explain: `각 ㅁㄹㅂ의 대응각은 각 ㄴㄱㄷ이에요. 180° − ${B}° − ${C}° = ${A}°예요.` };
   },
+  // 점대칭도형인 평행사변형: 대칭의 중심에서 두 꼭짓점까지 거리로 대각선 길이의 합
   (r) => {
-    const a = randInt(r, 3, 9), b = randInt(r, 2, 8);
-    return { kind: 'number', prompt: `점대칭도형인 평행사변형에서 대칭의 중심부터 이웃한 두 꼭짓점까지의 거리가 각각 ${a}cm, ${b}cm예요. 두 대각선의 길이의 합은? (cm)`, answer: 2 * (a + b), hint: '대칭의 중심은 대응점을 이은 선분을 똑같이 둘로 나눠요', explain: `두 대각선은 ${a * 2}cm, ${b * 2}cm라서 합은 ${2 * (a + b)}cm예요.` };
+    let a, b;
+    do [a, b] = [randInt(r, 3, 8), randInt(r, 2, 7)];
+    while (a === b || a / b > 1.8 || b / a > 1.8);
+    const u = [Math.cos((160 * Math.PI) / 180), Math.sin((160 * Math.PI) / 180)];
+    const v = [Math.cos((35 * Math.PI) / 180), Math.sin((35 * Math.PI) / 180)];
+    const cm = [[a * u[0], a * u[1]], [b * v[0], b * v[1]], [-a * u[0], -a * u[1]], [-b * v[0], -b * v[1]], [0, 0]];
+    const pts = cm.map(fit(cm, [60, 30, 240, 150]));
+    const [g, n, d, rr, o] = pts;
+    const body = polygon([g, n, d, rr]) + line(g, d) + line(n, rr) + dot(o) + vertexNames([g, n, d, rr], ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ']).join('') +
+      text(o[0], o[1] + 18, 'ㅇ', { size: 16 }) + sideLabel(o, g, [o, g, rr], `${a}cm`) + sideLabel(o, n, [o, n, d], `${b}cm`); // 치수선은 다른 대각선과 겹치지 않는 넓은 쪽으로
+    return { kind: 'number', svg: svgDoc(210, body), prompt: `점 ㅇ을 대칭의 중심으로 하는 점대칭도형이에요. 두 대각선 ㄱㄷ과 ㄴㄹ의 길이의 합은 몇 cm일까요? (cm)`, answer: 2 * (a + b), hint: '대칭의 중심은 대응점을 이은 선분을 똑같이 둘로 나눠요', explain: `선분 ㄱㄷ은 ${a} × 2 = ${a * 2}cm, 선분 ㄴㄹ은 ${b} × 2 = ${b * 2}cm라서 합은 ${2 * (a + b)}cm예요.` };
   },
+  // 점대칭도형인 평행사변형: 둘레와 한 변으로 다른 변 구하기
   (r) => {
-    const a = randInt(r, 4, 12), b = randInt(r, 3, 9);
-    return { kind: 'number', prompt: `점대칭도형인 평행사변형의 두 변이 ${a}cm, ${b}cm예요. 둘레는? (cm)`, answer: 2 * (a + b), hint: '대응변의 길이가 서로 같아요' };
+    let a, b;
+    do [a, b] = [randInt(r, 5, 11), randInt(r, 3, 8)];
+    while (a === b);
+    const P = 2 * (a + b);
+    const k = 0.45 * b; // 기울어진 정도
+    const h = Math.sqrt(b * b - k * k);
+    const cm = [[k, h], [a + k, h], [a, 0], [0, 0]];
+    const pts = cm.map(fit(cm, [50, 30, 260, 130]));
+    // 꼭짓점 이름은 옆으로 비켜 두고, 길이는 변 ㄱㄴ 위에 치수선으로
+    const names = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ'].map((t, i) => text(pts[i][0] + (i === 0 || i === 3 ? -16 : 16), pts[i][1], t)).join('');
+    const body = polygon(pts) + names + sideLabel(pts[0], pts[1], pts, `${a}cm`, { gap: 16 }) + sideLabel(pts[1], pts[2], pts, '?cm', { gap: 18, inside: true });
+    return { kind: 'number', svg: svgDoc(200, body), prompt: `점대칭도형인 평행사변형 ㄱㄴㄷㄹ의 둘레가 ${P}cm예요. 변 ㄴㄷ은 몇 cm일까요? (cm)`, answer: b, hint: '마주 보는 변은 대응변이라 길이가 같아요', explain: `변 ㄱㄴ과 변 ㄷㄹ이 ${a}cm씩이라 ${P} − ${a * 2} = ${P - a * 2}cm, 변 ㄴㄷ은 ${P - a * 2} ÷ 2 = ${b}cm예요.` };
   },
   (r) => {
     const q = pick(r, [

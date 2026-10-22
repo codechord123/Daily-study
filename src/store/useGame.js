@@ -6,6 +6,7 @@ import { priceOf } from './classSettings';
 import { loadProfile, newProfile, saveProfile, onRemoteProfile, onSynced } from './profileStore';
 import { cloudEnabled, cloudSignOut, setUploadDelay } from '../services/cloud';
 import { qId } from './learnStore';
+import { isRetired } from '../data/missions/retired';
 
 // 새 기능 안내 판 (ui/Onboarding.jsx NEWS_VERSION 과 같게)
 const NEWS_VERSION = 1;
@@ -75,6 +76,8 @@ export const useGame = create((set, get) => {
 
     login(sid) {
       const profile = loadProfile(sid) ?? newProfile(sid);
+      // 더 내지 않는 옛 문제는 남은 오답에서 뺀다
+      if (profile.wrongNotes?.some((n) => !n.cleared && isRetired(n.q))) profile.wrongNotes = profile.wrongNotes.filter((n) => n.cleared || !isRetired(n.q));
       saveProfile(profile);
       try {
         sessionStorage.setItem(SESSION_KEY, sid);
