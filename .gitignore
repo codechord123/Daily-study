@@ -7,3 +7,6 @@ dist
 firestore-debug.log
 database-debug.log
 firebase-debug.log
+
+# 문제 그림 검수 페이지 (npm run check:questions -- --sheet)
+review/
