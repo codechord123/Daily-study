@@ -77,7 +77,7 @@ export const useGame = create((set, get) => {
     login(sid) {
       const profile = loadProfile(sid) ?? newProfile(sid);
       // 더 내지 않는 옛 문제는 남은 오답에서 뺀다
-      if (profile.wrongNotes?.some((n) => !n.cleared && isRetired(n.q))) profile.wrongNotes = profile.wrongNotes.filter((n) => n.cleared || !isRetired(n.q));
+      if (profile.wrongNotes?.some((n) => !n.cleared && isRetired(n.q, n.q && qId(n.q)))) profile.wrongNotes = profile.wrongNotes.filter((n) => n.cleared || !isRetired(n.q, n.q && qId(n.q)));
       saveProfile(profile);
       try {
         sessionStorage.setItem(SESSION_KEY, sid);

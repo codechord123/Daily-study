@@ -79,7 +79,7 @@ function checkQuestion(q, where, { fromBank }) {
     if (degs > arcs) report('warn', 'R14', where, `각 ${degs}개 중 ${degs - arcs}개에 호 표시가 없어요`);
   }
   // R20 더 내지 않기로 한 옛 생성 문제
-  if (isRetired(q)) report('error', 'R20', where, '더 내지 않기로 한 옛 문제 모양이에요 (retired.js)');
+  if (isRetired(q, qId(q))) report('error', 'R20', where, '더 내지 않기로 한 옛 문제 모양이에요 (retired.js)');
 }
 
 // ---- 문항 은행 ----

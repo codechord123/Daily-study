@@ -7,4 +7,37 @@ const RETIRED = [
   /^점대칭도형에서 대칭의 중심부터 한 점까지의 거리가/,
   /^점대칭도형인 평행사변형(의 두 변이|에서 대칭의 중심부터)/,
 ];
-export const isRetired = (q) => !!q && !q.svg && RETIRED.some((re) => re.test(String(q.prompt ?? '')));
+// 고치거나 뺀 문항 은행 문제의 예전 이름표(qId): 학생들의 다시 보기·남은 오답에 남은 예전 내용을 빼낸다
+// (2026-10 전체 검토 — 정답이 둘로 읽히거나 사실·표현이 틀렸던 것)
+const RETIRED_IDS = new Set([
+  '1wrrv9x', // math: 서로 합동인 두 도형이 될 수 있는 것은?
+  'llyz8a', // math: 직사각형의 대각선은 그 직사각형의 대칭축이에요.
+  '1ju148e', // math: 날개 4개의 모양과 크기가 같은 바람개비 모양은 가운데
+  'sngwjg', // math: 선대칭도형에서 대응점끼리 이은 선분들은 모두 서로 평행
+  '1ejythm', // english: 소라가 좋아하는 과목과 하고 싶어 하는 일이 바르게 짝
+  '1sjinqc', // english: Ben이 가장 좋아하는 과목은?
+  'a39qnh', // english: 장난감 가게는 무엇 옆에 있을까요?
+  '1hh2p3w', // english: ‘꽃집은 빵집과 서점 사이에 있어요.’를 영어로 바르게
+  '1btd12r', // english: A가 찾는 곳은?
+  '1dz4yxw', // english: 다미가 이번 여름에 하고 싶은 일이 아닌 것은?
+  'yu74wi', // korean: 제주도 방언이 다른 지역 말과 특히 많이 다른 까닭으로
+  '30f400', // korean: ‘괜찮아유’, ‘그렇당께’를 비교할 때, 지역에 따라 
+  '11p1sdp', // korean: 방언과 표준어를 바르게 짝 지은 것은?
+  '1eo4mqe', // korean: 다른 지역에서 전학 온 친구가 방언을 쓸 때 알맞은 태
+  'galoy', // social: 이 문서로 추론할 수 있는 조선 전기의 모습은 무엇일까
+  '1rnhpf9', // social: 서당에서 아이들이 『천자문』 다음에 배운 책으로, 효도
+  '6zurl3', // social: 정묘호란이 끝난 뒤 조선과 후금이 맺은 관계는 무엇일까
+  'wkre20', // social: 한양 도성의 네 큰 문에 ‘인·의·예·지’를 넣었어요.
+  '4q012e', // social: 이 한양의 모습으로 추론할 수 있는 것으로 가장 알맞은
+  '1to68ot', // science: 이 실험에서 다르게 한 조건은 무엇일까요?
+  'vxy2i7', // science: 자원을 아끼는 실천이 아닌 것은 무엇일까요?
+  '1hg1jc7', // science: 이날 땅속과 바깥의 온도 차는 몇 ℃일까요? (℃)
+  '1yfjohn', // science: 모은 페트병으로 티셔츠를 몇 장 만들 수 있을까요? (
+  '1w1yu56', // science: 30일 동안 대기 전력으로 나가는 전기 요금은 약 몇 
+  '1mj1w2p', // science: LED 전구는 백열전구보다 소비 전력이 몇 W 더 작을
+  '7v2pmd', // science: 30분 뒤 두 집 안의 온도 차는 몇 ℃일까요? (℃)
+  '8nibdt', // science: 집에서 쓰는 에너지를 줄이도록 단열을 잘하고, 햇빛과 
+  '1pky2us', // science: 일주일 동안 아낀 수돗물은 몇 L일까요? (L)
+]);
+/** id: 그 문제의 이름표(qId). 넘기면 고치기 전 예전 은행 문제도 걸러 낸다 */
+export const isRetired = (q, id) => !!q && ((!!id && RETIRED_IDS.has(id)) || (!q.svg && RETIRED.some((re) => re.test(String(q.prompt ?? '')))));

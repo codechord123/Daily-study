@@ -9,7 +9,7 @@ import { sfx } from '../services/sound';
 import { speak, canSpeak, stopSpeaking } from '../services/speech';
 import { playClip, stopClip } from '../services/enAudio';
 import { englishSource } from '../services/enClips';
-import { recordAnswer, markConfused, reportQuestion, REPORT_REASONS, dueReviews } from '../store/learnStore';
+import { recordAnswer, markConfused, reportQuestion, REPORT_REASONS, dueReviews, qId } from '../store/learnStore';
 import { QUEST_BY_ID, PRINCE_REWARD } from '../data/prince';
 import { ITEM_BY_ID } from '../data/items';
 import { isRetired } from '../data/missions/retired';
@@ -239,7 +239,7 @@ export default function MissionView() {
       return dueReviews(profile.sid, 10).filter((e) => !isBlockedQ(e.q, blocked) && (!missionMode.subject || e.q.subject === missionMode.subject)).map((e, i) => ({ ...e.q, id: i, review: true }));
     if (mode === 'review')
       return (profile.wrongNotes ?? [])
-        .filter((n) => !n.cleared && !isRetired(n.q) && !isBlockedQ(n.q, blocked) && (!missionMode.subject || n.q.subject === missionMode.subject))
+        .filter((n) => !n.cleared && !isRetired(n.q, qId(n.q)) && !isBlockedQ(n.q, blocked) && (!missionMode.subject || n.q.subject === missionMode.subject))
         .slice(-10)
         .map((n, i) => ({ ...n.q, id: i, noteSource: n.source }));
     if (mode === 'practice') return buildPractice(missionMode.subject, `${profile.sid}:${Date.now()}`, todayKey());

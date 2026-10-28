@@ -39,7 +39,7 @@ const listeners = new Set();
 
 // 이름표를 바꾼 뒤 예전 기록: 다시 볼 문제는 문제 사본이 있어 새 이름표로 고친다
 function migrate(d) {
-  if (d.review.some((e) => isRetired(e?.q))) d.review = d.review.filter((e) => !isRetired(e?.q)); // 더 내지 않는 옛 문제
+  if (d.review.some((e) => isRetired(e?.q, e?.id))) d.review = d.review.filter((e) => !isRetired(e?.q, e?.id)); // 더 내지 않는 옛 문제
   if ((d.v ?? 1) >= LEARN_VER) return d;
   const seen = new Set();
   d.review = d.review.filter((e) => {
