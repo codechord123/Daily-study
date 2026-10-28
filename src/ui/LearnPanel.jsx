@@ -23,6 +23,7 @@ const dayLabel = (key) => (key === todayKey() ? '오늘' : `${Number(key.slice(5
 import { BANK_SOCIAL, BANK_KOREAN, BANK_SCIENCE, BANK_ENGLISH, BANK_MATH } from '../data/missions/bank';
 import RichText from './RichText';
 import PresentView from './PresentView';
+import { isGenerated, tplKey } from '../engine/blocking';
 
 // 화면에 띄울 때 정답이 늘 ①에 오지 않게 보기를 섞는다 (문제마다 같은 순서)
 export function shuffled(q, seed) {
@@ -71,7 +72,8 @@ export function QuestionPeek({ q }) {
     <div className="t-peek">
       {(q.image || q.svg) && <img className="t-peek-fig" src={q.image ?? svgUrl(q.svg)} alt="문제 그림" />}
       {q.passage && <p className="t-peek-pass"><RichText text={q.passage} /></p>}
-      <p><RichText text={q.prompt} /></p>
+      {q.sub && <p className="t-peek-sub"><RichText text={q.sub} neg /></p>}
+      <p><RichText text={q.prompt} neg /></p>
       {q.kind === 'choice' && (
         <ol>
           {q.choices.map((c, i) => (
@@ -104,15 +106,18 @@ function AssignButton({ id, assigned }) {
   );
 }
 
-function BlockButton({ id, blocked }) {
-  const on = blocked.includes(id);
+// 은행 문제는 그 문제 하나, 자동 생성 문제는 숫자만 다른 같은 틀의 문제를 모두 뺀다
+function BlockButton({ id, q, blocked }) {
+  const gen = q && isGenerated(q);
+  const key = gen ? tplKey(q) : id;
+  const on = blocked.includes(key) || blocked.includes(id);
   return (
     <button
       className={`btn btn-sm ${on ? 'btn-primary' : ''}`}
-      onClick={() => setSettings({ blocked: on ? blocked.filter((x) => x !== id) : [...blocked, id] })}
-      title={on ? '다시 출제해요' : '이 문제는 더 내지 않아요'}
+      onClick={() => setSettings({ blocked: on ? blocked.filter((x) => x !== id && x !== key) : [...blocked, key] })}
+      title={on ? '다시 출제해요' : gen ? '숫자만 다른 같은 모양의 문제도 모두 더 내지 않아요' : '이 문제는 더 내지 않아요'}
     >
-      {on ? '빠짐 · 다시 내기' : '출제에서 빼기'}
+      {on ? '빠짐 · 다시 내기' : gen ? '이 모양 문제 출제에서 빼기' : '출제에서 빼기'}
     </button>
   );
 }
@@ -190,6 +195,15 @@ export default function LearnPanel() {
     return { stdRows, missed, reportRows, review, wrongRows };
   }, [tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 예전에 생성 문제를 하나만 빼 둔 것: 숫자만 바뀐 같은 틀이 계속 나오므로 그 틀 전체로 넓힌다
+  useEffect(() => {
+    const extra = data.reportRows
+      .map((r) => ({ id: r.id, q: r.q ?? { prompt: r.prompt } }))
+      .filter((x) => blocked.includes(x.id) && isGenerated(x.q) && !blocked.includes(tplKey(x.q)))
+      .map((x) => tplKey(x.q));
+    if (extra.length) setSettings({ blocked: [...new Set([...blocked, ...extra])] });
+  }, [data, blocked]);
+
   const markSeen = (id) => {
     const next = new Set(seen).add(id);
     setSeen(next);
@@ -237,7 +251,7 @@ export default function LearnPanel() {
                   <div className="t-actions">
                     {r.q && <button className="btn btn-sm" onClick={() => setPresent({ items: reportSlides, start: reportSlides.findIndex((x) => x.id === r.id) })}>📺 크게 띄워 보기</button>}
                     {!seen.has(r.id) && <button className="btn btn-sm" onClick={() => markSeen(r.id)}>확인했어요</button>}
-                    <BlockButton id={r.id} blocked={blocked} />
+                    <BlockButton id={r.id} q={r.q ?? { prompt: r.prompt }} blocked={blocked} />
                   </div>
                 </div>
               )}
@@ -296,7 +310,7 @@ export default function LearnPanel() {
                   <div className="t-actions">
                     <button className="btn btn-sm" onClick={() => setPresent({ items: wrongSlides, start: wrongSlides.findIndex((x) => x.id === w.id) })}>📺 이 문제 띄우기</button>
                     <AssignButton id={w.id} assigned={assigned} />
-                    <BlockButton id={w.id} blocked={blocked} />
+                    <BlockButton id={w.id} q={w.q} blocked={blocked} />
                   </div>
                 </div>
               )}
@@ -337,7 +351,7 @@ export default function LearnPanel() {
                   <div className="t-actions">
                     {m.q && <button className="btn btn-sm" onClick={() => setPresent({ items: slides, start: slides.findIndex((x) => x.id === m.id) })}>📺 이 문제 띄우기</button>}
                     <AssignButton id={m.id} assigned={assigned} />
-                    <BlockButton id={m.id} blocked={blocked} />
+                    <BlockButton id={m.id} q={m.q} blocked={blocked} />
                   </div>
                 </div>
               )}

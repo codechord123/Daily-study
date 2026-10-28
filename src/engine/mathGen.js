@@ -345,12 +345,12 @@ export const MATH_UNITS = [
 
 /** current: 지금 단원 번호. 지금 단원에서 3문제 + 지난 단원 복습 2문제 */
 export function makeMathSet(r, count, current, opts = {}) {
-  const { weights = null, blocked = null, qId = null, legacyId = null, pickWeighted = null } = opts;
+  const { weights = null, isBlocked = () => false, pickWeighted = null } = opts;
   const out = [];
   const used = new Set();
   const draw = (u) => {
     // 새로 만든 생각하는 문제가 있는 단원은 대부분 거기서 낸다 (나머지는 계산 연습 생성)
-    const bank = BANK_MATH.filter((q) => q.unit === u && !used.has(q.prompt) && !(blocked && qId && (blocked.has(qId(q)) || (legacyId && blocked.has(legacyId(q))))));
+    const bank = BANK_MATH.filter((q) => q.unit === u && !used.has(q.prompt) && !isBlocked(q));
     if (bank.length && r() < 0.85) {
       const q = weights && pickWeighted ? pickWeighted(r, bank, weights) : bank[Math.floor(r() * bank.length)];
       used.add(q.prompt);
@@ -360,13 +360,17 @@ export function makeMathSet(r, count, current, opts = {}) {
       return;
     }
     const gens = MATH_UNITS[u].gens;
+    // 선생님이 뺀 문제 틀은 다시 뽑는다
     let g;
-    for (let tries = 0; tries < 8; tries++) {
+    let made;
+    for (let tries = 0; tries < 16; tries++) {
       g = gens[Math.floor(r() * gens.length)];
-      if (!used.has(g)) break;
+      if (used.has(g) && tries < 8) continue;
+      made = { subject: 'math', unit: MATH_UNITS[u].title, ...g(r) };
+      if (!isBlocked(made)) break;
     }
     used.add(g);
-    out.push({ subject: 'math', unit: MATH_UNITS[u].title, ...g(r) });
+    out.push(made);
   };
   const fresh = current === 0 ? count : Math.min(3, count);
   for (let i = 0; i < fresh; i++) draw(current);

@@ -84,7 +84,7 @@ export default function PresentView({ items, start = 0, onClose }) {
             </div>
           )}
           <div className="q-main">
-            {q.sub && <p className="q-sub">{q.sub}</p>}
+            {q.sub && <p className={`q-sub ${/않은|아닌|틀린|없는|잘못된/.test(q.sub) ? 'is-neg' : ''}`}><RichText text={q.sub} neg /></p>}
             <Prompt q={viewQ} fill={show && q.kind === 'choice' && !isImg(q.choices[q.answer]) ? q.choices[q.answer] : show ? answerText : null} fillState={show ? 'is-right' : 'is-preview'} />
             {q.kind === 'choice' && (
               <div className={`choices ${q.choices.length > 2 ? 'grid' : ''} ${q.choices.some((c) => c.length > 9) ? 'long' : ''}`}>

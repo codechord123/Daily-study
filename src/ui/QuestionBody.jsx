@@ -47,7 +47,7 @@ function Question({ text, fill, fillState, big }) {
       <h2 className={cls}>
         {text.split('□').map((s, i) => (
           <span key={i}>
-            <RichText text={s} />
+            <RichText text={s} neg />
             {i < blanks && <span className="blank" />}
           </span>
         ))}
@@ -58,11 +58,11 @@ function Question({ text, fill, fillState, big }) {
   const shown = fillText(before, fill);
   return (
     <h2 className={cls}>
-      <RichText text={before} />
+      <RichText text={before} neg />
       <span className={`blank ${shown ? 'filled' : ''} ${fillState ?? ''}`} key={`${shown}-${fillState}`}>
         {shown ? <RichText text={shown} /> : ' '}
       </span>
-      <RichText text={after} />
+      <RichText text={after} neg />
     </h2>
   );
 }
@@ -78,7 +78,7 @@ export function Prompt({ q, fill, fillState }) {
       ))}
       {instruction.map((c, i) => (
         <p key={i} className="q-instruction">
-          <RichText text={c} />
+          <RichText text={c} neg />
         </p>
       ))}
       <Question text={question} fill={fill} fillState={fillState} big={q.big} />

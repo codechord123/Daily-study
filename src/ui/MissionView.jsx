@@ -13,6 +13,7 @@ import { recordAnswer, markConfused, reportQuestion, REPORT_REASONS, dueReviews 
 import { QUEST_BY_ID, PRINCE_REWARD } from '../data/prince';
 import { ITEM_BY_ID } from '../data/items';
 import { isRetired } from '../data/missions/retired';
+import { isBlockedQ, blockedSet } from '../engine/blocking';
 
 // 영어 문제에서 읽어 줄 영어: 영어가 문제에 있으면 문제, 아니면 정답 보기
 const hasEn = (t) => /[a-z]/i.test(t ?? '');
@@ -232,17 +233,27 @@ export default function MissionView() {
   const practice = useMemo(() => mode !== 'daily' || missionDoneToday(), [mode]); // eslint-disable-line react-hooks/exhaustive-deps
   const saved = useMemo(() => (mode === 'daily' && !practice ? loadProgress(profile.sid) : null), []); // eslint-disable-line react-hooks/exhaustive-deps
   const questions = useMemo(() => {
+    const blocked = blockedSet(); // 선생님이 뺀 문제는 어디서도 내지 않는다
     // 오답 노트 (과목을 고르면 그 과목만), 또는 문제 정거장의 '다시 보기' 미리 풀기
     if (mode === 'review' && missionMode.source === 'queue')
-      return dueReviews(profile.sid, 10).filter((e) => !missionMode.subject || e.q.subject === missionMode.subject).map((e, i) => ({ ...e.q, id: i, review: true }));
+      return dueReviews(profile.sid, 10).filter((e) => !isBlockedQ(e.q, blocked) && (!missionMode.subject || e.q.subject === missionMode.subject)).map((e, i) => ({ ...e.q, id: i, review: true }));
     if (mode === 'review')
       return (profile.wrongNotes ?? [])
-        .filter((n) => !n.cleared && !isRetired(n.q) && (!missionMode.subject || n.q.subject === missionMode.subject))
+        .filter((n) => !n.cleared && !isRetired(n.q) && !isBlockedQ(n.q, blocked) && (!missionMode.subject || n.q.subject === missionMode.subject))
         .slice(-10)
         .map((n, i) => ({ ...n.q, id: i, noteSource: n.source }));
     if (mode === 'practice') return buildPractice(missionMode.subject, `${profile.sid}:${Date.now()}`, todayKey());
-    if (mode === 'prince') return missionMode.questions ?? [];
-    if (saved?.questions?.length) return saved.questions;
+    if (mode === 'prince') return (missionMode.questions ?? []).filter((q) => !isBlockedQ(q, blocked));
+    if (saved?.questions?.length) {
+      // 이어 풀기: 아직 안 푼 문제 중 그사이 선생님이 뺀 문제는 건너뛴다
+      const done = saved.results.length;
+      const kept = saved.questions.filter((q, i) => i < done || !isBlockedQ(q, blocked));
+      if (kept.length < saved.questions.length && kept.length > done) {
+        saveProgress(profile.sid, saved.results, kept);
+        return kept;
+      }
+      return saved.questions;
+    }
     const qs = buildDailyMission(profile.sid, todayKey(), { adaptive: true });
     if (!practice) saveProgress(profile.sid, [], qs);
     return qs;
@@ -550,7 +561,7 @@ export default function MissionView() {
                 </div>
               )}
               <div className="q-main">
-            {q.sub && <p className="q-sub">{q.sub}</p>}
+            {q.sub && <p className={`q-sub ${/않은|아닌|틀린|없는|잘못된/.test(q.sub) ? 'is-neg' : ''}`}><RichText text={q.sub} neg /></p>}
             <Prompt q={viewQ} fill={blankFill} fillState={blankState} />
             {/* 힌트는 바로 보이면 답을 알려 주는 셈이라, 필요한 학생만 눌러서 본다 */}
             {q.hint && !feedback && (showHint ? <p className="q-hint">💡 {q.hint}</p> : <button className="hint-btn" onClick={() => setShowHint(true)}>💡 힌트 보기</button>)}

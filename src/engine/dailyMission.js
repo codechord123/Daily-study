@@ -41,9 +41,9 @@ export function bankQuestion(id) {
 export const ASSIGN_MAX = 5;
 
 // 선생님이 '출제에서 빼기' 한 문제
-const blockedSet = () => new Set(getSettings().blocked ?? []);
+import { blockedSet, isBlockedQ } from './blocking';
 // 예전 이름표로 뺀 문제도 알아본다
-const isBlocked = (blocked, q) => blocked.has(qId(q)) || blocked.has(legacyId(q));
+const isBlocked = (blocked, q) => isBlockedQ(q, blocked);
 
 export const MISSION_COUNTS = { math: 6, english: 5, korean: 3, social: 3, science: 3 };
 export const MISSION_TOTAL = Object.values(MISSION_COUNTS).reduce((a, b) => a + b, 0);
@@ -111,8 +111,10 @@ export function englishSet(r, count, pos, weights = null) {
   const nWords = Math.max(1, Math.round(count / 5));
   const units = Array.from({ length: nWords }, () => pickUnit(r, pos, 'english', 0.3));
   const used = new Set();
+  const blocked = blockedSet();
   const qs = units.map((u) => {
-    const group = ENGLISH_WORDS.slice(u * WORDS_PER_UNIT, (u + 1) * WORDS_PER_UNIT).filter((w) => !used.has(w[0]));
+    // 선생님이 뺀 낱말 문제는 고르지 않는다
+    const group = ENGLISH_WORDS.slice(u * WORDS_PER_UNIT, (u + 1) * WORDS_PER_UNIT).filter((w) => !used.has(w[0]) && !isBlockedQ({ prompt: w[0] }, blocked) && !isBlockedQ({ prompt: w[1] }, blocked));
     const [en, ko] = group[randInt(r, 0, group.length - 1)] ?? ENGLISH_WORDS[0];
     used.add(en);
     const toKo = r() < 0.6;
@@ -171,8 +173,8 @@ function mathSet(r, count, pos, reviewRate, weights = null) {
     let q;
     for (let tries = 0; tries < 12; tries++) {
       const u = pos.mathFixed || reviewRate !== undefined ? pickUnit(r, pos, 'math', reviewRate ?? 0.4) : auto();
-      q = makeMathSet(r, 1, u, { weights, blocked, qId, legacyId, pickWeighted })[0];
-      if (!seen.has(qId(q))) break;
+      q = makeMathSet(r, 1, u, { weights, isBlocked: (x) => isBlockedQ(x, blocked), pickWeighted })[0];
+      if (!seen.has(qId(q)) && !isBlockedQ(q, blocked)) break;
     }
     seen.add(qId(q));
     out.push(q);
@@ -207,7 +209,7 @@ export function buildDailyMission(sid, dateKey, { adaptive = false } = {}) {
     if (asg?.date === dateKey) {
       for (const id of (asg.ids ?? []).slice(0, ASSIGN_MAX)) {
         const q = bankQuestion(id);
-        if (!q || ids.has(id)) continue;
+        if (!q || ids.has(id) || isBlockedQ(q, blocked)) continue;
         const at = qs.findLastIndex((x) => x.subject === q.subject && !x.assigned);
         if (at < 0) continue;
         qs[at] = { ...shuffleChoices(r, q), assigned: true };
@@ -217,7 +219,7 @@ export function buildDailyMission(sid, dateKey, { adaptive = false } = {}) {
     // 다시 보기: 같은 과목의 뒤쪽 문제와 바꾼다 (과목별 문제 수는 그대로)
     for (const e of dueReviews(sid, REVIEW_PER_DAY * 2)) {
       if (qs.filter((q) => q.review).length >= REVIEW_PER_DAY) break;
-      if (ids.has(e.id) || blocked.has(e.id) || !MISSION_COUNTS[e.q.subject]) continue;
+      if (ids.has(e.id) || isBlockedQ(e.q, blocked) || !MISSION_COUNTS[e.q.subject]) continue;
       const at = qs.findLastIndex((q) => q.subject === e.q.subject && !q.review && !q.assigned);
       if (at < 0) continue;
       qs[at] = { ...shuffleChoices(r, e.q), review: true };

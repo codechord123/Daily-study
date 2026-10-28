@@ -6,6 +6,7 @@ import { seeded } from './rng';
 import { buildPractice } from './dailyMission';
 import { getSettings } from '../store/classSettings';
 import { getLearn, dayNum, recentAccuracy } from '../store/learnStore';
+import { blockedSet, isBlockedQ } from './blocking';
 import { PRINCE_QUESTS, QUEST_BY_ID } from '../data/prince';
 
 export const PRINCE_QUESTIONS = 3;
@@ -31,7 +32,9 @@ export function princeToday(profile, dateKey) {
 /** 부탁 문제 3개: 다시 볼 문제(오래 기다린 것부터) → 모자라면 가장 약한 과목 연습 문제 */
 export function princeQuestions(sid, dateKey) {
   const learn = getLearn(sid);
+  const blocked = blockedSet();
   const review = learn.review
+    .filter((e) => !isBlockedQ(e.q, blocked))
     .slice()
     .sort((a, b) => a.due - b.due)
     .slice(0, PRINCE_QUESTIONS)

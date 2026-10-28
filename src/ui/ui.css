@@ -1319,3 +1319,9 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .st-cell { border-radius: 4px; color: var(--ink); }
 .st-cell.hi { background: rgba(111,227,165,.22); } .st-cell.mid { background: rgba(255,215,106,.2); } .st-cell.lo { background: rgba(255,143,163,.26); }
 .st-cell:not(.hi):not(.mid):not(.lo) { color: rgba(169,176,214,.4); }
+
+/* 거꾸로 묻는 말(알맞지 않은·아닌·틀린)은 빨간 밑줄로 눈에 띄게 */
+em.neg { font-style: normal; font-weight: 800; color: #d6336c; text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 4px; }
+.q-sub.is-neg { font-size: 19px; font-weight: 700; color: var(--ink-dark); }
+.t-peek-sub { font-weight: 700; }
+.t-peek em.neg { color: #ff8fb0; }
