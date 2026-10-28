@@ -16,7 +16,15 @@ const fracStr = ({ n, d }) => {
 };
 const dec = (x) => String(Math.round(x * 10000) / 10000);
 const pick = (r, arr) => arr[Math.floor(r() * arr.length)];
+// 분모와 서로소인 분자 (문제에 나오는 분수는 기약분수로)
+const coprime = (r, d) => {
+  let n;
+  do n = randInt(r, 1, d - 1);
+  while (gcd(n, d) !== 1);
+  return n;
+};
 
+// 보기: 정답 + 오답 후보 중 정답과 다른 것으로 4개 (후보는 넉넉히 받는다)
 function choicesFrom(r, answer, wrongs) {
   const set = [...new Set([answer, ...wrongs])].filter((x) => x !== undefined && x !== '').slice(0, 4);
   const choices = shuffle(r, set);
@@ -65,41 +73,41 @@ const unit1 = [
   (r) => {
     const k = pick(r, [8, 10, 12, 15]);
     const n = k * randInt(r, 3, 9) + randInt(r, 1, k - 1);
-    return { kind: 'number', prompt: `학생 ${n}명이 한 번에 ${k}명씩 탈 수 있는 케이블카를 모두 타려면 적어도 몇 번 운행해야 할까요?`, answer: Math.ceil(n / k), hint: '남는 사람도 타야 하니 올림!' };
+    return { kind: 'number', prompt: `학생 ${n}명이 한 번에 ${k}명씩 탈 수 있는 케이블카를 모두 타려면 적어도 몇 번 운행해야 할까요? (번)`, answer: Math.ceil(n / k), hint: '남는 사람도 타야 하니 올림!' };
   },
   (r) => {
     const n = randInt(r, 123, 989);
-    return { kind: 'number', prompt: `사과 ${n}개를 한 상자에 10개씩 담아 팔려고 해요. 팔 수 있는 상자는 최대 몇 상자일까요?`, answer: Math.floor(n / 10), hint: '모자란 상자는 팔 수 없으니 버림!' };
+    return { kind: 'number', prompt: `사과 ${n}개를 한 상자에 10개씩 담아 팔려고 해요. 팔 수 있는 상자는 최대 몇 상자일까요? (상자)`, answer: Math.floor(n / 10), hint: '모자란 상자는 팔 수 없으니 버림!' };
   },
 ];
 
 /* ---------- 2. 분수의 곱셈 ---------- */
 const unit2 = [
   (r) => {
-    const d = randInt(r, 3, 9), n = randInt(r, 1, d - 1), k = randInt(r, 2, 6);
+    const d = randInt(r, 3, 9), n = coprime(r, d), k = randInt(r, 2, 6);
     const ans = frac(n * k, d);
-    return { kind: 'choice', prompt: `{${n}/${d}} × ${k} = ?`, ...choicesFrom(r, fracStr(ans), [fracStr(frac(n, d * k)), fracStr(frac(n + k, d)), fracStr(frac(n * k + 1, d))]) };
+    return { kind: 'choice', prompt: `{${n}/${d}} × ${k} = ?`, ...choicesFrom(r, fracStr(ans), [fracStr(frac(n, d * k)), fracStr(frac(n + k, d)), fracStr(frac(n * k + 1, d)), fracStr(frac(n * k, d * k)), fracStr(frac(n * k + 2, d)), fracStr(frac(n * (k + 1), d))]) };
   },
   (r) => {
-    const d = randInt(r, 3, 9), n = randInt(r, 1, d - 1), k = randInt(r, 2, 8);
+    const d = randInt(r, 3, 9), n = coprime(r, d), k = randInt(r, 2, 8);
     const ans = frac(k * n, d);
-    return { kind: 'choice', prompt: `${k} × {${n}/${d}} = ?`, ...choicesFrom(r, fracStr(ans), [fracStr(frac(k + n, d)), fracStr(frac(n, k * d)), fracStr(frac(k * n, d + 1))]) };
+    return { kind: 'choice', prompt: `${k} × {${n}/${d}} = ?`, ...choicesFrom(r, fracStr(ans), [fracStr(frac(k + n, d)), fracStr(frac(n, k * d)), fracStr(frac(k * n, d + 1)), fracStr(frac(k * n + 1, d)), fracStr(frac(n * (k - 1), d)), fracStr(frac(k * n + 2, d))]) };
   },
   (r) => {
     const a = randInt(r, 2, 6);
     let b = randInt(r, 2, 7);
     if (a === b) b += 1;
-    return { kind: 'choice', prompt: `{1/${a}} × {1/${b}} = ?`, ...choicesFrom(r, `{1/${a * b}}`, [`{2/${a + b}}`, `{1/${a + b}}`, `{${a}/${b}}`]), hint: '단위분수끼리 곱하면 분모끼리 곱해요' };
+    return { kind: 'choice', prompt: `{1/${a}} × {1/${b}} = ?`, ...choicesFrom(r, fracStr(frac(1, a * b)), [fracStr(frac(2, a + b)), fracStr(frac(1, a + b)), fracStr(frac(a, b)), fracStr(frac(2, a * b))]), hint: '단위분수끼리 곱하면 분모끼리 곱해요' };
   },
   (r) => {
-    const d1 = randInt(r, 2, 6), n1 = randInt(r, 1, d1 - 1), d2 = randInt(r, 2, 7), n2 = randInt(r, 1, d2 - 1);
+    const d1 = randInt(r, 2, 6), n1 = coprime(r, d1), d2 = randInt(r, 2, 7), n2 = coprime(r, d2);
     const ans = frac(n1 * n2, d1 * d2);
-    return { kind: 'choice', prompt: `{${n1}/${d1}} × {${n2}/${d2}} = ?`, ...choicesFrom(r, fracStr(ans), [fracStr(frac(n1 + n2, d1 + d2)), fracStr(frac(n1 * d2, d1 * n2)), fracStr(frac(n1 * n2 + 1, d1 * d2))]) };
+    return { kind: 'choice', prompt: `{${n1}/${d1}} × {${n2}/${d2}} = ?`, ...choicesFrom(r, fracStr(ans), [fracStr(frac(n1 + n2, d1 + d2)), fracStr(frac(n1 * d2, d1 * n2)), fracStr(frac(n1 * n2 + 1, d1 * d2)), fracStr(frac(n1 * n2, d1 + d2)), fracStr(frac(n1 + n2, d1 * d2)), fracStr(frac(n1 * n2 + 2, d1 * d2))]) };
   },
   (r) => {
-    const w = randInt(r, 1, 3), d = randInt(r, 2, 5), n = randInt(r, 1, d - 1), k = randInt(r, 2, 4);
+    const w = randInt(r, 1, 3), d = randInt(r, 2, 5), n = coprime(r, d), k = randInt(r, 2, 4);
     const ans = frac((w * d + n) * k, d);
-    return { kind: 'choice', prompt: `${w}{${n}/${d}} × ${k} = ?`, ...choicesFrom(r, fracStr(ans), [fracStr(frac(w * k * d + n, d)), fracStr(frac((w * d + n) * k + 1, d)), fracStr(frac(w * d + n * k, d))]), hint: '대분수를 가분수로 바꿔요' };
+    return { kind: 'choice', prompt: `${w}{${n}/${d}} × ${k} = ?`, ...choicesFrom(r, fracStr(ans), [fracStr(frac(w * k * d + n, d)), fracStr(frac((w * d + n) * k + 1, d)), fracStr(frac(w * d + n * k, d)), fracStr(frac(w * k * d + n * k + 1, d)), fracStr(frac((w * d + n) * k + 2, d))]), hint: '대분수를 가분수로 바꿔요' };
   },
 ];
 
@@ -133,16 +141,20 @@ const unit3 = [
     const l = P.map(L);
     const rr = right.map(R);
     const askSum = r() < 0.5;
-    const body =
-      polygon(l) + polygon(rr) + vertexNames(l, ['ㄱ', 'ㄴ', 'ㄷ']).join('') + vertexNames(rr, ['ㄹ', 'ㅁ', 'ㅂ']).join('') +
-      sideLabel(l[0], l[1], l, `${a}cm`) + sideLabel(l[1], l[2], l, `${b}cm`) +
-      (askSum ? sideLabel(rr[2], rr[0], rr, `${c}cm`) : sideLabel(l[2], l[0], l, `${c}cm`));
-    const base = { kind: 'number', svg: svgDoc(210, body), hint: '대응점끼리 짝을 지어 보면 대응변이 보여요' };
-    if (askSum)
-      return { ...base, prompt: `삼각형 ㄱㄴㄷ과 삼각형 ㄹㅁㅂ은 서로 합동이에요. 삼각형 ㄱㄴㄷ의 둘레는 몇 cm일까요? (cm)`, answer: a + b + c, explain: `변 ㄷㄱ은 변 ㅂㄹ과 대응변이라 ${c}cm예요. 둘레는 ${a} + ${b} + ${c} = ${a + b + c}cm예요.` };
-    const ask = pick(r, [['ㄹㅁ', a, 'ㄱㄴ', 0, 1], ['ㅁㅂ', b, 'ㄴㄷ', 1, 2], ['ㅂㄹ', c, 'ㄷㄱ', 2, 0]]);
-    base.svg = svgDoc(210, body + sideLabel(rr[ask[3]], rr[ask[4]], rr, '?cm')); // 묻는 변도 그림에 표시
-    return { ...base, prompt: `삼각형 ㄱㄴㄷ과 삼각형 ㄹㅁㅂ은 서로 합동이에요. 변 ${ask[0]}은 몇 cm일까요? (cm)`, answer: ask[1], explain: `변 ${ask[0]}의 대응변은 변 ${ask[2]}이라 ${ask[1]}cm예요.` };
+    const shapes = polygon(l) + polygon(rr) + vertexNames(l, ['ㄱ', 'ㄴ', 'ㄷ']).join('') + vertexNames(rr, ['ㄹ', 'ㅁ', 'ㅂ']).join('');
+    const hint = '대응점끼리 짝을 지어 보면 대응변이 보여요';
+    if (askSum) {
+      const body = shapes + sideLabel(l[0], l[1], l, `${a}cm`) + sideLabel(l[1], l[2], l, `${b}cm`) + sideLabel(rr[2], rr[0], rr, `${c}cm`);
+      return { kind: 'number', svg: svgDoc(210, body), hint, prompt: `삼각형 ㄱㄴㄷ과 삼각형 ㄹㅁㅂ은 서로 합동이에요. 삼각형 ㄱㄴㄷ의 둘레는 몇 cm일까요? (cm)`, answer: a + b + c, explain: `변 ㄷㄱ은 변 ㅂㄹ과 대응변이라 ${c}cm예요. 둘레는 ${a} + ${b} + ${c} = ${a + b + c}cm예요.` };
+    }
+    // 둘레와 두 변을 보고 나머지 변을 구한 뒤, 그 대응변을 찾는다 (두 단계)
+    const sides = [['ㄱㄴ', a, 0, 1, 'ㄹㅁ'], ['ㄴㄷ', b, 1, 2, 'ㅁㅂ'], ['ㄷㄱ', c, 2, 0, 'ㅂㄹ']];
+    const k = randInt(r, 0, 2);
+    const [, ans, ri, rj, askName] = sides[k];
+    const shown = sides.filter((_, i) => i !== k);
+    const per = a + b + c;
+    const body = shapes + shown.map(([, v, i, j]) => sideLabel(l[i], l[j], l, `${v}cm`)).join('') + sideLabel(rr[ri], rr[rj], rr, '?cm');
+    return { kind: 'number', svg: svgDoc(210, body), hint, prompt: `삼각형 ㄱㄴㄷ과 삼각형 ㄹㅁㅂ은 서로 합동이에요. 삼각형 ㄱㄴㄷ의 둘레가 ${per}cm일 때, 변 ${askName}은 몇 cm일까요? (cm)`, answer: ans, explain: `변 ${askName}의 대응변은 변 ${sides[k][0]}이에요. 변 ${sides[k][0]}은 ${per} − ${shown[0][1]} − ${shown[1][1]} = ${ans}cm예요.` };
   },
   // 선대칭도형인 이등변삼각형: 둘레와 밑변으로 옆변 구하기
   (r) => {
@@ -277,11 +289,11 @@ const CUBOID_FACTS = [
 const unit5 = [
   (r) => {
     const [q, a] = pick(r, CUBOID_FACTS);
-    return { kind: 'number', prompt: q, answer: a };
+    return { kind: 'number', prompt: `${q} (${q.includes('쌍') ? '쌍' : '개'})`, answer: a };
   },
   (r) => {
     const a = randInt(r, 3, 12);
-    return { kind: 'number', prompt: `한 모서리가 ${a}cm인 정육면체의 모든 모서리 길이의 합은? (cm)`, answer: a * 12, hint: '정육면체의 모서리는 12개, 길이가 모두 같아요' };
+    return { kind: 'number', prompt: `한 모서리가 ${a}cm인 정육면체의 모든 모서리 길이의 합은? (cm)`, answer: a * 12, hint: '정육면체의 모서리가 몇 개인지, 길이는 어떤지 떠올려 봐요' };
   },
   (r) => {
     const a = randInt(r, 3, 10), b = randInt(r, 2, 8), c = randInt(r, 2, 6);
@@ -321,7 +333,7 @@ const unit6 = [
     const m = randInt(r, 20, 40);
     const xs = [m + randInt(r, -6, 6), m + randInt(r, -6, 6), m + randInt(r, -6, 6)];
     const missing = 4 * m - xs.reduce((a, b) => a + b, 0);
-    return { kind: 'number', prompt: `4일 동안 읽은 쪽수의 평균이 ${m}쪽이에요. 3일 동안 ${xs.join('쪽, ')}쪽을 읽었다면 넷째 날은 몇 쪽을 읽었을까요?`, answer: missing, hint: '평균 × 날수 = 전체 쪽수' };
+    return { kind: 'number', prompt: `4일 동안 읽은 쪽수의 평균이 ${m}쪽이에요. 3일 동안 ${xs.join('쪽, ')}쪽을 읽었다면 넷째 날은 몇 쪽을 읽었을까요? (쪽)`, answer: missing, hint: '평균 × 날수 = 전체 쪽수' };
   },
   (r) => {
     const [ev, ans] = pick(r, EVENTS);
