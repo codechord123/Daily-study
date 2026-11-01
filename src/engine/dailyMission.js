@@ -6,7 +6,7 @@ import { makeMathSet, MATH_UNITS } from './mathGen';
 import { getSettings } from '../store/classSettings';
 import { SCHEDULE, ENGLISH_WORDS } from '../data/missions/grade5s2';
 import { BANK_SOCIAL, BANK_KOREAN, BANK_SCIENCE, BANK_ENGLISH, BANK_MATH } from '../data/missions/bank';
-import { qId, legacyId, dueReviews, recentAccuracy } from '../store/learnStore';
+import { qId, legacyId, dueReviews, recentAccuracy, getLearn } from '../store/learnStore';
 
 // 난이도 맞추기: 최근 정답률이 높으면 어려운 문제(level 3)를, 낮으면 쉬운 문제(level 1)를 더 자주
 export function levelWeights(acc) {
@@ -43,6 +43,26 @@ export const ASSIGN_MAX = 5;
 // 선생님이 '출제에서 빼기' 한 문제
 import { blockedSet, isBlockedQ } from './blocking';
 import { ID_ALIASES } from '../data/missions/aliases';
+
+// 이 학생이 전에 푼 문항 은행 문제: 이름표 → 마지막으로 푼 날 (보기만 고친 문제는 지금 이름표로도)
+function solvedDays(sid) {
+  const out = new Map();
+  for (const [id, it] of Object.entries(getLearn(sid).items ?? {})) {
+    const day = it?.[2] ?? 0;
+    out.set(id, day);
+    if (ID_ALIASES[id]) out.set(ID_ALIASES[id], Math.max(day, out.get(ID_ALIASES[id]) ?? 0));
+  }
+  return out;
+}
+/** 안 푼 문제부터: 안 푼 문제가 있으면 그것만, 다 풀었으면 가장 오래전에 푼 문제들(3분의 1)에서 */
+export function freshPool(pool, solved) {
+  if (!solved?.size || !pool.length) return pool;
+  const day = (q) => solved.get(qId(q)) ?? solved.get(legacyId(q));
+  const unseen = pool.filter((q) => day(q) === undefined);
+  if (unseen.length) return unseen;
+  const byOld = [...pool].sort((a, b) => day(a) - day(b));
+  return byOld.slice(0, Math.max(1, Math.ceil(byOld.length / 3)));
+}
 // 예전 이름표로 뺀 문제도 알아본다
 const isBlocked = (blocked, q) => isBlockedQ(q, blocked);
 
@@ -107,7 +127,7 @@ function pickUnit(r, pos, subject, reviewRate = 0.4) {
   return cur > 0 && r() < reviewRate ? randInt(r, 0, cur - 1) : cur;
 }
 
-export function englishSet(r, count, pos, weights = null) {
+export function englishSet(r, count, pos, weights = null, solved = null) {
   // 새 문항 은행 위주 + 단어 뜻 1문제(5문제마다)
   const nWords = Math.max(1, Math.round(count / 5));
   const units = Array.from({ length: nWords }, () => pickUnit(r, pos, 'english', 0.3));
@@ -124,7 +144,7 @@ export function englishSet(r, count, pos, weights = null) {
     const choices = shuffle(r, [right, ...pool.map((w) => (toKo ? w[1] : w[0]))]);
     return { subject: 'english', unit: UNIT_TITLES.english[u], kind: 'choice', prompt: toKo ? en : ko, say: en, sub: toKo ? '이 단어의 뜻은?' : '알맞은 영어 단어는?', big: true, choices, answer: choices.indexOf(right) };
   });
-  qs.push(...bankSet(r, 'english', count - nWords, pos, 0.25, weights));
+  qs.push(...bankSet(r, 'english', count - nWords, pos, 0.25, weights, solved));
   return qs;
 }
 
@@ -141,21 +161,21 @@ function shuffleChoices(r, q) {
   return { ...q, choices: order.map((i) => q.choices[i]), answer: order.indexOf(q.answer) };
 }
 
-function bankSet(r, subject, count, pos, reviewRate = 0.4, weights = null) {
+function bankSet(r, subject, count, pos, reviewRate = 0.4, weights = null, solved = null) {
   const blocked = blockedSet();
   const bank = BANKS[subject].filter((q) => !isBlocked(blocked, q));
   const out = [];
   const seen = new Set();
   for (let tries = 0; out.length < count && tries < 80; tries++) {
     const u = pickUnit(r, pos, subject, reviewRate);
-    const pool = bank.filter((q) => q.unit === u && !seen.has(qKey(q)));
+    const pool = freshPool(bank.filter((q) => q.unit === u && !seen.has(qKey(q))), solved);
     if (!pool.length) continue;
     const q = pickWeighted(r, pool, weights);
     seen.add(qKey(q));
     out.push({ subject, ...shuffleChoices(r, q), unit: UNIT_TITLES[subject][q.unit] });
   }
   // 고른 단원에 아직 문항이 없으면(새 문항을 만드는 중인 단원) 문항이 있는 단원에서 채운다
-  const rest = shuffle(r, bank.filter((q) => !seen.has(qKey(q))));
+  const rest = shuffle(r, freshPool(bank.filter((q) => !seen.has(qKey(q))), solved));
   while (out.length < count && rest.length) {
     const q = rest.pop();
     seen.add(qKey(q));
@@ -164,7 +184,7 @@ function bankSet(r, subject, count, pos, reviewRate = 0.4, weights = null) {
   return out;
 }
 
-function mathSet(r, count, pos, reviewRate, weights = null) {
+function mathSet(r, count, pos, reviewRate, weights = null, solved = null) {
   const blocked = blockedSet();
   const out = [];
   const seen = new Set();
@@ -174,7 +194,7 @@ function mathSet(r, count, pos, reviewRate, weights = null) {
     let q;
     for (let tries = 0; tries < 12; tries++) {
       const u = pos.mathFixed || reviewRate !== undefined ? pickUnit(r, pos, 'math', reviewRate ?? 0.4) : auto();
-      q = makeMathSet(r, 1, u, { weights, isBlocked: (x) => isBlockedQ(x, blocked), pickWeighted })[0];
+      q = makeMathSet(r, 1, u, { weights, isBlocked: (x) => isBlockedQ(x, blocked), pickWeighted, fresh: (pool) => freshPool(pool, solved) })[0];
       if (!seen.has(qId(q)) && !isBlockedQ(q, blocked)) break;
     }
     seen.add(qId(q));
@@ -195,13 +215,14 @@ export function buildDailyMission(sid, dateKey, { adaptive = false } = {}) {
   const pos = curriculumPosition(dateKey);
   const c = MISSION_COUNTS;
   const w = (s) => (adaptive ? levelWeights(recentAccuracy(sid, s)) : null);
+  const solved = adaptive ? solvedDays(sid) : null; // 전에 푼 문제는 안 푼 문제를 다 낸 뒤에 (틀린 문제는 '다시 보기'로 따로 나온다)
   // 탐구 과목은 국어·사회·과학이 번갈아 나오게 섞는다
-  const ko = bankSet(r, 'korean', c.korean, pos, 0.25, w('korean'));
-  const so = bankSet(r, 'social', c.social, pos, 0.25, w('social'));
-  const sc = bankSet(r, 'science', c.science, pos, 0.4, w('science'));
+  const ko = bankSet(r, 'korean', c.korean, pos, 0.25, w('korean'), solved);
+  const so = bankSet(r, 'social', c.social, pos, 0.25, w('social'), solved);
+  const sc = bankSet(r, 'science', c.science, pos, 0.4, w('science'), solved);
   const inquiry = [];
   for (let i = 0; i < Math.max(ko.length, so.length, sc.length); i++) inquiry.push(...[ko[i], so[i], sc[i]].filter(Boolean));
-  const qs = [...mathSet(r, c.math, pos, undefined, w('math')), ...englishSet(r, c.english, pos, w('english')), ...inquiry];
+  const qs = [...mathSet(r, c.math, pos, undefined, w('math'), solved), ...englishSet(r, c.english, pos, w('english'), solved), ...inquiry];
   if (adaptive) {
     const blocked = blockedSet();
     const ids = new Set(qs.map(qId));
