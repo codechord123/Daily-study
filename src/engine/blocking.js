@@ -3,13 +3,15 @@
 //  - 자동 생성 문제(성취기준 std 가 없는 문제): 숫자만 바뀌어 다시 나오므로, 숫자를 #으로 바꾼 '문제 틀' 전체를 뺀다
 import { getSettings } from '../store/classSettings';
 import { qId, legacyId } from '../store/learnStore';
+import { ID_ALIASES } from '../data/missions/aliases';
 
 export const isGenerated = (q) => !q?.std;
 export const tplKey = (q) => `tpl:${String(q?.prompt ?? '').replace(/\d+(\.\d+)?/g, '#')}`;
 /** 빼기 버튼이 적어 두는 이름: 은행 문제는 그 문제, 생성 문제는 그 틀 */
 export const blockKey = (q) => (isGenerated(q) ? tplKey(q) : qId(q));
 
-export const blockedSet = () => new Set(getSettings().blocked ?? []);
+// 예전 이름표로 빼 둔 문제도 지금 이름표로 알아본다
+export const blockedSet = () => new Set((getSettings().blocked ?? []).flatMap((id) => (ID_ALIASES[id] ? [id, ID_ALIASES[id]] : [id])));
 export function isBlockedQ(q, set = blockedSet()) {
   if (!q || !set.size) return false;
   return set.has(qId(q)) || set.has(legacyId(q)) || set.has(tplKey(q));

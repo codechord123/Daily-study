@@ -24,6 +24,7 @@ import { BANK_SOCIAL, BANK_KOREAN, BANK_SCIENCE, BANK_ENGLISH, BANK_MATH } from 
 import RichText from './RichText';
 import PresentView from './PresentView';
 import { isGenerated, tplKey } from '../engine/blocking';
+import { ID_ALIASES } from '../data/missions/aliases';
 
 // 화면에 띄울 때 정답이 늘 ①에 오지 않게 보기를 섞는다 (문제마다 같은 순서)
 export function shuffled(q, seed) {
@@ -60,7 +61,7 @@ export function questionOf(id) {
         if (!QMAP.has(legacyId(q))) QMAP.set(legacyId(q), item); // 예전 이름표로 모인 기록
       }
   }
-  return QMAP.get(id);
+  return QMAP.get(id) ?? QMAP.get(ID_ALIASES[id]); // 보기만 고친 문제의 예전 기록
 }
 
 const svgUrl = (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;

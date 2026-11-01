@@ -36,12 +36,13 @@ export function bankQuestion(id) {
         if (!BY_ID.has(legacyId(q))) BY_ID.set(legacyId(q), item); // 예전 이름표로 넣어 둔 '미션에 넣기'
       }
   }
-  return BY_ID.get(id);
+  return BY_ID.get(id) ?? BY_ID.get(ID_ALIASES[id]); // 보기만 고친 문제는 예전 이름표로도
 }
 export const ASSIGN_MAX = 5;
 
 // 선생님이 '출제에서 빼기' 한 문제
 import { blockedSet, isBlockedQ } from './blocking';
+import { ID_ALIASES } from '../data/missions/aliases';
 // 예전 이름표로 뺀 문제도 알아본다
 const isBlocked = (blocked, q) => isBlockedQ(q, blocked);
 

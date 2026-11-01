@@ -100,7 +100,8 @@ for (const [subject, list] of Object.entries(BANKS)) {
 
 // R5 정답이 늘 가장 긴 보기면 길이만 보고 맞힌다: 과목마다 그런 문제가 40%를 넘으면 주의
 for (const [subject, list] of Object.entries(BANKS)) {
-  const cs = list.filter((q) => q.kind === 'choice' && !q.choices.some((c) => String(c).startsWith('img:')));
+  // 그림 보기나 '가·나·다'처럼 짧은 이름만 고르는 문제는 길이가 실마리가 되지 않아 뺀다
+  const cs = list.filter((q) => q.kind === 'choice' && !q.choices.some((c) => String(c).startsWith('img:')) && Math.max(...q.choices.map((c) => String(c).length)) >= 6);
   const longest = cs.filter((q) => {
     const L = q.choices.map((c) => String(c).length);
     const m = Math.max(...L);
@@ -108,6 +109,9 @@ for (const [subject, list] of Object.entries(BANKS)) {
   });
   if (cs.length >= 10 && longest.length / cs.length > 0.4)
     report('warn', 'R5', `${subject}`, `고르기 ${cs.length}문제 중 ${longest.length}문제(${Math.round((longest.length / cs.length) * 100)}%)에서 정답이 가장 긴 보기예요 (40% 아래로)`);
+  // 거꾸로 정답이 거의 가장 긴 보기가 아니면 '가장 긴 것은 빼고 고르기'가 통한다
+  if (cs.length >= 10 && longest.length / cs.length < 0.1)
+    report('warn', 'R5', `${subject}`, `고르기 ${cs.length}문제 중 정답이 가장 긴 보기인 문제가 ${longest.length}개뿐이에요 (10% 이상, 우연이면 25% 안팎)`);
 }
 
 // ---- 수학 생성기: 생성기마다 300번 뽑아 본다 ----
