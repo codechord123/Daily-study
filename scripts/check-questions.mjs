@@ -98,6 +98,18 @@ for (const [subject, list] of Object.entries(BANKS)) {
   });
 }
 
+// R5 정답이 늘 가장 긴 보기면 길이만 보고 맞힌다: 과목마다 그런 문제가 40%를 넘으면 주의
+for (const [subject, list] of Object.entries(BANKS)) {
+  const cs = list.filter((q) => q.kind === 'choice' && !q.choices.some((c) => String(c).startsWith('img:')));
+  const longest = cs.filter((q) => {
+    const L = q.choices.map((c) => String(c).length);
+    const m = Math.max(...L);
+    return L[q.answer] === m && L.filter((v) => v === m).length === 1;
+  });
+  if (cs.length >= 10 && longest.length / cs.length > 0.4)
+    report('warn', 'R5', `${subject}`, `고르기 ${cs.length}문제 중 ${longest.length}문제(${Math.round((longest.length / cs.length) * 100)}%)에서 정답이 가장 긴 보기예요 (40% 아래로)`);
+}
+
 // ---- 수학 생성기: 생성기마다 300번 뽑아 본다 ----
 let genCount = 0;
 const genSamples = [];
