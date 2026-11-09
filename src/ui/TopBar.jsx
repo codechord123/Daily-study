@@ -8,6 +8,7 @@ import { useEscape } from './useEscape';
 import { cloudEnabled } from '../services/cloud';
 import PasswordDialog from './PasswordDialog';
 
+import { openNotes } from '../engine/blocking';
 // 오른쪽 위: 문제 정거장·별가루·연속 출석·설정(화질·소리·비밀번호·로그아웃)
 export default function TopBar() {
   const { profile, logout, go } = useGame();
@@ -24,7 +25,7 @@ export default function TopBar() {
     return () => document.removeEventListener('pointerdown', off);
   }, [open]);
   const [snd, setSnd] = useState(sound.getPrefs);
-  const notes = (profile.wrongNotes ?? []).filter((n) => !n.cleared).length;
+  const notes = openNotes(profile.wrongNotes).length;
   useEffect(() => sound.onPrefs(setSnd), []);
   return (
     <div className="topbar" ref={root}>

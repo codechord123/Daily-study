@@ -26,6 +26,7 @@ import { onPlanetChange } from '../store/profileStore';
 import { SUBJECT_META } from '../data/missions/grade5';
 import { curriculumPosition, unitTitles, buildDailyMission, UNIT_TITLES, MISSION_COUNTS } from '../engine/dailyMission';
 
+import { openNotes } from '../engine/blocking';
 const SUBJECTS = ['math', 'english', 'korean', 'social', 'science'];
 const TAB_KEY = 'ds:teacher-tab';
 const T_TABS = [
@@ -176,8 +177,8 @@ export default function TeacherView() {
         rate: pct(c, t),
         subRaw: sub,
         sub: Object.fromEntries(Object.entries(sub).map(([k, [a, b]]) => [k, pct(a, b)])),
-        notes: (p?.wrongNotes ?? []).filter((n) => !n.cleared).length,
-        noteUnits: (p?.wrongNotes ?? []).filter((n) => !n.cleared).map((n) => `${SUBJECT_META[n.q.subject]?.label} · ${n.q.unit ?? '기본'}`),
+        notes: openNotes(p?.wrongNotes).length,
+        noteUnits: openNotes(p?.wrongNotes).map((n) => `${SUBJECT_META[n.q.subject]?.label} · ${n.q.unit ?? '기본'}`),
         stardust: p?.stardust ?? 0,
       };
     });

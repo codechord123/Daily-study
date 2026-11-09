@@ -9,6 +9,7 @@ import RichText from './RichText';
 import { RecordsBody } from './RecordsBody';
 import { useEscape } from './useEscape';
 
+import { openNotes, activeReviews } from '../engine/blocking';
 const SUBJECTS = ['math', 'english', 'korean', 'social', 'science'];
 const TABS = [
   ['records', '📒 기록'],
@@ -37,7 +38,8 @@ export default function StationSheet({ initialTab = 'subjects' }) {
   };
   const today = dayNum();
   const titles = unitTitles(curriculumPosition(todayKey()));
-  const notes = (profile.wrongNotes ?? []).filter((n) => !n.cleared);
+  const notes = openNotes(profile.wrongNotes);
+  const reviews = activeReviews(learn.review); // 선생님이 뺀 문제는 세지도 보여 주지도 않는다
 
   const per = useMemo(() => {
     const out = {};
@@ -46,15 +48,15 @@ export default function StationSheet({ initialTab = 'subjects' }) {
       out[s] = {
         acc: acc == null ? null : Math.round(acc * 100),
         wrong: notes.filter((n) => n.q.subject === s).length,
-        queue: learn.review.filter((e) => e.q.subject === s).length,
-        due: learn.review.filter((e) => e.q.subject === s && e.due <= today).length,
+        queue: reviews.filter((e) => e.q.subject === s).length,
+        due: reviews.filter((e) => e.q.subject === s && e.due <= today).length,
       };
     }
     return out;
   }, [learn, profile.wrongNotes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const wrongList = notes.filter((n) => !filter || n.q.subject === filter).slice().reverse();
-  const queueList = learn.review.filter((e) => !filter || e.q.subject === filter).slice().sort((a, b) => a.due - b.due);
+  const queueList = reviews.filter((e) => !filter || e.q.subject === filter).slice().sort((a, b) => a.due - b.due);
   const dueCount = queueList.filter((e) => e.due <= today).length;
 
   const Chips = () => (
@@ -80,7 +82,7 @@ export default function StationSheet({ initialTab = 'subjects' }) {
             <button key={id} role="tab" aria-selected={tab === id} className={`st-tab ${tab === id ? 'on' : ''}`} onClick={() => setTab(id)}>
               <span className="st-tab-label">{label}</span>
               {id === 'wrong' && notes.length > 0 && <b>{notes.length}</b>}
-              {id === 'queue' && learn.review.length > 0 && <b>{learn.review.length}</b>}
+              {id === 'queue' && reviews.length > 0 && <b>{reviews.length}</b>}
             </button>
           ))}
         </nav>

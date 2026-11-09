@@ -9,11 +9,10 @@ import { sfx } from '../services/sound';
 import { speak, canSpeak, stopSpeaking } from '../services/speech';
 import { playClip, stopClip } from '../services/enAudio';
 import { englishSource } from '../services/enClips';
-import { recordAnswer, markConfused, reportQuestion, REPORT_REASONS, dueReviews, qId } from '../store/learnStore';
+import { recordAnswer, markConfused, reportQuestion, REPORT_REASONS, dueReviews } from '../store/learnStore';
 import { QUEST_BY_ID, PRINCE_REWARD } from '../data/prince';
 import { ITEM_BY_ID } from '../data/items';
-import { isRetired } from '../data/missions/retired';
-import { isBlockedQ, blockedSet } from '../engine/blocking';
+import { isBlockedQ, blockedSet, openNotes, activeReviews } from '../engine/blocking';
 
 // 영어 문제에서 읽어 줄 영어: 영어가 문제에 있으면 문제, 아니면 정답 보기
 const hasEn = (t) => /[a-z]/i.test(t ?? '');
@@ -236,10 +235,10 @@ export default function MissionView() {
     const blocked = blockedSet(); // 선생님이 뺀 문제는 어디서도 내지 않는다
     // 오답 노트 (과목을 고르면 그 과목만), 또는 문제 정거장의 '다시 보기' 미리 풀기
     if (mode === 'review' && missionMode.source === 'queue')
-      return dueReviews(profile.sid, 10).filter((e) => !isBlockedQ(e.q, blocked) && (!missionMode.subject || e.q.subject === missionMode.subject)).map((e, i) => ({ ...e.q, id: i, review: true }));
+      return activeReviews(dueReviews(profile.sid, 10), blocked).filter((e) => (!missionMode.subject || e.q.subject === missionMode.subject)).map((e, i) => ({ ...e.q, id: i, review: true }));
     if (mode === 'review')
-      return (profile.wrongNotes ?? [])
-        .filter((n) => !n.cleared && !isRetired(n.q, qId(n.q)) && !isBlockedQ(n.q, blocked) && (!missionMode.subject || n.q.subject === missionMode.subject))
+      return openNotes(profile.wrongNotes, blocked)
+        .filter((n) => !missionMode.subject || n.q.subject === missionMode.subject)
         .slice(-10)
         .map((n, i) => ({ ...n.q, id: i, noteSource: n.source }));
     if (mode === 'practice') return buildPractice(missionMode.subject, `${profile.sid}:${Date.now()}`, todayKey());
@@ -372,7 +371,7 @@ export default function MissionView() {
       setReward(completeMission({ correct, total: questions.length, subjects, fixed: questions.filter((qq, i) => qq.review && results[i]).length }));
       saveProgress(profile.sid, null);
     }
-    setWrongCount((useGame.getState().profile.wrongNotes ?? []).filter((n) => !n.cleared).length);
+    setWrongCount(openNotes(useGame.getState().profile.wrongNotes).length);
     missionFx('complete');
     setFinished(true);
   }, [idx, questions, results, practice, completeMission, missionFx, mode, missionMode]);

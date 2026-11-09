@@ -26,6 +26,7 @@ import { princeToday } from '../engine/princeQuest';
 import { PRINCE_LOOK } from '../data/prince';
 import { sfx } from '../services/sound';
 
+import { openNotes, activeReviews } from '../engine/blocking';
 const R = PLANET_RADIUS;
 const WALK_SPEED = 0.9; // 라디안/초
 const MAX_PEERS = 8; // 한 별에 정상 표시할 최대 친구 수
@@ -582,7 +583,7 @@ export default function PlanetScene({ ownerId, editable, emote, inMission }) {
       {!inMission && !decorating && profile.sid === ownerId && princeToday(profile, todayKey()) && <PrinceVisitor />}
       {/* 모든 별의 궤도를 도는 문제 정거장: 어느 별에서 눌러도 내 공부(오답·다시 볼 문제)가 열린다 */}
       {/* 이름표(Html)를 그리는 중에 떼어 내면 React가 경고해서, 미션·꾸미기 중엔 숨기기만 한다 */}
-      <StudyStation hidden={!!inMission || decorating} badge={(profile.wrongNotes ?? []).filter((n) => !n.cleared).length || dueReviews(profile.sid, 99).length} />
+      <StudyStation hidden={!!inMission || decorating} badge={openNotes(profile.wrongNotes).length || activeReviews(dueReviews(profile.sid, 99)).length} />
       <MissionViewOffset active={!!inMission} look={lookFocus} decor={decorating} />
       {/* 내 모습을 꾸밀 때는 친구가 앞을 가리지 않게 잠깐 숨긴다 */}
       {!lookFocus && peerIds.map((sid, i) => (

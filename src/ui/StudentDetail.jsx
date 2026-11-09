@@ -11,6 +11,7 @@ import { QuestionPeek, shuffled } from './LearnPanel';
 import PresentView from './PresentView';
 import { currentVersion } from '../engine/currentBank';
 
+import { openNotes } from '../engine/blocking';
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : null);
 const SUBJECTS = ['math', 'english', 'korean', 'social', 'science'];
 
@@ -35,7 +36,7 @@ export default function StudentDetail({ sid, questionOf, onClose }) {
   }, []);
 
   const history = Object.entries(p?.history ?? {}).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 10);
-  const notes = (p?.wrongNotes ?? []).filter((n) => !n.cleared);
+  const notes = openNotes(p?.wrongNotes);
   const noteBy = SUBJECTS.map((s) => [s, notes.filter((n) => n.q.subject === s).length]).filter(([, n]) => n);
   const missed = Object.entries(l.items)
     .filter(([, [w]]) => w > 0)
