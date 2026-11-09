@@ -25,6 +25,7 @@ import RichText from './RichText';
 import PresentView from './PresentView';
 import { isGenerated, tplKey } from '../engine/blocking';
 import { ID_ALIASES } from '../data/missions/aliases';
+import { currentVersion } from '../engine/currentBank';
 
 // 화면에 띄울 때 정답이 늘 ①에 오지 않게 보기를 섞는다 (문제마다 같은 순서)
 export function shuffled(q, seed) {
@@ -186,8 +187,10 @@ export default function LearnPanel() {
     for (const st of ROSTER) {
       for (const n of loadProfile(st.id)?.wrongNotes ?? []) {
         if (!n?.q || n.date < since) continue;
-        const id = qId(n.q);
-        const e = (wrong[id] ??= { id, q: questionOf(id) ?? n.q, who: [], last: '' });
+        const nq = currentVersion(n.q); // 고친 문제는 지금 문제로, 더 내지 않는 문제는 빼고
+        if (!nq) continue;
+        const id = qId(nq);
+        const e = (wrong[id] ??= { id, q: questionOf(id) ?? nq, who: [], last: '' });
         if (!e.who.some((w) => w.sid === st.id)) e.who.push({ sid: st.id, name: st.nickname, cleared: !!n.cleared });
         if (n.date > e.last) e.last = n.date;
       }

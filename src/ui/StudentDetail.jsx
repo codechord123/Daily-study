@@ -9,6 +9,7 @@ import RichText from './RichText';
 import { useEscape } from './useEscape';
 import { QuestionPeek, shuffled } from './LearnPanel';
 import PresentView from './PresentView';
+import { currentVersion } from '../engine/currentBank';
 
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : null);
 const SUBJECTS = ['math', 'english', 'korean', 'social', 'science'];
@@ -45,7 +46,8 @@ export default function StudentDetail({ sid, questionOf, onClose }) {
   // 오답 노트 전체 (다시 풀어 해결한 문제도): 최근 것부터
   const allNotes = (p?.wrongNotes ?? [])
     .filter((n) => n?.q)
-    .map((n) => ({ ...n, id: qId(n.q), q: questionOf(qId(n.q)) ?? n.q }))
+    .map((n) => ({ ...n, q: questionOf(qId(n.q)) ?? currentVersion(n.q) ?? n.q }))
+    .map((n) => ({ ...n, id: qId(n.q) }))
     .reverse();
   const noteSlides = allNotes.map((n) => ({ id: n.id, q: shuffled(n.q, n.id) }));
 

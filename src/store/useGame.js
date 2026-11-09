@@ -6,7 +6,7 @@ import { priceOf } from './classSettings';
 import { loadProfile, newProfile, saveProfile, onRemoteProfile, onSynced } from './profileStore';
 import { cloudEnabled, cloudSignOut, setUploadDelay } from '../services/cloud';
 import { qId } from './learnStore';
-import { isRetired } from '../data/missions/retired';
+import { refreshNotes } from '../engine/currentBank';
 
 // 새 기능 안내 판 (ui/Onboarding.jsx NEWS_VERSION 과 같게)
 const NEWS_VERSION = 1;
@@ -76,8 +76,8 @@ export const useGame = create((set, get) => {
 
     login(sid) {
       const profile = loadProfile(sid) ?? newProfile(sid);
-      // 더 내지 않는 옛 문제는 남은 오답에서 뺀다
-      if (profile.wrongNotes?.some((n) => !n.cleared && isRetired(n.q, n.q && qId(n.q)))) profile.wrongNotes = profile.wrongNotes.filter((n) => n.cleared || !isRetired(n.q, n.q && qId(n.q)));
+      // 오답 노트의 문제 사본을 지금 문제로 (고친 문제는 고친 대로, 더 내지 않는 문제는 빼고)
+      profile.wrongNotes = refreshNotes(profile.wrongNotes).notes;
       saveProfile(profile);
       try {
         sessionStorage.setItem(SESSION_KEY, sid);
@@ -395,7 +395,10 @@ useGame.subscribe((s, prev) => {
 // 같은 학생이 다른 기기에서 바꾼 내용이 더 새것이면 반영
 onRemoteProfile((p) => {
   const cur = useGame.getState().profile;
-  if (cur?.sid === p.sid && (cur.provisional || (p.updatedAt ?? 0) > (cur.updatedAt ?? 0))) useGame.setState({ profile: p });
+  if (cur?.sid === p.sid && (cur.provisional || (p.updatedAt ?? 0) > (cur.updatedAt ?? 0))) {
+    const { notes, changed } = refreshNotes(p.wrongNotes);
+    useGame.setState({ profile: changed ? { ...p, wrongNotes: notes } : p });
+  }
 });
 // 서버와 처음 맞춰진 순간: 끊긴 동안 바꾼 내 별을 올리고, 서버에 없던 학생의 임시 별은 진짜 별이 된다
 // (서버에 더 새 기록이 있었다면 이미 그것으로 바뀌어 있다)

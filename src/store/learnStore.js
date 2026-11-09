@@ -2,7 +2,7 @@
 // 별(프로필)과 따로 둔다: 별은 반 친구들도 보지만 학습 기록은 나와 선생님만 본다.
 // Firestore classes/{c}/learn/{sid}, 이 기기에는 ds:learn:{sid}
 import { uploadLearn, onRemote } from '../services/cloud';
-import { isRetired } from '../data/missions/retired';
+import { currentVersion } from '../engine/currentBank';
 
 const KEY = (sid) => `ds:learn:${sid}`;
 export const GAPS = [1, 3, 7]; // 틀린(헷갈린) 문제를 다시 낼 간격(일). 3번 이어 맞히면 졸업
@@ -39,7 +39,28 @@ const listeners = new Set();
 
 // 이름표를 바꾼 뒤 예전 기록: 다시 볼 문제는 문제 사본이 있어 새 이름표로 고친다
 function migrate(d) {
-  if (d.review.some((e) => isRetired(e?.q, e?.id))) d.review = d.review.filter((e) => !isRetired(e?.q, e?.id)); // 더 내지 않는 옛 문제
+  // 다시 볼 문제 사본을 지금 문제로 (고친 문제는 고친 대로, 더 내지 않는 문제는 빼고)
+  if (d.review.length) {
+    const seen = new Set();
+    let changed = false;
+    const next = [];
+    for (const e of d.review) {
+      const q = e?.q && currentVersion(e.q);
+      if (!q) {
+        changed = true;
+        continue;
+      }
+      const id = q === e.q ? e.id : qId(q);
+      if (seen.has(id)) {
+        changed = true;
+        continue;
+      }
+      seen.add(id);
+      if (q !== e.q) changed = true;
+      next.push(q === e.q ? e : { ...e, q, id });
+    }
+    if (changed) d.review = next;
+  }
   if ((d.v ?? 1) >= LEARN_VER) return d;
   const seen = new Set();
   d.review = d.review.filter((e) => {
